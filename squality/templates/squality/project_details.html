@@ -1,0 +1,98 @@
+{% extends 'squality/base/layout.html' %}
+
+{% load static %}
+
+{% block main %}
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">{{ project.name }}</h1>
+</div>
+
+<div class="container">
+
+    <h2>Import</h2>
+
+    <div class="row pb-4">
+        <div class="col">
+            <div class="card">
+                <h5 class="card-header">SDMetrics Data</h5>
+                <div class="card-body">
+                    {% if sdmetric_file %}
+                    <h5 class="card-title">Uploaded file</h5>
+                    <p class="card-text">Filename: <a href="{{ sdmetric_file.fileurl }}" download>{{ sdmetric_file.filename }}</a></p>
+                    <p class="card-text">Uploaded: {{ sdmetric_file.created_at }}</p>
+                    {% endif %}
+                  <form class="row g-3" action="{% url 'sdmetrics_upload' project.id %}" enctype="multipart/form-data" method="post">
+                      {% csrf_token %}
+                    <div class="col-auto">
+                        <input class="form-control form-control-sm" type="file" name="sdupload" accept=".csv">
+                    </div>
+                    <div class="col-auto">
+                      <button type="submit" class="btn btn-outline-primary btn-sm">Upload</button>
+                    </div>
+                  </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col">
+            <div class="card">
+                <h5 class="card-header">Structure101 Data</h5>
+                <div class="card-body">
+                    {% if s101_file %}
+                    <h5 class="card-title">Uploaded file</h5>
+                    <p class="card-text">Filename: <a href="{{ s101_file.fileurl }}" download>{{ s101_file.filename }}</a></p>
+                    <p class="card-text">Uploaded: {{ s101_file.created_at }}</p>
+                    {% endif %}
+                  <form class="row g-3" action="{% url 's101_upload' project.id %}" enctype="multipart/form-data" method="post">
+                      {% csrf_token %}
+                    <div class="col-auto">
+                        <input class="form-control form-control-sm" type="file" name="s101upload" accept=".csv">
+                    </div>
+                    <div class="col-auto">
+                      <button type="submit" class="btn btn-outline-primary btn-sm">Upload</button>
+                    </div>
+                  </form>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+    
+    
+    <div class="row">
+        
+        <div class="col col-6">
+            <div class="card">
+                <h5 class="card-header">CLOC Data</h5>
+                <div class="card-body">
+                    <p class="text-muted">cloc --by-file [source_code] --csv --out=cloc_output.csv</p>
+                    {% if cloc_file %}
+                    <h5 class="card-title">Uploaded file</h5>
+                    <p class="card-text">Filename: <a href="{{ cloc_file.fileurl }}" download>{{ cloc_file.filename }}</a></p>
+                    <p class="card-text">Uploaded: {{ cloc_file.created_at }}</p>
+                    {% endif %}
+                  <form class="row g-3" action="{% url 'cloc_upload' project.id %}" enctype="multipart/form-data" method="post">
+                      {% csrf_token %}
+                    <div class="col-auto">
+                        <input class="form-control form-control-sm" type="file" name="clocupload" accept=".csv">
+                    </div>
+                    <div class="col-auto">
+                      <button type="submit" class="btn btn-outline-primary btn-sm">Upload</button>
+                    </div>
+                  </form>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+
+    <div class="row pt-5">
+        <a href="{% url 'project_clean' project.id %}" class="btn btn-lg btn-primary">Next: Data Cleaning</a>
+    </div>
+
+</div>
+
+  
+
+{% endblock %}
