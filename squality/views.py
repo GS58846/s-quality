@@ -22,7 +22,7 @@ from kneed import KneeLocator
 from sklearn.metrics import silhouette_score
 
 
-from squality.models import ClocMetric, ClocMetricRaw, Clustering, MetricNormalize, Project, S101Metric, S101MetricRaw, SdMetric, SdMetricRaw
+from squality.models import ClocMetric, ClocMetricRaw, Clustering, ClusteringMetric, MetricNormalize, Project, S101Metric, S101MetricRaw, SdMetric, SdMetricRaw
 
 
 # Create your views here.
@@ -469,6 +469,49 @@ def clustering_metric(request, project_id):
         c.save()
     
     kmeans_group = Clustering.objects.filter(project_id=project_id,algo='kmeans').order_by('cluster').all()
+
+    # kmeans summary
+
+    if ClusteringMetric.objects.filter(project_id=project_id,algo='kmeans').count() > 0:
+        ClusteringMetric.objects.filter(project_id=project_id,algo='kmeans').delete()
+
+    ms_len = Clustering.objects.filter(project_id=project_id,algo='kmeans').distinct('cluster').count()
+    for i in range(ms_len):
+        mloc = 0
+        mnoc = 0
+        ncam = 0
+        imc = 0
+        cluster_list = []
+        cls = Clustering.objects.filter(project_id=project_id,algo='kmeans',cluster=i).all()
+        for c in cls:
+            cm = SdMetricRaw.objects.filter(project_id=project_id,class_name=c.class_name).get()
+            mloc += cm.loc
+            mnoc += 1 
+            ncam += cm.cam
+            cluster_list.append(c.class_name)
+        # imc
+        for cl in cluster_list:
+            imc_list = S101MetricRaw.objects.filter(project_id=project_id,class_from=cl).all()
+            imc_x = 0
+            for il in imc_list:
+                # if il.class_to != cl:
+                if ((il.class_to in cluster_list) and (il.class_to != cl)):
+                    imc += il.weight
+
+
+        ncam = ncam / mnoc
+        imc = imc
+        
+        fms = ClusteringMetric(
+            algo = 'kmeans',
+            microservice = i,
+            mloc = mloc,
+            mnoc = mnoc,
+            ncam = ncam,
+            imc = imc,
+            project_id = project_id
+        )
+        fms.save()
 
     # mean-shift
 
