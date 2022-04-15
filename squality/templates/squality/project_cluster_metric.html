@@ -1,0 +1,120 @@
+{% extends 'squality/base/layout.html' %}
+
+{% load static %}
+
+{% block main %}
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">{{ project.name }}</h1>
+</div>
+
+<div class="container">
+  <a href="{% url 'project_clean' project.id %}" class="btn btn-secondary">Back: Data Cleaning</a>
+  <h2 class="col mt-2">Metric-based Clustering</h2>
+
+  <form action="{% url 'clustering_normalize' project.id %}" method="post">
+    {% csrf_token %}
+    <button class="btn btn-danger btn-sm" type="submit" {{ state }} >Normalize Data</button>
+  </form>
+  
+
+  <div class="card mt-3 mb-3">
+    <h5 class="card-header">Available Metrics</h5>
+    <div class="card-body">
+        
+        <table class="table table-striped table-hover table-sm table-responsive">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Class Name</th>
+                <th scope="col">CBO</th>
+                <th scope="col">IC</th>
+                <th scope="col">OC</th>
+                <th scope="col">CAM</th>
+                <th scope="col">NCO</th>
+                <th scope="col">DIT</th>
+                <th scope="col">RFC</th>
+                <th scope="col">LOC</th>
+                <th scope="col">NCA</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for sd in sdmetrics %}
+              <tr>
+                <td>{{ forloop.counter }}.</td>
+                <td>{{ sd.class_name }}</td>
+                <td>{{ sd.cbo }}</td>
+                <td>{{ sd.ic }}</td>
+                <td>{{ sd.oc }}</td>
+                <td>{{ sd.cam }}</td>
+                <td>{{ sd.nco }}</td>
+                <td>{{ sd.dit }}</td>
+                <td>{{ sd.rfc }}</td>
+                <td>{{ sd.loc }}</td>
+                <td>{{ sd.nca }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+      </div>
+  </div>
+
+  <hr>
+
+  
+  <div class="row">
+    
+
+    <div class="col">
+      <h4>K-Means</h4>
+      <p>The Elbow Method <strong>(K = {{k}})</strong></p>
+      <table class="table table-striped table-hover table-sm table-responsive">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Class Name</th>
+            <th scope="col">Cluster</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for kg in kmeans_group %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ kg.class_name }}</td>
+            <td>{{ kg.cluster }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="col">
+      <h4>Mean Shift</h4>
+      <p>&nbsp;</p>
+      <table class="table table-striped table-hover table-sm table-responsive">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Class Name</th>
+            <th scope="col">Cluster</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ms in mshift_group %}
+          <tr>
+            <td>{{ forloop.counter }}</td>
+            <td>{{ ms.class_name }}</td>
+            <td>{{ ms.cluster }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+  
+  <hr class="pb-5">
+  
+</div>
+
+{% endblock %}

@@ -1,20 +1,28 @@
+import base64, urllib
 from csv import DictReader, reader
 from fileinput import filename
 from functools import reduce
+import io
 from os import rename
 import os
 import random
 import re
 from statistics import mode
 import string
+import pandas as pd
+from sklearn.cluster import KMeans
+from sklearn.cluster import MeanShift
 from webbrowser import get
 from django.http import HttpRequest
 from django.shortcuts import redirect, render
 from django.core.files.storage import FileSystemStorage
 from django.conf import settings
+from sklearn.preprocessing import MinMaxScaler
+from kneed import KneeLocator
+from sklearn.metrics import silhouette_score
 
 
-from squality.models import ClocMetric, ClocMetricRaw, Project, S101Metric, S101MetricRaw, SdMetric, SdMetricRaw
+from squality.models import ClocMetric, ClocMetricRaw, Clustering, MetricNormalize, Project, S101Metric, S101MetricRaw, SdMetric, SdMetricRaw
 
 
 # Create your views here.
@@ -120,7 +128,7 @@ def sdmetrics_upload(request, id):
                 # sdmetric_raw.oc = row['OC']
                 sdmetric_raw.cam = row['CAM']
                 sdmetric_raw.nco = row['NumOps']
-                # sdmetric_raw.dit = row['DIT']
+                sdmetric_raw.dit = row['DIT']
                 # sdmetric_raw.rfc = row['RFC']
                 # sdmetric_raw.loc = row['LOC']
                 sdmetric_raw.nca = row['NumAttr']
@@ -193,14 +201,14 @@ def cloc_upload(request, id):
 
         project = Project.objects.get(id=id)
 
-        if(ClocMetric.objects.filter(project=project).count() > 0):
+        if ClocMetric.objects.filter(project=project).count() > 0:
             p = ClocMetric.objects.filter(project=project).get()
             p.filename = new_name
             p.fileurl = file_url
             p.save()
 
-            if ClocMetricRaw.objects.filter(project_id=id).count() > 0:
-                ClocMetricRaw.objects.filter(project_id=id).delete()
+            if ClocMetricRaw.objects.filter(project_id=project.id).count() > 0:
+                ClocMetricRaw.objects.filter(project_id=project.id).delete()
 
         else:
             cloc = ClocMetric(
@@ -259,7 +267,7 @@ def project_clean(request, id):
 
 def clean_delete(request, class_id):
     sdmetric = SdMetricRaw.objects.get(id=class_id)
-    project_id = sdmetric.id
+    project_id = sdmetric.project_id
     sdmetric.delete()
     return redirect('project_clean', id=project_id)
 
@@ -287,7 +295,7 @@ def clean_rename(request, project_id, type):
 
         for s in s101:
             s.class_from = s.class_from.replace(remove_string,'')
-            s.class_to = s.class_from.replace(remove_string,'')
+            s.class_to = s.class_to.replace(remove_string,'')
             s.save()
 
     return redirect('project_clean', id=project_id)
@@ -314,3 +322,223 @@ def clean_remove_usage(request, project_id, type):
     usage_list = S101MetricRaw.objects.filter(project_id=project_id, usage=type).all()
     usage_list.delete()
     return redirect('project_clean', id=project_id)
+
+def clean_syn_s101(request, project_id):
+    # clean from
+    sd_classes = SdMetricRaw.objects.filter(project_id=project_id).all()
+    # sync with sdmetric class list
+    for sd in sd_classes:
+        if S101MetricRaw.objects.filter(class_from=sd.class_name):
+            s101from_list = S101MetricRaw.objects.filter(class_from=sd.class_name).all()
+            for sfl in s101from_list:
+                sfl.ok_from = 1
+                sfl.save()
+    remove_metric = S101MetricRaw.objects.filter(ok_from=0).all()
+    remove_metric.delete()
+    # clean to
+    sd_classes = SdMetricRaw.objects.filter(project_id=project_id).all()
+    for sd in sd_classes:    
+        if S101MetricRaw.objects.filter(class_to=sd.class_name):
+            s101to_list = S101MetricRaw.objects.filter(class_to=sd.class_name).all()
+            for sft in s101to_list:
+                sft.ok_to = 1
+                sft.save()
+    remove_metric = S101MetricRaw.objects.filter(ok_to=0).all()
+    remove_metric.delete()
+
+    sd_classes = SdMetricRaw.objects.filter(project_id=project_id).all()
+    for sd in sd_classes:
+        # rfc
+        if S101MetricRaw.objects.filter(project_id=project_id, usage='returns', class_from=sd.class_name).count() > 0:
+            rfc_list = S101MetricRaw.objects.filter(project_id=project_id, usage='returns', class_from=sd.class_name).all()
+            rfc_value = 0
+            for rfc in rfc_list:
+                rfc_value += rfc.weight
+        else:
+            rfc_value = 0
+        sd.rfc = rfc_value
+        # ic
+        if S101MetricRaw.objects.filter(project_id=project_id, class_to=sd.class_name).count() > 0:
+            ic_list = S101MetricRaw.objects.filter(project_id=project_id, class_to=sd.class_name).all()
+            ic_value = 0
+            for ic in ic_list:
+                ic_value += ic.weight
+        else:
+            ic_value = 0
+        sd.ic = ic_value
+        # oc
+        if S101MetricRaw.objects.filter(project_id=project_id, class_from=sd.class_name).count() > 0:
+            oc_list = S101MetricRaw.objects.filter(project_id=project_id, class_from=sd.class_name).all()
+            oc_value = 0
+            for oc in oc_list:
+                oc_value += oc.weight
+        else:
+            oc_value = 0
+        sd.oc = oc_value
+        # cbo
+        if S101MetricRaw.objects.filter(project_id=project_id, class_from=sd.class_name).count() > 0:
+            cbo = S101MetricRaw.objects.filter(project_id=project_id, class_from=sd.class_name).all().distinct('class_to').count()
+            cbo_value = cbo
+        else:
+            cbo_value = 0
+        sd.cbo = cbo_value 
+
+        sd.save()
+
+    return redirect('project_clean', id=project_id)
+
+# METRIC CLUSTERING
+
+def migrate_raw_normalize(request, project_id):
+    if MetricNormalize.objects.filter(project_id=project_id).count() > 0:
+        MetricNormalize.objects.filter(project_id=project_id).delete()
+
+    raw_data = SdMetricRaw.objects.filter(project_id=project_id).all()
+    for row in raw_data:
+        normalize_data = MetricNormalize(
+            class_name = row.class_name,
+            cbo = row.cbo,
+            ic = row.ic,
+            oc = row.oc,
+            cam = row.cam,
+            nco = row.nco,
+            dit = row.dit,
+            rfc = row.rfc,
+            loc = row.loc,
+            nca = row.nca,
+            project_id = project_id
+        )
+        normalize_data.save()
+    return redirect('clustering_metric', project_id=project_id)
+
+def clustering_metric(request, project_id):
+    project = Project.objects.get(id=project_id)
+    sdmetric_data = MetricNormalize.objects.order_by('class_name').all().filter(project_id=project_id)
+
+    if MetricNormalize.objects.order_by('class_name').filter(project_id=project_id, normalized=1).count() > 0:
+        state = 'disabled'
+    else:
+        state = ''
+
+    # k-mean
+
+    raw_data = MetricNormalize.objects.filter(project_id=project_id).all().values()
+    df = pd.DataFrame(raw_data)
+    df_metric = df.iloc[:,2:-2]
+
+    class_count = MetricNormalize.objects.order_by('class_name').filter(project_id=project_id).count()
+
+    # the elbow method
+    kmeans_args = {
+        "init": "random",
+        "n_init": 10,
+        "max_iter": 300,
+        "random_state": 42
+    }
+
+    sse = []
+    sse_list = []
+
+    for k in range(1,class_count): #rows
+        kmeans = KMeans(n_clusters=k, **kmeans_args)
+        kmeans.fit(df_metric)
+        sse.append([k, kmeans.inertia_])
+        sse_list.append(kmeans.inertia_)
+
+    k_value = KneeLocator(range(1,class_count), sse_list, curve="convex", direction="decreasing")
+    k_value.elbow  
+    
+    kmeans_minmax = KMeans(k_value.elbow).fit(df_metric)
+    kmeans_clusters = kmeans_minmax.fit_predict(df_metric)
+
+    df_kmeans = df.iloc[:,1:2].copy()
+    df_kmeans['kmeans'] = kmeans_clusters
+
+    # save into db
+    if Clustering.objects.filter(project_id=project_id,algo='kmeans').count() > 0:
+        Clustering.objects.filter(project_id=project_id,algo='kmeans').delete()
+
+    for k in df_kmeans.index:
+        c = Clustering(
+            class_name = df_kmeans['class_name'][k],
+            cluster = df_kmeans['kmeans'][k],
+            type = 'metric',
+            algo = 'kmeans',
+            project_id = project_id
+        )
+        c.save()
+    
+    kmeans_group = Clustering.objects.filter(project_id=project_id,algo='kmeans').order_by('cluster').all()
+
+    # mean-shift
+
+    mshift = MeanShift()
+    mshift_cluster = mshift.fit_predict(df_metric)
+    df_mshift = df.iloc[:,1:2].copy()
+    df_mshift['mean_shift'] = mshift_cluster
+    
+    # save into db
+    if Clustering.objects.filter(project_id=project_id,algo='mean_shift').count() > 0:
+        Clustering.objects.filter(project_id=project_id,algo='mean_shift').delete()
+
+    for k in df_mshift.index:
+        c = Clustering(
+            class_name = df_mshift['class_name'][k],
+            cluster = df_mshift['mean_shift'][k],
+            type = 'metric',
+            algo = 'mean_shift',
+            project_id = project_id
+        )
+        c.save()
+    
+    mshift_group = Clustering.objects.filter(project_id=project_id,algo='mean_shift').order_by('cluster').all()
+
+    data = {
+        'project': project,
+        'sdmetrics': sdmetric_data,
+        'state': state,
+        # 'df': df_kmeans.to_html(),
+        'k': k_value.elbow,
+        'kmeans_group': kmeans_group,
+        'mshift_group': mshift_group
+    }
+
+    return render(request, 'squality/project_cluster_metric.html', data)
+
+def clustering_normalize(request, project_id):
+    raw_data = MetricNormalize.objects.filter(project_id=project_id).all().values()
+    df = pd.DataFrame(raw_data)
+    df_metric = df.iloc[:,2:-2]
+    # normalize
+    scaler = MinMaxScaler() 
+    scaler_feature = scaler.fit_transform(df_metric)
+    df_normalize_id = df.iloc[:,0:1].copy()
+    df_normalize_metric = pd.DataFrame(scaler_feature)
+    df_normalize = pd.concat([df_normalize_id, df_normalize_metric], axis=1)
+    df_normalize.columns = ['id','cbo','ic','oc','cam','nco','dit','rfc','loc','nca']
+    
+    mydict = {
+        'df': df.to_html(),
+        'df_metric': df_metric.to_html(),
+        'df_normalize': df_normalize.to_html()
+    }
+
+    # update db
+    for df_row in df_normalize.index:
+        normalize = MetricNormalize.objects.filter(project_id=project_id, id=df_normalize['id'][df_row]).get()
+        normalize.cbo = df_normalize['cbo'][df_row]
+        normalize.ic = df_normalize['ic'][df_row]
+        normalize.oc = df_normalize['oc'][df_row]
+        normalize.cam = df_normalize['cam'][df_row]
+        normalize.nco = df_normalize['nco'][df_row]
+        normalize.dit = df_normalize['dit'][df_row]
+        normalize.rfc = df_normalize['rfc'][df_row]
+        normalize.loc = df_normalize['loc'][df_row]
+        normalize.nca = df_normalize['nca'][df_row]
+        normalize.normalized = 1
+        normalize.save()
+
+    return redirect('clustering_metric', project_id=project_id)
+    # return render(request, 'squality/project_test.html',context=mydict)
+
+

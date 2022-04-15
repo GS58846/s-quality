@@ -21,4 +21,13 @@ urlpatterns = [
     path('squality/project/cleaning/rename/<int:project_id>/<str:type>', views.clean_rename, name='clean_rename'),
     path('squality/project/cleaning/sync/cloc/<int:project_id>', views.clean_syn_cloc, name='clean_syn_cloc'),
     path('squality/project/cleaning/remove/usage/<int:project_id>/<str:type>', views.clean_remove_usage, name='clean_remove_usage'),
+    path('squality/project/cleaning/sync/s101/<int:project_id>', views.clean_syn_s101, name='clean_syn_s101'),
+
+    # Cluster Metric
+    path('squality/project/cluster/<int:project_id>/raw_migration', views.migrate_raw_normalize, name='raw_migration'),
+    path('squality/project/cluster/<int:project_id>/metric', views.clustering_metric, name='clustering_metric'),
+    path('squality/project/cluster/<int:project_id>/normalize', views.clustering_normalize, name='clustering_normalize'),
+
+    # path('squality/project/cluster/normalize', views.clustering_normalize, name='clustering_normalize_test'),
+    
 ]

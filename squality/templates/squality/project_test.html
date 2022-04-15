@@ -1,0 +1,13 @@
+{% extends 'squality/base/layout.html' %}
+
+{% load static %}
+
+{% block main %}
+
+{{ df|safe }}
+
+{{ df_metric|safe }}
+
+{{ df_normalize|safe }}
+
+{% endblock %}
