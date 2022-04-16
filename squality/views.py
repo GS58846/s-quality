@@ -1,4 +1,5 @@
 import base64, urllib
+from collections import defaultdict
 from csv import DictReader, reader
 from fileinput import filename
 from functools import reduce
@@ -471,36 +472,40 @@ def clustering_metric(request, project_id):
     kmeans_group = Clustering.objects.filter(project_id=project_id,algo='kmeans').order_by('cluster').all()
 
     # kmeans summary
+    # TODO: separate as re-usable function? start ---------------------------------------------
 
     if ClusteringMetric.objects.filter(project_id=project_id,algo='kmeans').count() > 0:
         ClusteringMetric.objects.filter(project_id=project_id,algo='kmeans').delete()
 
+    ms_grp = defaultdict(list)
     ms_len = Clustering.objects.filter(project_id=project_id,algo='kmeans').distinct('cluster').count()
     for i in range(ms_len):
         mloc = 0
         mnoc = 0
         ncam = 0
         imc = 0
-        cluster_list = []
+        nmo = 0
+        cluster_grp = []
         cls = Clustering.objects.filter(project_id=project_id,algo='kmeans',cluster=i).all()
         for c in cls:
             cm = SdMetricRaw.objects.filter(project_id=project_id,class_name=c.class_name).get()
             mloc += cm.loc
             mnoc += 1 
+            nmo += cm.nco
             ncam += cm.cam
-            cluster_list.append(c.class_name)
+            cluster_grp.append(c.class_name)
+            ms_grp[i].append(c.class_name)
         # imc
-        for cl in cluster_list:
+        for cl in cluster_grp:
             imc_list = S101MetricRaw.objects.filter(project_id=project_id,class_from=cl).all()
-            imc_x = 0
             for il in imc_list:
                 # if il.class_to != cl:
-                if ((il.class_to in cluster_list) and (il.class_to != cl)):
+                if ((il.class_to in cluster_grp) and (il.class_to != cl)):
                     imc += il.weight
 
 
         ncam = ncam / mnoc
-        imc = imc
+        imc = imc       
         
         fms = ClusteringMetric(
             algo = 'kmeans',
@@ -509,9 +514,71 @@ def clustering_metric(request, project_id):
             mnoc = mnoc,
             ncam = ncam,
             imc = imc,
+            nmo = nmo,
             project_id = project_id
         )
         fms.save()
+
+    # wcbm
+
+    for key, val in ms_grp.items():
+        ms_wcbm = 0
+        ms_trm = 0
+        if S101MetricRaw.objects.filter(class_from__in=val, project_id=project_id).count() > 0:
+            cf = S101MetricRaw.objects.filter(class_from__in=val, project_id=project_id).all()
+            for cc in cf:
+                if cc.class_to not in val:
+                    ms_wcbm += cc.weight
+                    if cc.usage == 'returns':
+                        ms_trm += cc.weight
+        ms_x = ClusteringMetric.objects.filter(project_id=project_id, microservice=key, algo='kmeans').get()
+        ms_x.wcbm = ms_wcbm
+        ms_x.trm = ms_trm
+        ms_x.save()
+
+    # cbm
+    
+    for key, val in ms_grp.items():
+        ms_cbm = 0
+        ms_acbm = 0
+        # print('MS'+str(key)+' ===========================================')
+        # print(val)
+        for i in range(ms_len):
+            if key != i:
+                if S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_grp[i], project_id=project_id):
+                    ms_cbm += 1
+                   
+                    if S101MetricRaw.objects.filter(class_from__in=ms_grp[i], class_to__in=val, project_id=project_id):
+                        # print('     MS'+str(i)) 
+                        # print(ms_grp[i])
+                        # print('---------------')
+                        ms_from = S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_grp[i], project_id=project_id).all()
+                        for mf in ms_from:
+                            ms_acbm += mf.weight
+                            # print(mf.class_from + '-' + str(mf.weight))
+                        # print('...............')
+                        ms_to = S101MetricRaw.objects.filter(class_from__in=ms_grp[i], class_to__in=val, project_id=project_id).all()
+                        for mt in ms_to:
+                            ms_acbm += mt.weight
+                            # print(mt.class_from + '-' + str(mt.weight))
+                # if (S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_grp[i]) and S101MetricRaw.objects.filter(class_from__in=ms_grp[i], class_to__in=val)):
+                #     # ms_acbm += 1
+                #     acbm_from_list = S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_grp[i]).all()
+                #     for afl in acbm_from_list:
+                #         ms_acbm += afl.weight
+                #     acbm_to_list = S101MetricRaw.objects.filter(class_to__in=val, class_from__in=ms_grp[i]).all()
+                #     for atl in acbm_to_list:
+                #         ms_acbm += atl.weight
+
+
+        ms_x = ClusteringMetric.objects.filter(project_id=project_id, microservice=key, algo='kmeans').get()
+        ms_x.cbm = ms_cbm
+        ms_x.acbm = ms_acbm
+        ms_x.save()
+
+    # TODO: separate as re-usable function? end ---------------------------------------------
+ 
+    # print(ms_grp[0])
 
     # mean-shift
 
@@ -536,6 +603,102 @@ def clustering_metric(request, project_id):
     
     mshift_group = Clustering.objects.filter(project_id=project_id,algo='mean_shift').order_by('cluster').all()
 
+    # mean-shift summary
+    # TODO: separate as re-usable function? start ---------------------------------------------
+
+    if ClusteringMetric.objects.filter(project_id=project_id,algo='mean_shift').count() > 0:
+        ClusteringMetric.objects.filter(project_id=project_id,algo='mean_shift').delete()
+
+    ms_ms_grp = defaultdict(list)
+    ms_ms_len = Clustering.objects.filter(project_id=project_id,algo='mean_shift').distinct('cluster').count()
+    for i in range(ms_ms_len):
+        mloc = 0
+        mnoc = 0
+        ncam = 0
+        imc = 0
+        nmo = 0
+        cluster_grp = []
+        cls = Clustering.objects.filter(project_id=project_id,algo='mean_shift',cluster=i).all()
+        for c in cls:
+            cm = SdMetricRaw.objects.filter(project_id=project_id,class_name=c.class_name).get()
+            mloc += cm.loc
+            mnoc += 1 
+            nmo += cm.nco
+            ncam += cm.cam
+            cluster_grp.append(c.class_name)
+            ms_ms_grp[i].append(c.class_name)
+        # imc
+        for cl in cluster_grp:
+            imc_list = S101MetricRaw.objects.filter(project_id=project_id,class_from=cl).all()
+            for il in imc_list:
+                # if il.class_to != cl:
+                if ((il.class_to in cluster_grp) and (il.class_to != cl)):
+                    imc += il.weight
+
+
+        ncam = ncam / mnoc
+        imc = imc       
+        
+        fms = ClusteringMetric(
+            algo = 'mean_shift',
+            microservice = i,
+            mloc = mloc,
+            mnoc = mnoc,
+            ncam = ncam,
+            imc = imc,
+            nmo = nmo,
+            project_id = project_id
+        )
+        fms.save()
+
+    # wcbm
+
+    for key, val in ms_ms_grp.items():
+        ms_wcbm = 0
+        ms_trm = 0
+        if S101MetricRaw.objects.filter(class_from__in=val, project_id=project_id).count() > 0:
+            cf = S101MetricRaw.objects.filter(class_from__in=val, project_id=project_id).all()
+            for cc in cf:
+                if cc.class_to not in val:
+                    ms_wcbm += cc.weight
+                    if cc.usage == 'returns':
+                        ms_trm += cc.weight
+        ms_x = ClusteringMetric.objects.filter(project_id=project_id, microservice=key, algo='mean_shift').get()
+        ms_x.wcbm = ms_wcbm
+        ms_x.trm = ms_trm
+        ms_x.save()
+
+    # cbm
+    
+    for key, val in ms_ms_grp.items():
+        ms_cbm = 0
+        ms_acbm = 0
+ 
+        for i in range(ms_ms_len):
+            if key != i:
+                if S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_ms_grp[i], project_id=project_id):
+                    ms_cbm += 1
+                   
+                    if S101MetricRaw.objects.filter(class_from__in=ms_ms_grp[i], class_to__in=val, project_id=project_id):
+                        ms_from = S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_ms_grp[i], project_id=project_id).all()
+                        for mf in ms_from:
+                            ms_acbm += mf.weight
+                        ms_to = S101MetricRaw.objects.filter(class_from__in=ms_ms_grp[i], class_to__in=val, project_id=project_id).all()
+                        for mt in ms_to:
+                            ms_acbm += mt.weight
+
+        ms_x = ClusteringMetric.objects.filter(project_id=project_id, microservice=key, algo='mean_shift').get()
+        ms_x.cbm = ms_cbm
+        ms_x.acbm = ms_acbm
+        ms_x.save()
+
+    # TODO: separate as re-usable function? end ---------------------------------------------
+
+    ms_kmeans = ClusteringMetric.objects.filter(project_id=project_id, algo='kmeans').order_by('microservice').all()
+    ms_mean_shift = ClusteringMetric.objects.filter(project_id=project_id, algo='mean_shift').order_by('microservice').all()
+
+    # display page
+
     data = {
         'project': project,
         'sdmetrics': sdmetric_data,
@@ -543,7 +706,9 @@ def clustering_metric(request, project_id):
         # 'df': df_kmeans.to_html(),
         'k': k_value.elbow,
         'kmeans_group': kmeans_group,
-        'mshift_group': mshift_group
+        'mshift_group': mshift_group,
+        'ms_kmeans': ms_kmeans,
+        'ms_mean_shift': ms_mean_shift
     }
 
     return render(request, 'squality/project_cluster_metric.html', data)
@@ -560,11 +725,11 @@ def clustering_normalize(request, project_id):
     df_normalize = pd.concat([df_normalize_id, df_normalize_metric], axis=1)
     df_normalize.columns = ['id','cbo','ic','oc','cam','nco','dit','rfc','loc','nca']
     
-    mydict = {
-        'df': df.to_html(),
-        'df_metric': df_metric.to_html(),
-        'df_normalize': df_normalize.to_html()
-    }
+    # mydict = {
+    #     'df': df.to_html(),
+    #     'df_metric': df_metric.to_html(),
+    #     'df_normalize': df_normalize.to_html()
+    # }
 
     # update db
     for df_row in df_normalize.index:
