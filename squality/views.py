@@ -1,4 +1,3 @@
-import base64, urllib
 from collections import defaultdict
 from csv import DictReader, reader
 from fileinput import filename
@@ -20,10 +19,13 @@ from django.core.files.storage import FileSystemStorage
 from django.conf import settings
 from sklearn.preprocessing import MinMaxScaler
 from kneed import KneeLocator
+# import networkx as nx
+# import igraph
+# from igraph import *
 from sklearn.metrics import silhouette_score
 
 
-from squality.models import ClocMetric, ClocMetricRaw, Clustering, ClusteringMetric, MetricNormalize, Project, S101Metric, S101MetricRaw, SdMetric, SdMetricRaw
+from squality.models import ClocMetric, ClocMetricRaw, Clustering, ClusteringMetric, MetricNormalize, NetworkMetric, Project, S101Metric, S101MetricRaw, SdMetric, SdMetricRaw
 
 
 # Create your views here.
@@ -749,4 +751,37 @@ def clustering_normalize(request, project_id):
     return redirect('clustering_metric', project_id=project_id)
     # return render(request, 'squality/project_test.html',context=mydict)
 
+# def initiate_network_metric(request, project_id):
+#     df_ref = pd.DataFrame.from_records(SdMetricRaw.objects.filter(project_id=project_id).all().values())
+#     df_s101 = pd.DataFrame.from_records(S101MetricRaw.objects.filter(project_id=project_id).all().values())
+#     df_raw = df_s101[['class_from','class_to','weight']]
+#     df_raw['class_from'] = df_raw['class_from'].map(df_ref.set_index('class_name')['id'])
+#     df_raw['class_to'] = df_raw['class_to'].map(df_ref.set_index('class_name')['id'])
+    
+#     mydict = {
+#         'df101': df_raw.to_html(),
+#         'dfref': df_ref.to_html()
+#     }
+#     return render(request, 'squality/project_test.html', mydict)
+    
 
+def clustering_network(request, project_id):
+
+    # init mono network
+    # df_ref = pd.DataFrame.from_records(SdMetricRaw.objects.filter(project_id=project_id).all().values())
+    # df_s101 = pd.DataFrame.from_records(S101MetricRaw.objects.filter(project_id=project_id).all().values())
+    # df_raw = df_s101[['class_from','class_to','weight']].copy()
+    # df_raw['class_from'] = df_raw['class_from'].map(df_ref.set_index('class_name')['id'])
+    # df_raw['class_to'] = df_raw['class_to'].map(df_ref.set_index('class_name')['id'])
+
+    # g = Graph.graph_from_data_frame(df_raw, directed=False)
+
+    project = Project.objects.get(id=project_id)
+    # kmeans
+
+    data = {
+        'project': project,
+        # 'df': df_raw.to_html()
+    }
+    return render(request, 'squality/project_cluster_network.html', data)
+    

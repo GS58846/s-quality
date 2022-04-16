@@ -29,5 +29,9 @@ urlpatterns = [
     path('squality/project/cluster/<int:project_id>/normalize', views.clustering_normalize, name='clustering_normalize'),
 
     # path('squality/project/cluster/normalize', views.clustering_normalize, name='clustering_normalize_test'),
+
+    # Cluster Network
+    # path('squality/project/cluster/<int:project_id>/network_init', views.initiate_network_metric, name='initiate_network_metric'),
+    path('squality/project/cluster/<int:project_id>/network', views.clustering_network, name='clustering_network'),
     
 ]

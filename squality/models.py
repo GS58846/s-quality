@@ -4,6 +4,8 @@ from django.db import models
 
 class Project(models.Model):
     name = models.CharField(max_length=50)
+    filename = models.TextField(null=True)
+    fileurl = models.TextField(null=True)
     created_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
@@ -112,3 +114,13 @@ class ClusteringMetric(models.Model):
     mloc = models.IntegerField(default=0)
     mnoc = models.IntegerField(default=0)
     project_id = models.IntegerField()
+
+class NetworkMetric(models.Model):
+    source = models.TextField(null=True)
+    source_id = models.IntegerField(null=True)
+    target = models.TextField(null=True)
+    target_id = models.IntegerField(null=True)
+    weight = models.IntegerField(null=True)
+    algo = models.TextField(null=True)
+    project_id = models.IntegerField(null=True)
+
