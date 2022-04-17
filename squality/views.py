@@ -1,4 +1,5 @@
 from collections import defaultdict
+from locale import normalize
 from django.db.models import Q
 from csv import DictReader, reader
 from fileinput import filename
@@ -28,7 +29,7 @@ from igraph import *
 from sklearn.metrics import silhouette_score
 
 
-from squality.models import ClocMetric, ClocMetricRaw, Clustering, ClusteringMetric, GraphImages, MetricNormalize, Project, S101Metric, S101MetricRaw, SdMetric, SdMetricRaw
+from squality.models import ClocMetric, ClocMetricRaw, ClusteringNormalize, Clustering, ClusteringMetric, GraphImages, MetricNormalize, Project, S101Metric, S101MetricRaw, SdMetric, SdMetricRaw
 
 
 # Create your views here.
@@ -1338,13 +1339,89 @@ def clustering_network(request, project_id):
 def scoring(request, project_id):
     project = Project.objects.get(id=project_id)
 
+    # k-means
+
     ms_kmeans = ClusteringMetric.objects.filter(project_id=project_id, algo='kmeans').order_by('microservice').all()
+
+    raw_data = ClusteringMetric.objects.filter(project_id=project_id, algo='kmeans').order_by('microservice').all().values()
+    df = pd.DataFrame(raw_data)
+    df_metric = df.iloc[:,4:-1]
+    # normalize
+    scaler = MinMaxScaler() 
+    scaler_feature = scaler.fit_transform(df_metric)
+    df_normalize_id = df.iloc[:,0:1].copy()
+    df_normalize_metric = pd.DataFrame(scaler_feature)
+    df_normalize = pd.concat([df_normalize_id, df_normalize_metric], axis=1)
+    df_normalize.columns = ['id','cbm','wcbm','acbm','ncam','imc','nmo','trm','mloc','mnoc']
+
+    # update db
+    if ClusteringNormalize.objects.filter(project_id=project_id,algo='kmeans').all().count() > 0:
+        ClusteringNormalize.objects.filter(project_id=project_id,algo='kmeans').delete()
+    
+    for df_row in df_normalize.index:
+        normalize = ClusteringNormalize(
+            microservice = df_row,
+            cbm = df_normalize['cbm'][df_row],
+            wcbm = df_normalize['wcbm'][df_row],
+            acbm = df_normalize['acbm'][df_row],
+            ncam = df_normalize['ncam'][df_row],
+            imc = df_normalize['imc'][df_row],
+            nmo = df_normalize['nmo'][df_row],
+            trm = df_normalize['trm'][df_row],
+            mloc = df_normalize['mloc'][df_row],
+            mnoc = df_normalize['mnoc'][df_row],
+            algo = 'kmeans',
+            type = 'network',
+            project_id = project_id
+        )
+        normalize.save()
+
+    # mean shift
+
     ms_mean_shift = ClusteringMetric.objects.filter(project_id=project_id, algo='mean_shift').order_by('microservice').all()
+
+    raw_data_ms = ClusteringMetric.objects.filter(project_id=project_id, algo='mean_shift').order_by('microservice').all().values()
+    df_ms = pd.DataFrame(raw_data_ms)
+    df_metric_ms = df_ms.iloc[:,4:-1]
+    # normalize
+    scaler = MinMaxScaler() 
+    scaler_feature = scaler.fit_transform(df_metric_ms)
+    df_normalize_id = df_ms.iloc[:,0:1].copy()
+    df_normalize_metric = pd.DataFrame(scaler_feature)
+    df_normalize = pd.concat([df_normalize_id, df_normalize_metric], axis=1)
+    df_normalize.columns = ['id','cbm','wcbm','acbm','ncam','imc','nmo','trm','mloc','mnoc']
+
+    # update db
+    if ClusteringNormalize.objects.filter(project_id=project_id,algo='mean_shift').all().count() > 0:
+        ClusteringNormalize.objects.filter(project_id=project_id,algo='mean_shift').delete()
+    
+    for df_row in df_normalize.index:
+        normalize = ClusteringNormalize(
+            microservice = df_row,
+            cbm = df_normalize['cbm'][df_row],
+            wcbm = df_normalize['wcbm'][df_row],
+            acbm = df_normalize['acbm'][df_row],
+            ncam = df_normalize['ncam'][df_row],
+            imc = df_normalize['imc'][df_row],
+            nmo = df_normalize['nmo'][df_row],
+            trm = df_normalize['trm'][df_row],
+            mloc = df_normalize['mloc'][df_row],
+            mnoc = df_normalize['mnoc'][df_row],
+            algo = 'mean_shift',
+            type = 'network',
+            project_id = project_id
+        )
+        normalize.save()
+
+    ms_kmeans_normalize = ClusteringNormalize.objects.filter(project_id=project_id,algo='kmeans').order_by('microservice').all()
+    ms_mean_shift_normalize = ClusteringNormalize.objects.filter(project_id=project_id,algo='mean_shift').order_by('microservice').all()
 
     data = {
         'project': project,
         'ms_kmeans': ms_kmeans,
-        'ms_mean_shift': ms_mean_shift
+        'ms_mean_shift': ms_mean_shift,
+        'ms_kmeans_normalize': ms_kmeans_normalize,
+        'ms_mean_shift_normalize': ms_mean_shift_normalize
     }
     return render(request, 'squality/project_scoring.html', data)
     
