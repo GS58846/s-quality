@@ -795,6 +795,7 @@ def clustering_network(request, project_id):
     df_ref = pd.DataFrame.from_records(SdMetricRaw.objects.filter(project_id=project_id).order_by('class_name').all().values())
     df_ref['node_id'] = range(0, len(df_ref))
     df_s101 = pd.DataFrame.from_records(S101MetricRaw.objects.filter(project_id=project_id).all().values())
+
     df_raw = df_s101[['class_from','class_to']].copy()
     df_raw['class_from'] = df_raw['class_from'].map(df_ref.set_index('class_name')['node_id'])
     df_raw['class_to'] = df_raw['class_to'].map(df_ref.set_index('class_name')['node_id'])
@@ -802,13 +803,16 @@ def clustering_network(request, project_id):
     np.savetxt(r'uploads/edges/edge_list.txt', df_raw.values, fmt='%d')
     edgelist = Graph.Read_Edgelist("uploads/edges/edge_list.txt", directed=False)
 
+    df_nr = df_ref[['id','node_id','class_name']].copy()
+    
     # edgelist = Graph.TupleList(df_raw.itertuples(index=False), directed=False, weights=True)
-    print(edgelist)
+    # print(edgelist_tmp)
 
     # fast greedy
 
     fg_clusters = edgelist.community_fastgreedy().as_clustering()
-    print(fg_clusters)
+    # print(fg_clusters)
+    # print(fg_clusters_tmp)
     
     fg_pal = igraph.drawing.colors.ClusterColoringPalette(len(fg_clusters))
     edgelist.vs["color"] = fg_pal.get_many(fg_clusters.membership)
@@ -821,25 +825,244 @@ def clustering_network(request, project_id):
     igraph.plot(edgelist, "uploads/csv/fast_greedy.png", **visual_style)
  
     gi = GraphImages(
-        algo = 'Fast-greedy Community Detection',
+        fullname = 'Fast-greedy Community Detection',
+        algo = 'fast_greedy',
         fileurl = '/files/fast_greedy.png',
         project_id = project_id
     )
     gi.save()
 
+    # save into db
+    if Clustering.objects.filter(project_id=project_id,algo='fast_greedy').count() > 0:
+        Clustering.objects.filter(project_id=project_id,algo='fast_greedy').delete()
+
+    i = 0
+    for nodes in list(fg_clusters):
+        for n in nodes:
+            nn = Clustering(
+                class_name = df_nr['class_name'].values[n],
+                cluster = i,
+                type = 'network',
+                algo = 'fast_greedy',
+                project_id = project_id
+            )
+            nn.save()
+        i += 1
+    
+    # fg_group = Clustering.objects.filter(project_id=project_id,algo='fast_greedy').order_by('cluster').all()
+
+    # TODO: separate as re-usable function? start ---------------------------------------------
+
+    if NetworkMetric.objects.filter(project_id=project_id,algo='fast_greedy').count() > 0:
+        NetworkMetric.objects.filter(project_id=project_id,algo='fast_greedy').delete()
+
+    ms_ms_grp = defaultdict(list)
+    ms_ms_len = Clustering.objects.filter(project_id=project_id,algo='fast_greedy').distinct('cluster').count()
+    for i in range(ms_ms_len):
+        mloc = 0
+        mnoc = 0
+        ncam = 0
+        imc = 0
+        nmo = 0
+        cluster_grp = []
+        cls = Clustering.objects.filter(project_id=project_id,algo='fast_greedy',cluster=i).all()
+        for c in cls:
+            cm = SdMetricRaw.objects.filter(project_id=project_id,class_name=c.class_name).get()
+            mloc += cm.loc
+            mnoc += 1 
+            nmo += cm.nco
+            ncam += cm.cam
+            cluster_grp.append(c.class_name)
+            ms_ms_grp[i].append(c.class_name)
+        # imc
+        for cl in cluster_grp:
+            imc_list = S101MetricRaw.objects.filter(project_id=project_id,class_from=cl).all()
+            for il in imc_list:
+                # if il.class_to != cl:
+                if ((il.class_to in cluster_grp) and (il.class_to != cl)):
+                    imc += il.weight
+
+
+        ncam = ncam / mnoc
+        imc = imc       
+        
+        fms = NetworkMetric(
+            algo = 'fast_greedy',
+            microservice = i,
+            mloc = mloc,
+            mnoc = mnoc,
+            ncam = ncam,
+            imc = imc,
+            nmo = nmo,
+            project_id = project_id
+        )
+        fms.save()
+
+    # wcbm
+
+    for key, val in ms_ms_grp.items():
+        ms_wcbm = 0
+        ms_trm = 0
+        if S101MetricRaw.objects.filter(class_from__in=val, project_id=project_id).count() > 0:
+            cf = S101MetricRaw.objects.filter(class_from__in=val, project_id=project_id).all()
+            for cc in cf:
+                if cc.class_to not in val:
+                    ms_wcbm += cc.weight
+                    if cc.usage == 'returns':
+                        ms_trm += cc.weight
+        ms_x = NetworkMetric.objects.filter(project_id=project_id, microservice=key, algo='fast_greedy').get()
+        ms_x.wcbm = ms_wcbm
+        ms_x.trm = ms_trm
+        ms_x.save()
+
+    # cbm
+    
+    for key, val in ms_ms_grp.items():
+        ms_cbm = 0
+        ms_acbm = 0
+ 
+        for i in range(ms_ms_len):
+            if key != i:
+                if S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_ms_grp[i], project_id=project_id):
+                    ms_cbm += 1
+                   
+                    if S101MetricRaw.objects.filter(class_from__in=ms_ms_grp[i], class_to__in=val, project_id=project_id):
+                        ms_from = S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_ms_grp[i], project_id=project_id).all()
+                        for mf in ms_from:
+                            ms_acbm += mf.weight
+                        ms_to = S101MetricRaw.objects.filter(class_from__in=ms_ms_grp[i], class_to__in=val, project_id=project_id).all()
+                        for mt in ms_to:
+                            ms_acbm += mt.weight
+
+        ms_x = NetworkMetric.objects.filter(project_id=project_id, microservice=key, algo='fast_greedy').get()
+        ms_x.cbm = ms_cbm
+        ms_x.acbm = ms_acbm
+        ms_x.save()
+
+    # TODO: separate as re-usable function? end ---------------------------------------------
+
     # louvain
 
     lv_clusters = edgelist.community_multilevel()
+    # print(lv_clusters)
     lv_pal = igraph.drawing.colors.ClusterColoringPalette(len(lv_clusters))
     edgelist.vs["color"] = lv_pal.get_many(lv_clusters.membership)
     igraph.plot(edgelist, "uploads/csv/louvain.png", **visual_style)
 
     gi = GraphImages(
-        algo = 'Louvain Method',
+        fullname = 'Louvain Method',
+        algo = 'louvain',
         fileurl = '/files/louvain.png',
         project_id = project_id
     )
     gi.save()
+
+    # save into db
+    if Clustering.objects.filter(project_id=project_id,algo='louvain').count() > 0:
+        Clustering.objects.filter(project_id=project_id,algo='louvain').delete()
+
+    i = 0
+    for nodes in list(lv_clusters):
+        for n in nodes:
+            nn = Clustering(
+                class_name = df_nr['class_name'].values[n],
+                cluster = i,
+                type = 'network',
+                algo = 'louvain',
+                project_id = project_id
+            )
+            nn.save()
+        i += 1
+
+    # TODO: separate as re-usable function? start ---------------------------------------------
+
+    if NetworkMetric.objects.filter(project_id=project_id,algo='louvain').count() > 0:
+        NetworkMetric.objects.filter(project_id=project_id,algo='louvain').delete()
+
+    ms_ms_grp = defaultdict(list)
+    ms_ms_len = Clustering.objects.filter(project_id=project_id,algo='louvain').distinct('cluster').count()
+    for i in range(ms_ms_len):
+        mloc = 0
+        mnoc = 0
+        ncam = 0
+        imc = 0
+        nmo = 0
+        cluster_grp = []
+        cls = Clustering.objects.filter(project_id=project_id,algo='louvain',cluster=i).all()
+        for c in cls:
+            cm = SdMetricRaw.objects.filter(project_id=project_id,class_name=c.class_name).get()
+            mloc += cm.loc
+            mnoc += 1 
+            nmo += cm.nco
+            ncam += cm.cam
+            cluster_grp.append(c.class_name)
+            ms_ms_grp[i].append(c.class_name)
+        # imc
+        for cl in cluster_grp:
+            imc_list = S101MetricRaw.objects.filter(project_id=project_id,class_from=cl).all()
+            for il in imc_list:
+                # if il.class_to != cl:
+                if ((il.class_to in cluster_grp) and (il.class_to != cl)):
+                    imc += il.weight
+
+
+        ncam = ncam / mnoc
+        imc = imc       
+        
+        fms = NetworkMetric(
+            algo = 'louvain',
+            microservice = i,
+            mloc = mloc,
+            mnoc = mnoc,
+            ncam = ncam,
+            imc = imc,
+            nmo = nmo,
+            project_id = project_id
+        )
+        fms.save()
+
+    # wcbm
+
+    for key, val in ms_ms_grp.items():
+        ms_wcbm = 0
+        ms_trm = 0
+        if S101MetricRaw.objects.filter(class_from__in=val, project_id=project_id).count() > 0:
+            cf = S101MetricRaw.objects.filter(class_from__in=val, project_id=project_id).all()
+            for cc in cf:
+                if cc.class_to not in val:
+                    ms_wcbm += cc.weight
+                    if cc.usage == 'returns':
+                        ms_trm += cc.weight
+        ms_x = NetworkMetric.objects.filter(project_id=project_id, microservice=key, algo='louvain').get()
+        ms_x.wcbm = ms_wcbm
+        ms_x.trm = ms_trm
+        ms_x.save()
+
+    # cbm
+    
+    for key, val in ms_ms_grp.items():
+        ms_cbm = 0
+        ms_acbm = 0
+ 
+        for i in range(ms_ms_len):
+            if key != i:
+                if S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_ms_grp[i], project_id=project_id):
+                    ms_cbm += 1
+                   
+                    if S101MetricRaw.objects.filter(class_from__in=ms_ms_grp[i], class_to__in=val, project_id=project_id):
+                        ms_from = S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_ms_grp[i], project_id=project_id).all()
+                        for mf in ms_from:
+                            ms_acbm += mf.weight
+                        ms_to = S101MetricRaw.objects.filter(class_from__in=ms_ms_grp[i], class_to__in=val, project_id=project_id).all()
+                        for mt in ms_to:
+                            ms_acbm += mt.weight
+
+        ms_x = NetworkMetric.objects.filter(project_id=project_id, microservice=key, algo='louvain').get()
+        ms_x.cbm = ms_cbm
+        ms_x.acbm = ms_acbm
+        ms_x.save()
+
+    # TODO: separate as re-usable function? end ---------------------------------------------
 
     # leiden
 
@@ -849,20 +1072,135 @@ def clustering_network(request, project_id):
     igraph.plot(edgelist, "uploads/csv/leiden.png", **visual_style)
 
     gi = GraphImages(
-        algo = 'Leiden Method',
+        fullname = 'Leiden Method',
+        algo = 'leiden',
         fileurl = '/files/leiden.png',
         project_id = project_id
     )
     gi.save()
 
+    # save into db
+    if Clustering.objects.filter(project_id=project_id,algo='leiden').count() > 0:
+        Clustering.objects.filter(project_id=project_id,algo='leiden').delete()
+
+    i = 0
+    for nodes in list(lv_clusters):
+        for n in nodes:
+            nn = Clustering(
+                class_name = df_nr['class_name'].values[n],
+                cluster = i,
+                type = 'network',
+                algo = 'leiden',
+                project_id = project_id
+            )
+            nn.save()
+        i += 1
+
+    # TODO: separate as re-usable function? start ---------------------------------------------
+
+    if NetworkMetric.objects.filter(project_id=project_id,algo='leiden').count() > 0:
+        NetworkMetric.objects.filter(project_id=project_id,algo='leiden').delete()
+
+    ms_ms_grp = defaultdict(list)
+    ms_ms_len = Clustering.objects.filter(project_id=project_id,algo='leiden').distinct('cluster').count()
+    for i in range(ms_ms_len):
+        mloc = 0
+        mnoc = 0
+        ncam = 0
+        imc = 0
+        nmo = 0
+        cluster_grp = []
+        cls = Clustering.objects.filter(project_id=project_id,algo='leiden',cluster=i).all()
+        for c in cls:
+            cm = SdMetricRaw.objects.filter(project_id=project_id,class_name=c.class_name).get()
+            mloc += cm.loc
+            mnoc += 1 
+            nmo += cm.nco
+            ncam += cm.cam
+            cluster_grp.append(c.class_name)
+            ms_ms_grp[i].append(c.class_name)
+        # imc
+        for cl in cluster_grp:
+            imc_list = S101MetricRaw.objects.filter(project_id=project_id,class_from=cl).all()
+            for il in imc_list:
+                # if il.class_to != cl:
+                if ((il.class_to in cluster_grp) and (il.class_to != cl)):
+                    imc += il.weight
+
+
+        ncam = ncam / mnoc
+        imc = imc       
+        
+        fms = NetworkMetric(
+            algo = 'leiden',
+            microservice = i,
+            mloc = mloc,
+            mnoc = mnoc,
+            ncam = ncam,
+            imc = imc,
+            nmo = nmo,
+            project_id = project_id
+        )
+        fms.save()
+
+    # wcbm
+
+    for key, val in ms_ms_grp.items():
+        ms_wcbm = 0
+        ms_trm = 0
+        if S101MetricRaw.objects.filter(class_from__in=val, project_id=project_id).count() > 0:
+            cf = S101MetricRaw.objects.filter(class_from__in=val, project_id=project_id).all()
+            for cc in cf:
+                if cc.class_to not in val:
+                    ms_wcbm += cc.weight
+                    if cc.usage == 'returns':
+                        ms_trm += cc.weight
+        ms_x = NetworkMetric.objects.filter(project_id=project_id, microservice=key, algo='leiden').get()
+        ms_x.wcbm = ms_wcbm
+        ms_x.trm = ms_trm
+        ms_x.save()
+
+    # cbm
+    
+    for key, val in ms_ms_grp.items():
+        ms_cbm = 0
+        ms_acbm = 0
+ 
+        for i in range(ms_ms_len):
+            if key != i:
+                if S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_ms_grp[i], project_id=project_id):
+                    ms_cbm += 1
+                   
+                    if S101MetricRaw.objects.filter(class_from__in=ms_ms_grp[i], class_to__in=val, project_id=project_id):
+                        ms_from = S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_ms_grp[i], project_id=project_id).all()
+                        for mf in ms_from:
+                            ms_acbm += mf.weight
+                        ms_to = S101MetricRaw.objects.filter(class_from__in=ms_ms_grp[i], class_to__in=val, project_id=project_id).all()
+                        for mt in ms_to:
+                            ms_acbm += mt.weight
+
+        ms_x = NetworkMetric.objects.filter(project_id=project_id, microservice=key, algo='leiden').get()
+        ms_x.cbm = ms_cbm
+        ms_x.acbm = ms_acbm
+        ms_x.save()
+
+    # TODO: separate as re-usable function? end ---------------------------------------------
+
     # main
 
     project = Project.objects.get(id=project_id)
     graph_images = GraphImages.objects.filter(project_id=project_id).all()
+    fastgreedy = NetworkMetric.objects.filter(project_id=project_id,algo='fast_greedy').order_by('microservice').all()
+    louvain = NetworkMetric.objects.filter(project_id=project_id,algo='louvain').order_by('microservice').all()
+    leiden = NetworkMetric.objects.filter(project_id=project_id,algo='leiden').order_by('microservice').all()
 
     data = {
         'project': project,
         'graph_images': graph_images,
+        'fastgreedy': fastgreedy,
+        'louvain': louvain,
+        'leiden': leiden
+        # 'df': df_nr.to_html()
     }
     return render(request, 'squality/project_cluster_network.html', data)
     

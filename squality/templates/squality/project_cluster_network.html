@@ -15,7 +15,7 @@
   {% if graph_images %}
     {% for gi in graph_images %}
     <hr>
-    <h4>{{ gi.algo }}</h4>
+    <h4>{{ gi.fullname }}</h4>
     <div class="row pb-3">
       <div class="col">
         <img src="{{ gi.fileurl }}" width="460" alt="">
@@ -38,9 +38,41 @@
             </tr>
           </thead>
           <tbody>
-            <!-- {% for ms in ms_mean_shift %}
+            {% if gi.algo == 'fast_greedy' %}
+              {% for ms in fastgreedy %}
+              <tr>
+                <td>MS-{{ ms.microservice }}</td>
+                <td>{{ ms.cbm }}</td>
+                <td>{{ ms.wcbm }}</td>
+                <td>{{ ms.acbm }}</td>
+                <td>{{ ms.ncam }}</td>
+                <td>{{ ms.imc }}</td>
+                <td>{{ ms.nmo }}</td>
+                <td>{{ ms.trm }}</td>
+                <td>{{ ms.mloc }}</td>
+                <td>{{ ms.mnoc }}</td>
+              </tr>
+                {% endfor %}
+              {% endif %}
+            {% if gi.algo == 'louvain' %}
+              {% for ms in louvain %}
+              <tr>
+                <td>MS-{{ ms.microservice }}</td>
+                <td>{{ ms.cbm }}</td>
+                <td>{{ ms.wcbm }}</td>
+                <td>{{ ms.acbm }}</td>
+                <td>{{ ms.ncam }}</td>
+                <td>{{ ms.imc }}</td>
+                <td>{{ ms.nmo }}</td>
+                <td>{{ ms.trm }}</td>
+                <td>{{ ms.mloc }}</td>
+                <td>{{ ms.mnoc }}</td>
+              </tr>
+                {% endfor %}
+              {% endif %}
+            {% if gi.algo == 'leiden' %}
+              {% for ms in leiden %}
             <tr>
-              <td>{{ forloop.counter }}.</td>
               <td>MS-{{ ms.microservice }}</td>
               <td>{{ ms.cbm }}</td>
               <td>{{ ms.wcbm }}</td>
@@ -52,7 +84,8 @@
               <td>{{ ms.mloc }}</td>
               <td>{{ ms.mnoc }}</td>
             </tr>
-            {% endfor %} -->
+              {% endfor %}
+            {% endif %}
           </tbody>
         </table>
       </div>
