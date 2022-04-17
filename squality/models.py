@@ -4,8 +4,6 @@ from django.db import models
 
 class Project(models.Model):
     name = models.CharField(max_length=50)
-    filename = models.TextField(null=True)
-    fileurl = models.TextField(null=True)
     created_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
@@ -77,9 +75,9 @@ class MetricNormalize(models.Model):
     project_id = models.IntegerField()
 
 class S101MetricRaw(models.Model):
-    class_from = models.TextField()
-    usage = models.TextField()
-    class_to = models.TextField()
+    class_from = models.TextField(null=True)
+    usage = models.TextField(null=True)
+    class_to = models.TextField(null=True)
     weight = models.IntegerField(default=0)
     ok_from = models.IntegerField(default=0, null=True)
     ok_to = models.IntegerField(default=0, null=True)
@@ -124,3 +122,22 @@ class NetworkMetric(models.Model):
     algo = models.TextField(null=True)
     project_id = models.IntegerField(null=True)
 
+# class NetworkMetric(models.Model):
+#     algo = models.TextField()
+#     microservice = models.TextField()
+#     cbm = models.IntegerField(default=0)
+#     wcbm = models.IntegerField(default=0)
+#     acbm = models.IntegerField(default=0)
+#     ncam = models.DecimalField(max_digits=30, decimal_places=6, default=0)
+#     imc = models.IntegerField(default=0)
+#     nmo = models.IntegerField(default=0)
+#     trm = models.IntegerField(default=0)
+#     mloc = models.IntegerField(default=0)
+#     mnoc = models.IntegerField(default=0)
+#     project_id = models.IntegerField()
+
+class GraphImages(models.Model):
+    algo = models.TextField()
+    fileurl = models.TextField()
+    updated_at = models.DateTimeField(auto_now=True)
+    project_id = models.IntegerField()

@@ -1,14 +1,17 @@
 from collections import defaultdict
+from django.db.models import Q
 from csv import DictReader, reader
 from fileinput import filename
 from functools import reduce
 import io
 from os import rename
 import os
+from platform import node
 import random
 import re
 from statistics import mode
 import string
+import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
 from sklearn.cluster import MeanShift
@@ -19,13 +22,13 @@ from django.core.files.storage import FileSystemStorage
 from django.conf import settings
 from sklearn.preprocessing import MinMaxScaler
 from kneed import KneeLocator
-# import networkx as nx
-# import igraph
-# from igraph import *
+import networkx as nx
+import igraph
+from igraph import *
 from sklearn.metrics import silhouette_score
 
 
-from squality.models import ClocMetric, ClocMetricRaw, Clustering, ClusteringMetric, MetricNormalize, NetworkMetric, Project, S101Metric, S101MetricRaw, SdMetric, SdMetricRaw
+from squality.models import ClocMetric, ClocMetricRaw, Clustering, ClusteringMetric, GraphImages, MetricNormalize, NetworkMetric, Project, S101Metric, S101MetricRaw, SdMetric, SdMetricRaw
 
 
 # Create your views here.
@@ -751,37 +754,115 @@ def clustering_normalize(request, project_id):
     return redirect('clustering_metric', project_id=project_id)
     # return render(request, 'squality/project_test.html',context=mydict)
 
-# def initiate_network_metric(request, project_id):
-#     df_ref = pd.DataFrame.from_records(SdMetricRaw.objects.filter(project_id=project_id).all().values())
-#     df_s101 = pd.DataFrame.from_records(S101MetricRaw.objects.filter(project_id=project_id).all().values())
-#     df_raw = df_s101[['class_from','class_to','weight']]
-#     df_raw['class_from'] = df_raw['class_from'].map(df_ref.set_index('class_name')['id'])
-#     df_raw['class_to'] = df_raw['class_to'].map(df_ref.set_index('class_name')['id'])
-    
-#     mydict = {
-#         'df101': df_raw.to_html(),
-#         'dfref': df_ref.to_html()
-#     }
-#     return render(request, 'squality/project_test.html', mydict)
-    
 
 def clustering_network(request, project_id):
 
-    # init mono network
-    # df_ref = pd.DataFrame.from_records(SdMetricRaw.objects.filter(project_id=project_id).all().values())
-    # df_s101 = pd.DataFrame.from_records(S101MetricRaw.objects.filter(project_id=project_id).all().values())
-    # df_raw = df_s101[['class_from','class_to','weight']].copy()
-    # df_raw['class_from'] = df_raw['class_from'].map(df_ref.set_index('class_name')['id'])
-    # df_raw['class_to'] = df_raw['class_to'].map(df_ref.set_index('class_name')['id'])
+    GraphImages.objects.filter(project_id=project_id).delete()
 
-    # g = Graph.graph_from_data_frame(df_raw, directed=False)
+    # fix single node
+    singles = [] # defaultdict(list)
+    sdm = SdMetricRaw.objects.filter(project_id=project_id).all()
+    # i = 0
+    for sd in sdm :
+        # singles[i].append(sd.class_name)
+        singles.append(sd.class_name)
+        # i += 1
+
+    # print(singles)
+
+    elist = S101MetricRaw.objects.filter(project_id=project_id).all()
+    uses_list = set([])
+    for el in elist:
+        uses_list.add(el.class_from)
+        uses_list.add(el.class_to)
+
+    single_nodes = list(set(singles) - uses_list)
+    if len(single_nodes) > 0:
+        for sn in single_nodes:
+            x = S101MetricRaw(
+                class_from = sn,
+                usage = '-',
+                class_to = sn,
+                weight = 0,
+                project_id = project_id,
+                ok_from = 1,
+                ok_to = 1
+            )
+            x.save()
+
+
+    # init mono network
+    df_ref = pd.DataFrame.from_records(SdMetricRaw.objects.filter(project_id=project_id).order_by('class_name').all().values())
+    df_ref['node_id'] = range(0, len(df_ref))
+    df_s101 = pd.DataFrame.from_records(S101MetricRaw.objects.filter(project_id=project_id).all().values())
+    df_raw = df_s101[['class_from','class_to']].copy()
+    df_raw['class_from'] = df_raw['class_from'].map(df_ref.set_index('class_name')['node_id'])
+    df_raw['class_to'] = df_raw['class_to'].map(df_ref.set_index('class_name')['node_id'])
+
+    np.savetxt(r'uploads/edges/edge_list.txt', df_raw.values, fmt='%d')
+    edgelist = Graph.Read_Edgelist("uploads/edges/edge_list.txt", directed=False)
+
+    # edgelist = Graph.TupleList(df_raw.itertuples(index=False), directed=False, weights=True)
+    print(edgelist)
+
+    # fast greedy
+
+    fg_clusters = edgelist.community_fastgreedy().as_clustering()
+    print(fg_clusters)
+    
+    fg_pal = igraph.drawing.colors.ClusterColoringPalette(len(fg_clusters))
+    edgelist.vs["color"] = fg_pal.get_many(fg_clusters.membership)
+    
+    visual_style = {}
+    visual_style['vertex_label'] = list(df_ref['class_name'])
+    visual_style['vertex_label_dist'] = 1
+    visual_style['bbox'] = (800,800)
+    visual_style['margin'] = 50
+    igraph.plot(edgelist, "uploads/csv/fast_greedy.png", **visual_style)
+ 
+    gi = GraphImages(
+        algo = 'Fast-greedy Community Detection',
+        fileurl = '/files/fast_greedy.png',
+        project_id = project_id
+    )
+    gi.save()
+
+    # louvain
+
+    lv_clusters = edgelist.community_multilevel()
+    lv_pal = igraph.drawing.colors.ClusterColoringPalette(len(lv_clusters))
+    edgelist.vs["color"] = lv_pal.get_many(lv_clusters.membership)
+    igraph.plot(edgelist, "uploads/csv/louvain.png", **visual_style)
+
+    gi = GraphImages(
+        algo = 'Louvain Method',
+        fileurl = '/files/louvain.png',
+        project_id = project_id
+    )
+    gi.save()
+
+    # leiden
+
+    le_clusters = edgelist.community_leiden(objective_function="modularity")
+    le_pal = igraph.drawing.colors.ClusterColoringPalette(len(le_clusters))
+    edgelist.vs["color"] = le_pal.get_many(le_clusters.membership)
+    igraph.plot(edgelist, "uploads/csv/leiden.png", **visual_style)
+
+    gi = GraphImages(
+        algo = 'Leiden Method',
+        fileurl = '/files/leiden.png',
+        project_id = project_id
+    )
+    gi.save()
+
+    # main
 
     project = Project.objects.get(id=project_id)
-    # kmeans
+    graph_images = GraphImages.objects.filter(project_id=project_id).all()
 
     data = {
         'project': project,
-        # 'df': df_raw.to_html()
+        'graph_images': graph_images,
     }
     return render(request, 'squality/project_cluster_network.html', data)
     
