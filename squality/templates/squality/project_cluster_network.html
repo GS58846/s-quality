@@ -86,6 +86,22 @@
             </tr>
               {% endfor %}
             {% endif %}
+          {% if gi.algo == 'gnewman' %}
+            {% for ms in gnewman %}
+          <tr>
+            <td>MS-{{ ms.microservice }}</td>
+            <td>{{ ms.cbm }}</td>
+            <td>{{ ms.wcbm }}</td>
+            <td>{{ ms.acbm }}</td>
+            <td>{{ ms.ncam }}</td>
+            <td>{{ ms.imc }}</td>
+            <td>{{ ms.nmo }}</td>
+            <td>{{ ms.trm }}</td>
+            <td>{{ ms.mloc }}</td>
+            <td>{{ ms.mnoc }}</td>
+          </tr>
+            {% endfor %}
+          {% endif %}
           </tbody>
         </table>
       </div>
