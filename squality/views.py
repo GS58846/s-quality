@@ -28,7 +28,7 @@ from igraph import *
 from sklearn.metrics import silhouette_score
 
 
-from squality.models import ClocMetric, ClocMetricRaw, Clustering, ClusteringMetric, GraphImages, MetricNormalize, NetworkMetric, Project, S101Metric, S101MetricRaw, SdMetric, SdMetricRaw
+from squality.models import ClocMetric, ClocMetricRaw, Clustering, ClusteringMetric, GraphImages, MetricNormalize, Project, S101Metric, S101MetricRaw, SdMetric, SdMetricRaw
 
 
 # Create your views here.
@@ -514,6 +514,7 @@ def clustering_metric(request, project_id):
         
         fms = ClusteringMetric(
             algo = 'kmeans',
+            type = 'metric',
             microservice = i,
             mloc = mloc,
             mnoc = mnoc,
@@ -646,6 +647,7 @@ def clustering_metric(request, project_id):
         
         fms = ClusteringMetric(
             algo = 'mean_shift',
+            type = 'metric',
             microservice = i,
             mloc = mloc,
             mnoc = mnoc,
@@ -853,8 +855,8 @@ def clustering_network(request, project_id):
 
     # TODO: separate as re-usable function? start ---------------------------------------------
 
-    if NetworkMetric.objects.filter(project_id=project_id,algo='fast_greedy').count() > 0:
-        NetworkMetric.objects.filter(project_id=project_id,algo='fast_greedy').delete()
+    if ClusteringMetric.objects.filter(project_id=project_id,algo='fast_greedy').count() > 0:
+        ClusteringMetric.objects.filter(project_id=project_id,algo='fast_greedy').delete()
 
     ms_ms_grp = defaultdict(list)
     ms_ms_len = Clustering.objects.filter(project_id=project_id,algo='fast_greedy').distinct('cluster').count()
@@ -886,8 +888,9 @@ def clustering_network(request, project_id):
         ncam = ncam / mnoc
         imc = imc       
         
-        fms = NetworkMetric(
+        fms = ClusteringMetric(
             algo = 'fast_greedy',
+            type = 'network',
             microservice = i,
             mloc = mloc,
             mnoc = mnoc,
@@ -910,7 +913,7 @@ def clustering_network(request, project_id):
                     ms_wcbm += cc.weight
                     if cc.usage == 'returns':
                         ms_trm += cc.weight
-        ms_x = NetworkMetric.objects.filter(project_id=project_id, microservice=key, algo='fast_greedy').get()
+        ms_x = ClusteringMetric.objects.filter(project_id=project_id, microservice=key, algo='fast_greedy').get()
         ms_x.wcbm = ms_wcbm
         ms_x.trm = ms_trm
         ms_x.save()
@@ -934,7 +937,7 @@ def clustering_network(request, project_id):
                         for mt in ms_to:
                             ms_acbm += mt.weight
 
-        ms_x = NetworkMetric.objects.filter(project_id=project_id, microservice=key, algo='fast_greedy').get()
+        ms_x = ClusteringMetric.objects.filter(project_id=project_id, microservice=key, algo='fast_greedy').get()
         ms_x.cbm = ms_cbm
         ms_x.acbm = ms_acbm
         ms_x.save()
@@ -976,8 +979,8 @@ def clustering_network(request, project_id):
 
     # TODO: separate as re-usable function? start ---------------------------------------------
 
-    if NetworkMetric.objects.filter(project_id=project_id,algo='louvain').count() > 0:
-        NetworkMetric.objects.filter(project_id=project_id,algo='louvain').delete()
+    if ClusteringMetric.objects.filter(project_id=project_id,algo='louvain').count() > 0:
+        ClusteringMetric.objects.filter(project_id=project_id,algo='louvain').delete()
 
     ms_ms_grp = defaultdict(list)
     ms_ms_len = Clustering.objects.filter(project_id=project_id,algo='louvain').distinct('cluster').count()
@@ -1009,8 +1012,9 @@ def clustering_network(request, project_id):
         ncam = ncam / mnoc
         imc = imc       
         
-        fms = NetworkMetric(
+        fms = ClusteringMetric(
             algo = 'louvain',
+            type = 'network',
             microservice = i,
             mloc = mloc,
             mnoc = mnoc,
@@ -1033,7 +1037,7 @@ def clustering_network(request, project_id):
                     ms_wcbm += cc.weight
                     if cc.usage == 'returns':
                         ms_trm += cc.weight
-        ms_x = NetworkMetric.objects.filter(project_id=project_id, microservice=key, algo='louvain').get()
+        ms_x = ClusteringMetric.objects.filter(project_id=project_id, microservice=key, algo='louvain').get()
         ms_x.wcbm = ms_wcbm
         ms_x.trm = ms_trm
         ms_x.save()
@@ -1057,7 +1061,7 @@ def clustering_network(request, project_id):
                         for mt in ms_to:
                             ms_acbm += mt.weight
 
-        ms_x = NetworkMetric.objects.filter(project_id=project_id, microservice=key, algo='louvain').get()
+        ms_x = ClusteringMetric.objects.filter(project_id=project_id, microservice=key, algo='louvain').get()
         ms_x.cbm = ms_cbm
         ms_x.acbm = ms_acbm
         ms_x.save()
@@ -1098,8 +1102,8 @@ def clustering_network(request, project_id):
 
     # TODO: separate as re-usable function? start ---------------------------------------------
 
-    if NetworkMetric.objects.filter(project_id=project_id,algo='leiden').count() > 0:
-        NetworkMetric.objects.filter(project_id=project_id,algo='leiden').delete()
+    if ClusteringMetric.objects.filter(project_id=project_id,algo='leiden').count() > 0:
+        ClusteringMetric.objects.filter(project_id=project_id,algo='leiden').delete()
 
     ms_ms_grp = defaultdict(list)
     ms_ms_len = Clustering.objects.filter(project_id=project_id,algo='leiden').distinct('cluster').count()
@@ -1131,8 +1135,9 @@ def clustering_network(request, project_id):
         ncam = ncam / mnoc
         imc = imc       
         
-        fms = NetworkMetric(
+        fms = ClusteringMetric(
             algo = 'leiden',
+            type = 'network',
             microservice = i,
             mloc = mloc,
             mnoc = mnoc,
@@ -1155,7 +1160,7 @@ def clustering_network(request, project_id):
                     ms_wcbm += cc.weight
                     if cc.usage == 'returns':
                         ms_trm += cc.weight
-        ms_x = NetworkMetric.objects.filter(project_id=project_id, microservice=key, algo='leiden').get()
+        ms_x = ClusteringMetric.objects.filter(project_id=project_id, microservice=key, algo='leiden').get()
         ms_x.wcbm = ms_wcbm
         ms_x.trm = ms_trm
         ms_x.save()
@@ -1179,7 +1184,7 @@ def clustering_network(request, project_id):
                         for mt in ms_to:
                             ms_acbm += mt.weight
 
-        ms_x = NetworkMetric.objects.filter(project_id=project_id, microservice=key, algo='leiden').get()
+        ms_x = ClusteringMetric.objects.filter(project_id=project_id, microservice=key, algo='leiden').get()
         ms_x.cbm = ms_cbm
         ms_x.acbm = ms_acbm
         ms_x.save()
@@ -1221,8 +1226,8 @@ def clustering_network(request, project_id):
 
     # TODO: separate as re-usable function? start ---------------------------------------------
 
-    if NetworkMetric.objects.filter(project_id=project_id,algo='gnewman').count() > 0:
-        NetworkMetric.objects.filter(project_id=project_id,algo='gnewman').delete()
+    if ClusteringMetric.objects.filter(project_id=project_id,algo='gnewman').count() > 0:
+        ClusteringMetric.objects.filter(project_id=project_id,algo='gnewman').delete()
 
     ms_ms_grp = defaultdict(list)
     ms_ms_len = Clustering.objects.filter(project_id=project_id,algo='gnewman').distinct('cluster').count()
@@ -1254,8 +1259,9 @@ def clustering_network(request, project_id):
         ncam = ncam / mnoc
         imc = imc       
         
-        fms = NetworkMetric(
+        fms = ClusteringMetric(
             algo = 'gnewman',
+            type = 'network',
             microservice = i,
             mloc = mloc,
             mnoc = mnoc,
@@ -1278,7 +1284,7 @@ def clustering_network(request, project_id):
                     ms_wcbm += cc.weight
                     if cc.usage == 'returns':
                         ms_trm += cc.weight
-        ms_x = NetworkMetric.objects.filter(project_id=project_id, microservice=key, algo='gnewman').get()
+        ms_x = ClusteringMetric.objects.filter(project_id=project_id, microservice=key, algo='gnewman').get()
         ms_x.wcbm = ms_wcbm
         ms_x.trm = ms_trm
         ms_x.save()
@@ -1302,7 +1308,7 @@ def clustering_network(request, project_id):
                         for mt in ms_to:
                             ms_acbm += mt.weight
 
-        ms_x = NetworkMetric.objects.filter(project_id=project_id, microservice=key, algo='gnewman').get()
+        ms_x = ClusteringMetric.objects.filter(project_id=project_id, microservice=key, algo='gnewman').get()
         ms_x.cbm = ms_cbm
         ms_x.acbm = ms_acbm
         ms_x.save()
@@ -1313,10 +1319,10 @@ def clustering_network(request, project_id):
 
     project = Project.objects.get(id=project_id)
     graph_images = GraphImages.objects.filter(project_id=project_id).all()
-    fastgreedy = NetworkMetric.objects.filter(project_id=project_id,algo='fast_greedy').order_by('microservice').all()
-    louvain = NetworkMetric.objects.filter(project_id=project_id,algo='louvain').order_by('microservice').all()
-    leiden = NetworkMetric.objects.filter(project_id=project_id,algo='leiden').order_by('microservice').all()
-    gnewman = NetworkMetric.objects.filter(project_id=project_id,algo='gnewman').order_by('microservice').all()
+    fastgreedy = ClusteringMetric.objects.filter(project_id=project_id,algo='fast_greedy').order_by('microservice').all()
+    louvain = ClusteringMetric.objects.filter(project_id=project_id,algo='louvain').order_by('microservice').all()
+    leiden = ClusteringMetric.objects.filter(project_id=project_id,algo='leiden').order_by('microservice').all()
+    gnewman = ClusteringMetric.objects.filter(project_id=project_id,algo='gnewman').order_by('microservice').all()
 
     data = {
         'project': project,
@@ -1328,4 +1334,17 @@ def clustering_network(request, project_id):
         # 'df': df_nr.to_html()
     }
     return render(request, 'squality/project_cluster_network.html', data)
+
+def scoring(request, project_id):
+    project = Project.objects.get(id=project_id)
+
+    ms_kmeans = ClusteringMetric.objects.filter(project_id=project_id, algo='kmeans').order_by('microservice').all()
+    ms_mean_shift = ClusteringMetric.objects.filter(project_id=project_id, algo='mean_shift').order_by('microservice').all()
+
+    data = {
+        'project': project,
+        'ms_kmeans': ms_kmeans,
+        'ms_mean_shift': ms_mean_shift
+    }
+    return render(request, 'squality/project_scoring.html', data)
     
