@@ -29,7 +29,7 @@ from igraph import *
 from sklearn.metrics import silhouette_score
 
 
-from squality.models import ClocMetric, ClocMetricRaw, ClusteringNormalize, Clustering, ClusteringMetric, GraphImages, MetricNormalize, Project, S101Metric, S101MetricRaw, SdMetric, SdMetricRaw
+from squality.models import ClocMetric, ClocMetricRaw, ClusteringNormalize, Clustering, ClusteringMetric, GraphImages, MetricNormalize, Project, S101Metric, S101MetricRaw, ScoringAverage, ScoringFinale, SdMetric, SdMetricRaw
 
 
 # Create your views here.
@@ -1336,7 +1336,7 @@ def clustering_network(request, project_id):
     }
     return render(request, 'squality/project_cluster_network.html', data)
 
-def scoring(request, project_id):
+def scoring_initialize(request, project_id):
     project = Project.objects.get(id=project_id)
 
     # k-means
@@ -1371,7 +1371,7 @@ def scoring(request, project_id):
             mloc = df_normalize['mloc'][df_row],
             mnoc = df_normalize['mnoc'][df_row],
             algo = 'kmeans',
-            type = 'network',
+            type = 'metric',
             project_id = project_id
         )
         normalize.save()
@@ -1408,20 +1408,515 @@ def scoring(request, project_id):
             mloc = df_normalize['mloc'][df_row],
             mnoc = df_normalize['mnoc'][df_row],
             algo = 'mean_shift',
+            type = 'metric',
+            project_id = project_id
+        )
+        normalize.save()
+
+    # fast-greedy
+
+    raw_data_ms = ClusteringMetric.objects.filter(project_id=project_id, algo='fast_greedy').order_by('microservice').all().values()
+    df_ms = pd.DataFrame(raw_data_ms)
+    df_metric_ms = df_ms.iloc[:,4:-1]
+    # normalize
+    scaler = MinMaxScaler() 
+    scaler_feature = scaler.fit_transform(df_metric_ms)
+    df_normalize_id = df_ms.iloc[:,0:1].copy()
+    df_normalize_metric = pd.DataFrame(scaler_feature)
+    df_normalize = pd.concat([df_normalize_id, df_normalize_metric], axis=1)
+    df_normalize.columns = ['id','cbm','wcbm','acbm','ncam','imc','nmo','trm','mloc','mnoc']
+
+    # update db
+    if ClusteringNormalize.objects.filter(project_id=project_id,algo='fast_greedy').all().count() > 0:
+        ClusteringNormalize.objects.filter(project_id=project_id,algo='fast_greedy').delete()
+    
+    for df_row in df_normalize.index:
+        normalize = ClusteringNormalize(
+            microservice = df_row,
+            cbm = df_normalize['cbm'][df_row],
+            wcbm = df_normalize['wcbm'][df_row],
+            acbm = df_normalize['acbm'][df_row],
+            ncam = df_normalize['ncam'][df_row],
+            imc = df_normalize['imc'][df_row],
+            nmo = df_normalize['nmo'][df_row],
+            trm = df_normalize['trm'][df_row],
+            mloc = df_normalize['mloc'][df_row],
+            mnoc = df_normalize['mnoc'][df_row],
+            algo = 'fast_greedy',
             type = 'network',
             project_id = project_id
         )
         normalize.save()
 
+    # louvain
+
+    raw_data_ms = ClusteringMetric.objects.filter(project_id=project_id, algo='louvain').order_by('microservice').all().values()
+    df_ms = pd.DataFrame(raw_data_ms)
+    df_metric_ms = df_ms.iloc[:,4:-1]
+    # normalize
+    scaler = MinMaxScaler() 
+    scaler_feature = scaler.fit_transform(df_metric_ms)
+    df_normalize_id = df_ms.iloc[:,0:1].copy()
+    df_normalize_metric = pd.DataFrame(scaler_feature)
+    df_normalize = pd.concat([df_normalize_id, df_normalize_metric], axis=1)
+    df_normalize.columns = ['id','cbm','wcbm','acbm','ncam','imc','nmo','trm','mloc','mnoc']
+
+    # update db
+    if ClusteringNormalize.objects.filter(project_id=project_id,algo='louvain').all().count() > 0:
+        ClusteringNormalize.objects.filter(project_id=project_id,algo='louvain').delete()
+    
+    for df_row in df_normalize.index:
+        normalize = ClusteringNormalize(
+            microservice = df_row,
+            cbm = df_normalize['cbm'][df_row],
+            wcbm = df_normalize['wcbm'][df_row],
+            acbm = df_normalize['acbm'][df_row],
+            ncam = df_normalize['ncam'][df_row],
+            imc = df_normalize['imc'][df_row],
+            nmo = df_normalize['nmo'][df_row],
+            trm = df_normalize['trm'][df_row],
+            mloc = df_normalize['mloc'][df_row],
+            mnoc = df_normalize['mnoc'][df_row],
+            algo = 'louvain',
+            type = 'network',
+            project_id = project_id
+        )
+        normalize.save()
+
+    # leiden
+
+    raw_data_ms = ClusteringMetric.objects.filter(project_id=project_id, algo='leiden').order_by('microservice').all().values()
+    df_ms = pd.DataFrame(raw_data_ms)
+    df_metric_ms = df_ms.iloc[:,4:-1]
+    # normalize
+    scaler = MinMaxScaler() 
+    scaler_feature = scaler.fit_transform(df_metric_ms)
+    df_normalize_id = df_ms.iloc[:,0:1].copy()
+    df_normalize_metric = pd.DataFrame(scaler_feature)
+    df_normalize = pd.concat([df_normalize_id, df_normalize_metric], axis=1)
+    df_normalize.columns = ['id','cbm','wcbm','acbm','ncam','imc','nmo','trm','mloc','mnoc']
+
+    # update db
+    if ClusteringNormalize.objects.filter(project_id=project_id,algo='leiden').all().count() > 0:
+        ClusteringNormalize.objects.filter(project_id=project_id,algo='leiden').delete()
+    
+    for df_row in df_normalize.index:
+        normalize = ClusteringNormalize(
+            microservice = df_row,
+            cbm = df_normalize['cbm'][df_row],
+            wcbm = df_normalize['wcbm'][df_row],
+            acbm = df_normalize['acbm'][df_row],
+            ncam = df_normalize['ncam'][df_row],
+            imc = df_normalize['imc'][df_row],
+            nmo = df_normalize['nmo'][df_row],
+            trm = df_normalize['trm'][df_row],
+            mloc = df_normalize['mloc'][df_row],
+            mnoc = df_normalize['mnoc'][df_row],
+            algo = 'leiden',
+            type = 'network',
+            project_id = project_id
+        )
+        normalize.save()
+
+    # girvan-newman
+
+    raw_data_ms = ClusteringMetric.objects.filter(project_id=project_id, algo='gnewman').order_by('microservice').all().values()
+    df_ms = pd.DataFrame(raw_data_ms)
+    df_metric_ms = df_ms.iloc[:,4:-1]
+    # normalize
+    scaler = MinMaxScaler() 
+    scaler_feature = scaler.fit_transform(df_metric_ms)
+    df_normalize_id = df_ms.iloc[:,0:1].copy()
+    df_normalize_metric = pd.DataFrame(scaler_feature)
+    df_normalize = pd.concat([df_normalize_id, df_normalize_metric], axis=1)
+    df_normalize.columns = ['id','cbm','wcbm','acbm','ncam','imc','nmo','trm','mloc','mnoc']
+
+    # update db
+    if ClusteringNormalize.objects.filter(project_id=project_id,algo='gnewman').all().count() > 0:
+        ClusteringNormalize.objects.filter(project_id=project_id,algo='gnewman').delete()
+    
+    for df_row in df_normalize.index:
+        normalize = ClusteringNormalize(
+            microservice = df_row,
+            cbm = df_normalize['cbm'][df_row],
+            wcbm = df_normalize['wcbm'][df_row],
+            acbm = df_normalize['acbm'][df_row],
+            ncam = df_normalize['ncam'][df_row],
+            imc = df_normalize['imc'][df_row],
+            nmo = df_normalize['nmo'][df_row],
+            trm = df_normalize['trm'][df_row],
+            mloc = df_normalize['mloc'][df_row],
+            mnoc = df_normalize['mnoc'][df_row],
+            algo = 'gnewman',
+            type = 'network',
+            project_id = project_id
+        )
+        normalize.save()
+
+    return redirect('scoring', project_id=project_id)
+
+def scoring(request, project_id):
+    project = Project.objects.get(id=project_id)
+
+    # average scoring
+
+    if ScoringAverage.objects.filter(project_id=project_id).all().count() > 0:
+        ScoringAverage.objects.filter(project_id=project_id).delete()
+
     ms_kmeans_normalize = ClusteringNormalize.objects.filter(project_id=project_id,algo='kmeans').order_by('microservice').all()
+
+    avg_cbm=0
+    avg_wcbm=0
+    avg_acbm=0
+    avg_ncam=0
+    avg_imc=0
+    avg_nmo=0
+    avg_trm=0
+    avg_mloc=0
+    avg_mnoc=0
+    algo = ''
+    type = ''
+
+    for ms in ms_kmeans_normalize:
+        avg_cbm += ms.cbm
+        avg_wcbm += ms.wcbm
+        avg_acbm += ms.acbm
+        avg_ncam += ms.ncam
+        avg_imc += ms.imc
+        avg_nmo += ms.nmo
+        avg_trm += ms.trm
+        avg_mloc += ms.mloc
+        avg_mnoc += ms.mnoc
+        algo = ms.algo
+        type = ms.type
+
+    avg_ms = ScoringAverage(
+        cbm = avg_cbm/len(ms_kmeans_normalize),
+        wcbm = avg_wcbm/len(ms_kmeans_normalize),
+        acbm = avg_acbm/len(ms_kmeans_normalize),
+        ncam = avg_ncam/len(ms_kmeans_normalize),
+        imc = avg_imc/len(ms_kmeans_normalize),
+        nmo = avg_nmo/len(ms_kmeans_normalize),
+        trm = avg_trm/len(ms_kmeans_normalize),
+        mloc = avg_mloc/len(ms_kmeans_normalize),
+        mnoc = avg_mnoc/len(ms_kmeans_normalize),
+        algo = algo,
+        type = type,
+        project_id = project_id
+    )
+    avg_ms.save()
+
     ms_mean_shift_normalize = ClusteringNormalize.objects.filter(project_id=project_id,algo='mean_shift').order_by('microservice').all()
+
+    avg_cbm=0
+    avg_wcbm=0
+    avg_acbm=0
+    avg_ncam=0
+    avg_imc=0
+    avg_nmo=0
+    avg_trm=0
+    avg_mloc=0
+    avg_mnoc=0
+    algo = ''
+    type = ''
+
+    for ms in ms_mean_shift_normalize:
+        avg_cbm += ms.cbm
+        avg_wcbm += ms.wcbm
+        avg_acbm += ms.acbm
+        avg_ncam += ms.ncam
+        avg_imc += ms.imc
+        avg_nmo += ms.nmo
+        avg_trm += ms.trm
+        avg_mloc += ms.mloc
+        avg_mnoc += ms.mnoc
+        algo = ms.algo
+        type = ms.type
+
+    avg_ms = ScoringAverage(
+        cbm = avg_cbm/len(ms_mean_shift_normalize),
+        wcbm = avg_wcbm/len(ms_mean_shift_normalize),
+        acbm = avg_acbm/len(ms_mean_shift_normalize),
+        ncam = avg_ncam/len(ms_mean_shift_normalize),
+        imc = avg_imc/len(ms_mean_shift_normalize),
+        nmo = avg_nmo/len(ms_mean_shift_normalize),
+        trm = avg_trm/len(ms_mean_shift_normalize),
+        mloc = avg_mloc/len(ms_mean_shift_normalize),
+        mnoc = avg_mnoc/len(ms_mean_shift_normalize),
+        algo = algo,
+        type = type,
+        project_id = project_id
+    )
+    avg_ms.save()
+
+    ms_fast_greedy_normalize = ClusteringNormalize.objects.filter(project_id=project_id,algo='fast_greedy').order_by('microservice').all()
+
+    avg_cbm=0
+    avg_wcbm=0
+    avg_acbm=0
+    avg_ncam=0
+    avg_imc=0
+    avg_nmo=0
+    avg_trm=0
+    avg_mloc=0
+    avg_mnoc=0
+    algo = ''
+    type = ''
+
+    for ms in ms_fast_greedy_normalize:
+        avg_cbm += ms.cbm
+        avg_wcbm += ms.wcbm
+        avg_acbm += ms.acbm
+        avg_ncam += ms.ncam
+        avg_imc += ms.imc
+        avg_nmo += ms.nmo
+        avg_trm += ms.trm
+        avg_mloc += ms.mloc
+        avg_mnoc += ms.mnoc
+        algo = ms.algo
+        type = ms.type
+
+    avg_ms = ScoringAverage(
+        cbm = avg_cbm/len(ms_fast_greedy_normalize),
+        wcbm = avg_wcbm/len(ms_fast_greedy_normalize),
+        acbm = avg_acbm/len(ms_fast_greedy_normalize),
+        ncam = avg_ncam/len(ms_fast_greedy_normalize),
+        imc = avg_imc/len(ms_fast_greedy_normalize),
+        nmo = avg_nmo/len(ms_fast_greedy_normalize),
+        trm = avg_trm/len(ms_fast_greedy_normalize),
+        mloc = avg_mloc/len(ms_fast_greedy_normalize),
+        mnoc = avg_mnoc/len(ms_fast_greedy_normalize),
+        algo = algo,
+        type = type,
+        project_id = project_id
+    )
+    avg_ms.save()
+
+    ms_louvain_normalize = ClusteringNormalize.objects.filter(project_id=project_id,algo='louvain').order_by('microservice').all()
+
+    avg_cbm=0
+    avg_wcbm=0
+    avg_acbm=0
+    avg_ncam=0
+    avg_imc=0
+    avg_nmo=0
+    avg_trm=0
+    avg_mloc=0
+    avg_mnoc=0
+    algo = ''
+    type = ''
+
+    for ms in ms_louvain_normalize:
+        avg_cbm += ms.cbm
+        avg_wcbm += ms.wcbm
+        avg_acbm += ms.acbm
+        avg_ncam += ms.ncam
+        avg_imc += ms.imc
+        avg_nmo += ms.nmo
+        avg_trm += ms.trm
+        avg_mloc += ms.mloc
+        avg_mnoc += ms.mnoc
+        algo = ms.algo
+        type = ms.type
+
+    avg_ms = ScoringAverage(
+        cbm = avg_cbm/len(ms_louvain_normalize),
+        wcbm = avg_wcbm/len(ms_louvain_normalize),
+        acbm = avg_acbm/len(ms_louvain_normalize),
+        ncam = avg_ncam/len(ms_louvain_normalize),
+        imc = avg_imc/len(ms_louvain_normalize),
+        nmo = avg_nmo/len(ms_louvain_normalize),
+        trm = avg_trm/len(ms_louvain_normalize),
+        mloc = avg_mloc/len(ms_louvain_normalize),
+        mnoc = avg_mnoc/len(ms_louvain_normalize),
+        algo = algo,
+        type = type,
+        project_id = project_id
+    )
+    avg_ms.save()
+
+    ms_leiden_normalize = ClusteringNormalize.objects.filter(project_id=project_id,algo='leiden').order_by('microservice').all()
+
+    avg_cbm=0
+    avg_wcbm=0
+    avg_acbm=0
+    avg_ncam=0
+    avg_imc=0
+    avg_nmo=0
+    avg_trm=0
+    avg_mloc=0
+    avg_mnoc=0
+    algo = ''
+    type = ''
+
+    for ms in ms_leiden_normalize:
+        avg_cbm += ms.cbm
+        avg_wcbm += ms.wcbm
+        avg_acbm += ms.acbm
+        avg_ncam += ms.ncam
+        avg_imc += ms.imc
+        avg_nmo += ms.nmo
+        avg_trm += ms.trm
+        avg_mloc += ms.mloc
+        avg_mnoc += ms.mnoc
+        algo = ms.algo
+        type = ms.type
+
+    avg_ms = ScoringAverage(
+        cbm = avg_cbm/len(ms_leiden_normalize),
+        wcbm = avg_wcbm/len(ms_leiden_normalize),
+        acbm = avg_acbm/len(ms_leiden_normalize),
+        ncam = avg_ncam/len(ms_leiden_normalize),
+        imc = avg_imc/len(ms_leiden_normalize),
+        nmo = avg_nmo/len(ms_leiden_normalize),
+        trm = avg_trm/len(ms_leiden_normalize),
+        mloc = avg_mloc/len(ms_leiden_normalize),
+        mnoc = avg_mnoc/len(ms_leiden_normalize),
+        algo = algo,
+        type = type,
+        project_id = project_id
+    )
+    avg_ms.save()
+
+    ms_girvan_newman_normalize = ClusteringNormalize.objects.filter(project_id=project_id,algo='gnewman').order_by('microservice').all()
+
+    avg_cbm=0
+    avg_wcbm=0
+    avg_acbm=0
+    avg_ncam=0
+    avg_imc=0
+    avg_nmo=0
+    avg_trm=0
+    avg_mloc=0
+    avg_mnoc=0
+    algo = ''
+    type = ''
+
+    for ms in ms_girvan_newman_normalize:
+        avg_cbm += ms.cbm
+        avg_wcbm += ms.wcbm
+        avg_acbm += ms.acbm
+        avg_ncam += ms.ncam
+        avg_imc += ms.imc
+        avg_nmo += ms.nmo
+        avg_trm += ms.trm
+        avg_mloc += ms.mloc
+        avg_mnoc += ms.mnoc
+        algo = ms.algo
+        type = ms.type
+
+    avg_ms = ScoringAverage(
+        cbm = avg_cbm/len(ms_girvan_newman_normalize),
+        wcbm = avg_wcbm/len(ms_girvan_newman_normalize),
+        acbm = avg_acbm/len(ms_girvan_newman_normalize),
+        ncam = avg_ncam/len(ms_girvan_newman_normalize),
+        imc = avg_imc/len(ms_girvan_newman_normalize),
+        nmo = avg_nmo/len(ms_girvan_newman_normalize),
+        trm = avg_trm/len(ms_girvan_newman_normalize),
+        mloc = avg_mloc/len(ms_girvan_newman_normalize),
+        mnoc = avg_mnoc/len(ms_girvan_newman_normalize),
+        algo = algo,
+        type = type,
+        project_id = project_id
+    )
+    avg_ms.save()
+
+    # scoring for metric
+
+    if ScoringFinale.objects.filter(project_id=project_id).all().count() > 0:
+        ScoringFinale.objects.filter(project_id=project_id).delete()
+
+    df_metric = pd.DataFrame(ScoringAverage.objects.filter(project_id=project_id,type='metric').all().values())
+    df_metric['rank_cbm'] = df_metric['cbm'].rank()
+    df_metric['rank_wcbm'] = df_metric['wcbm'].rank()
+    df_metric['rank_acbm'] = df_metric['acbm'].rank()
+    df_metric['rank_ncam'] = df_metric['ncam'].rank()
+    df_metric['rank_imc'] = df_metric['imc'].rank()
+    df_metric['rank_nmo'] = df_metric['nmo'].rank()
+    df_metric['rank_trm'] = df_metric['trm'].rank()
+    df_metric['rank_mloc'] = df_metric['mloc'].rank()
+    df_metric['rank_mnoc'] = df_metric['mnoc'].rank()
+
+    df_metric_ranked = df_metric[['algo','type','rank_cbm','rank_wcbm','rank_acbm','rank_ncam','rank_imc','rank_nmo','rank_trm','rank_mloc','rank_mnoc']].copy()
+
+    for df_row in df_metric_ranked.index:
+        scoring_finale = ScoringFinale(
+            cbm = df_metric_ranked['rank_cbm'][df_row],
+            wcbm = df_metric_ranked['rank_wcbm'][df_row],
+            acbm = df_metric_ranked['rank_acbm'][df_row],
+            ncam = df_metric_ranked['rank_ncam'][df_row],
+            imc = df_metric_ranked['rank_imc'][df_row],
+            nmo = df_metric_ranked['rank_nmo'][df_row],
+            trm = df_metric_ranked['rank_trm'][df_row],
+            mloc = df_metric_ranked['rank_mloc'][df_row],
+            mnoc = df_metric_ranked['rank_mnoc'][df_row],
+            algo = df_metric_ranked['algo'][df_row],
+            type = df_metric_ranked['type'][df_row],
+            project_id = project_id
+        )
+        scoring_finale.save()
+
+    # scoring network
+
+    df_network = pd.DataFrame(ScoringAverage.objects.filter(project_id=project_id,type='network').all().values())
+    df_network['rank_cbm'] = df_network['cbm'].rank()
+    df_network['rank_wcbm'] = df_network['wcbm'].rank()
+    df_network['rank_acbm'] = df_network['acbm'].rank()
+    df_network['rank_ncam'] = df_network['ncam'].rank()
+    df_network['rank_imc'] = df_network['imc'].rank()
+    df_network['rank_nmo'] = df_network['nmo'].rank()
+    df_network['rank_trm'] = df_network['trm'].rank()
+    df_network['rank_mloc'] = df_network['mloc'].rank()
+    df_network['rank_mnoc'] = df_network['mnoc'].rank()
+
+    df_network_ranked = df_network[['algo','type','rank_cbm','rank_wcbm','rank_acbm','rank_ncam','rank_imc','rank_nmo','rank_trm','rank_mloc','rank_mnoc']].copy()
+
+    for df_row in df_network_ranked.index:
+        scoring_finale = ScoringFinale(
+            cbm = df_network_ranked['rank_cbm'][df_row],
+            wcbm = df_network_ranked['rank_wcbm'][df_row],
+            acbm = df_network_ranked['rank_acbm'][df_row],
+            ncam = df_network_ranked['rank_ncam'][df_row],
+            imc = df_network_ranked['rank_imc'][df_row],
+            nmo = df_network_ranked['rank_nmo'][df_row],
+            trm = df_network_ranked['rank_trm'][df_row],
+            mloc = df_network_ranked['rank_mloc'][df_row],
+            mnoc = df_network_ranked['rank_mnoc'][df_row],
+            algo = df_network_ranked['algo'][df_row],
+            type = df_network_ranked['type'][df_row],
+            project_id = project_id
+        )
+        scoring_finale.save()
+
+    # get scoring rank
+    scoring_metric = ScoringFinale.objects.filter(project_id=project_id,type='metric').all()
+    scoring_network = ScoringFinale.objects.filter(project_id=project_id,type='network').all()
 
     data = {
         'project': project,
-        'ms_kmeans': ms_kmeans,
-        'ms_mean_shift': ms_mean_shift,
+        'scoring_metric': scoring_metric,
+        'scoring_network': scoring_network,
         'ms_kmeans_normalize': ms_kmeans_normalize,
-        'ms_mean_shift_normalize': ms_mean_shift_normalize
+        'ms_mean_shift_normalize': ms_mean_shift_normalize,
+        'ms_fast_greedy_normalize': ms_fast_greedy_normalize,
+        'ms_louvain_normalize': ms_louvain_normalize,
+        'ms_leiden_normalize': ms_leiden_normalize,
+        'ms_girvan_newman_normalize': ms_girvan_newman_normalize,
+        # 'df': df_metric_ranked.to_html()
     }
     return render(request, 'squality/project_scoring.html', data)
-    
+
+
+def summary(request, project_id):
+    project = Project.objects.get(id=project_id)
+
+    # get scoring rank
+    scoring_metric = ScoringFinale.objects.filter(project_id=project_id,type='metric').all()
+    scoring_network = ScoringFinale.objects.filter(project_id=project_id,type='network').all()
+
+    data = {
+        'project': project,
+        'scoring_metric': scoring_metric,
+        'scoring_network': scoring_network,
+    }
+    return render(request, 'squality/project_summary.html', data)

@@ -34,6 +34,10 @@ urlpatterns = [
     path('squality/project/cluster/<int:project_id>/network', views.clustering_network, name='clustering_network'),
 
     # Scoring
+    path('squality/project/scoring/<int:project_id>/initialize', views.scoring_initialize, name='scoring_initialize'),
     path('squality/project/scoring/<int:project_id>', views.scoring, name='scoring'),
+
+    # Summary
+    path('squality/project/summary/<int:project_id>', views.summary, name='summary'),
     
 ]

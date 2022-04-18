@@ -50,16 +50,8 @@
   <body>
     
 <header class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0 shadow">
-  <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3" href="#">S-QUALITY</a>
-  <!-- <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false" aria-label="Toggle navigation">
-    <span class="navbar-toggler-icon"></span>
-  </button> -->
-  <!-- <input class="form-control form-control-dark w-100" type="text" placeholder="Search" aria-label="Search"> -->
-  <div class="navbar-nav">
-    <div class="nav-item text-nowrap">
-      <a class="nav-link px-3" href="#">Sign out</a>
-    </div>
-  </div>
+  <a class="navbar-brand col-md-3 col-lg-2 me-0 px-3" href="#">STRUCTURAL QUALITY</a>
+
 </header>
 
 <div class="container-fluid">
@@ -67,32 +59,54 @@
   <div class="row">
     <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
       <div class="position-sticky pt-3">
-        <ul class="nav flex-column">
-          <li class="nav-item">
-            <a class="nav-link active" aria-current="page" href="{% url 'index' %}">
-              <i class="bi-window-sidebar"></i>
-              Dashboard
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" aria-current="page" href="#">
-              <i class="bi-file-earmark-arrow-up"></i>
-              Import
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" aria-current="page" href="#">
-              <i class="bi-funnel"></i>
-              Clean
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" aria-current="page" href="#">
-              <i class="bi-bezier2"></i>
-              Generate Edges
-            </a>
-          </li>
-        </ul>
+        
+        <div class="ps-2 pe-2 lh-1" style="font-size: 10px;">
+
+          <p style="font-size: 15px !important;"><strong>OO DESIGN PROPERTY</strong></p>
+
+          <strong>CBC</strong>
+          <p class="font-monospace">Coupling Between Object Classes</p>
+          <strong>ICC</strong>
+          <p class="font-monospace">Incoming Class Coupling</p>
+          <strong>OCC</strong>
+          <p class="font-monospace">Outgoing CLass Coupling</p>
+          <strong>CAM</strong>
+          <p class="font-monospace">Cohesion Among Method in Class</p>
+          <strong>NCO</strong>
+          <p class="font-monospace">No of Class Operations</p>
+          <strong>DIT</strong>
+          <p class="font-monospace">Depth of Inheritance Tree</p>
+          <strong>RFC</strong>
+          <p class="font-monospace">Response for a Class</p>
+          <strong>LOC</strong>
+          <p class="font-monospace">Line of Code</p>
+          <strong>NCA</strong>
+          <p class="font-monospace">No of Class Attributes</p>
+
+          <hr>
+
+          <p style="font-size: 15px !important;"><strong>MS DESIGN PROPERTY</strong></p>
+
+          <strong>CBM</strong>
+          <p class="font-monospace">Coupling Between Microservice</p>
+          <strong>WCBM</strong>
+          <p class="font-monospace">Weighted Coupling Between Microservice</p>
+          <strong>ACBM</strong>
+          <p class="font-monospace">Absolute Coupling Between Microservice</p>
+          <strong>NCAM</strong>
+          <p class="font-monospace">Normalize Cohesion Among Microservice</p>
+          <strong>IMC</strong>
+          <p class="font-monospace">Intra Microservice Coupling</p>
+          <strong>NMO</strong>
+          <p class="font-monospace">No of Microservice Operations</p>
+          <strong>TRM</strong>
+          <p class="font-monospace">Total Response of Microservice</p>
+          <strong>MLOC</strong>
+          <p class="font-monospace">Microservice Line of Code</p>
+          <strong>MNOC</strong>
+          <p class="font-monospace">Microservice No of Classes</p>
+        </div>
+
       </div>
     </nav>
 

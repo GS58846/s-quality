@@ -9,6 +9,7 @@
 </div>
 
 <div class="container">
+  <a href="{% url 'index' %}" class="btn btn-info"><i class="bi-house"></i></a>
   <a href="{% url 'clustering_metric' project.id %}" class="btn btn-secondary">Back: Metric Clustering</a>
   <h2 class="col mt-2">Network-based Clustering</h2>
 
@@ -110,7 +111,7 @@
   {% endif %}
 
   <div class="row pt-2 pb-5">
-    <a href="{% url 'scoring' project.id %}" class="btn btn-secondary">Next: Scoring</a>
+    <a href="{% url 'scoring_initialize' project.id %}" class="btn btn-secondary">Next: Scoring</a>
   </div>
   
 </div>

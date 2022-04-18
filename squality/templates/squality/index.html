@@ -36,6 +36,7 @@
             <form action="{% url 'project_delete' project.id %}" method="post">
               {% csrf_token %}
               <a href="{% url 'project_details' project.id %}" class="btn btn-sm btn-outline-primary"><i class="bi-folder-fill"></i></a>
+              <a href="{% url 'scoring' project.id %}" class="btn btn-sm btn-outline-primary"><i class="bi-bullseye"></i></a>
               <button type="submit" class="btn btn-outline-secondary btn-sm"><i class="bi-trash-fill"></i></a></button>
             </form>
             
