@@ -116,7 +116,7 @@
 
   <div class="row">
     <div class="col">
-      <table class="table table-striped table-hover table-sm table-responsive">
+      <table class="table table-dark table-striped table-hover table-sm table-responsive">
         <thead>
           <tr>
             <!-- <th scope="col">#</th> -->
@@ -152,7 +152,7 @@
       </table>
     </div>
     <div class="col">
-      <table class="table table-striped table-hover table-sm table-responsive">
+      <table class="table table-dark table-striped table-hover table-sm table-responsive">
         <thead>
           <tr>
             <!-- <th scope="col">#</th> -->
@@ -170,6 +170,132 @@
         </thead>
         <tbody>
           {% for ms in ms_mean_shift %}
+          <tr>
+            <!-- <td>{{ forloop.counter }}.</td> -->
+            <td>MS-{{ ms.microservice }}</td>
+            <td>{{ ms.cbm }}</td>
+            <td>{{ ms.wcbm }}</td>
+            <td>{{ ms.acbm }}</td>
+            <td>{{ ms.ncam }}</td>
+            <td>{{ ms.imc }}</td>
+            <td>{{ ms.nmo }}</td>
+            <td>{{ ms.trm }}</td>
+            <td>{{ ms.mloc }}</td>
+            <td>{{ ms.mnoc }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="row">
+    
+    <div class="col">
+      <h4>Agglomerative</h4>
+      <p>The Elbow Method <strong>(K = {{k}})</strong></p>
+      <table class="table table-striped table-hover table-sm table-responsive">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Class Name</th>
+            <th scope="col">Cluster</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for kg in agglomerative_group %}
+          <tr>
+            <td>{{ forloop.counter }}.</td>
+            <td>{{ kg.class_name }}</td>
+            <td>{{ kg.cluster }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="col">
+      <h4>Gaussian Mixture</h4>
+      <p>The Elbow Method <strong>(K = {{k}})</strong></p>
+
+      <table class="table table-striped table-hover table-sm table-responsive">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Class Name</th>
+            <th scope="col">Cluster</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ms in gaussian_group %}
+          <tr>
+            <td>{{ forloop.counter }}.</td>
+            <td>{{ ms.class_name }}</td>
+            <td>{{ ms.cluster }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <div class="row">
+    <div class="col">
+      <table class="table table-dark table-striped table-hover table-sm table-responsive">
+        <thead>
+          <tr>
+            <!-- <th scope="col">#</th> -->
+            <th scope="col">Microservice</th>
+            <th scope="col">CBM</th>
+            <th scope="col">WCBM</th>
+            <th scope="col">ACBM</th>
+            <th scope="col">NCAM</th>
+            <th scope="col">IMC</th>
+            <th scope="col">NMO</th>
+            <th scope="col">TRM</th>
+            <th scope="col">MLOC</th>
+            <th scope="col">MNOC</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ms in ms_agglomerative %}
+          <tr>
+            <!-- <td>{{ forloop.counter }}.</td> -->
+            <td>MS-{{ ms.microservice }}</td>
+            <td>{{ ms.cbm }}</td>
+            <td>{{ ms.wcbm }}</td>
+            <td>{{ ms.acbm }}</td>
+            <td>{{ ms.ncam }}</td>
+            <td>{{ ms.imc }}</td>
+            <td>{{ ms.nmo }}</td>
+            <td>{{ ms.trm }}</td>
+            <td>{{ ms.mloc }}</td>
+            <td>{{ ms.mnoc }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="col">
+      <table class="table table-dark table-striped table-hover table-sm table-responsive">
+        <thead>
+          <tr>
+            <!-- <th scope="col">#</th> -->
+            <th scope="col">Microservice</th>
+            <th scope="col">CBM</th>
+            <th scope="col">WCBM</th>
+            <th scope="col">ACBM</th>
+            <th scope="col">NCAM</th>
+            <th scope="col">IMC</th>
+            <th scope="col">NMO</th>
+            <th scope="col">TRM</th>
+            <th scope="col">MLOC</th>
+            <th scope="col">MNOC</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ms in ms_gaussian %}
           <tr>
             <!-- <td>{{ forloop.counter }}.</td> -->
             <td>MS-{{ ms.microservice }}</td>

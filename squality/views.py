@@ -16,6 +16,8 @@ import numpy as np
 import pandas as pd
 from sklearn.cluster import KMeans
 from sklearn.cluster import MeanShift
+from sklearn.cluster import AgglomerativeClustering
+from sklearn.mixture import GaussianMixture
 from webbrowser import get
 from django.http import HttpRequest
 from django.shortcuts import redirect, render
@@ -41,6 +43,8 @@ def index(request):
 
     return render(request, 'squality/index.html', data)
 
+def about(request):
+    return render(request, 'squality/about.html')
 
 # PROJECT
 
@@ -50,8 +54,21 @@ def project_create(request: HttpRequest):
     return redirect('/squality')
 
 def project_delete(request, id):
-    project = Project.objects.get(id=id)
-    project.delete()
+    Project.objects.filter(id=id).delete()
+    ClocMetric.objects.filter(project_id=id).delete()
+    ClocMetricRaw.objects.filter(project_id=id).delete()
+    Clustering.objects.filter(project_id=id).delete()
+    ClusteringMetric.objects.filter(project_id=id).delete()
+    ClusteringNormalize.objects.filter(project_id=id).delete()
+    GraphImages.objects.filter(project_id=id).delete()
+    MetricNormalize.objects.filter(project_id=id).delete()
+    S101Metric.objects.filter(project_id=id).delete()
+    S101MetricRaw.objects.filter(project_id=id).delete()
+    ScoringAverage.objects.filter(project_id=id).delete()
+    ScoringFinale.objects.filter(project_id=id).delete()
+    SdMetric.objects.filter(project_id=id).delete()
+    SdMetricRaw.objects.filter(project_id=id).delete()
+
     return redirect('/squality')
 
 def project_details(request, id):
@@ -313,8 +330,8 @@ def clean_syn_cloc(request, project_id):
     # cloc_list = ClocMetricRaw.objects.filter(project_id=project_id).all()
     
     for sd in sd_classes:
-        if ClocMetricRaw.objects.filter(class_name=sd.class_name):
-            cloc = ClocMetricRaw.objects.filter(class_name=sd.class_name).get()
+        if ClocMetricRaw.objects.filter(class_name=sd.class_name,project_id=project_id):
+            cloc = ClocMetricRaw.objects.filter(class_name=sd.class_name,project_id=project_id).get()
             sd.loc = cloc.code
             sd.save()
             cloc.ok = 1
@@ -702,8 +719,241 @@ def clustering_metric(request, project_id):
 
     # TODO: separate as re-usable function? end ---------------------------------------------
 
+    # agglomerative
+    agglomerative = AgglomerativeClustering(k_value.elbow)
+    agglomerative_cluster = agglomerative.fit_predict(df_metric)
+    df_agglomerative = df.iloc[:,1:2].copy()
+    df_agglomerative['agglomerative'] = agglomerative_cluster
+    
+    # save into db
+    if Clustering.objects.filter(project_id=project_id,algo='agglomerative').count() > 0:
+        Clustering.objects.filter(project_id=project_id,algo='agglomerative').delete()
+
+    for k in df_agglomerative.index:
+        c = Clustering(
+            class_name = df_agglomerative['class_name'][k],
+            cluster = df_agglomerative['agglomerative'][k],
+            type = 'metric',
+            algo = 'agglomerative',
+            project_id = project_id
+        )
+        c.save()
+    
+    agglomerative_group = Clustering.objects.filter(project_id=project_id,algo='agglomerative').order_by('cluster').all()
+
+    # agglomerative summary
+    # TODO: separate as re-usable function? start ---------------------------------------------
+
+    if ClusteringMetric.objects.filter(project_id=project_id,algo='agglomerative').count() > 0:
+        ClusteringMetric.objects.filter(project_id=project_id,algo='agglomerative').delete()
+
+    ms_ms_grp = defaultdict(list)
+    ms_ms_len = Clustering.objects.filter(project_id=project_id,algo='agglomerative').distinct('cluster').count()
+    for i in range(ms_ms_len):
+        mloc = 0
+        mnoc = 0
+        ncam = 0
+        imc = 0
+        nmo = 0
+        cluster_grp = []
+        cls = Clustering.objects.filter(project_id=project_id,algo='agglomerative',cluster=i).all()
+        for c in cls:
+            cm = SdMetricRaw.objects.filter(project_id=project_id,class_name=c.class_name).get()
+            mloc += cm.loc
+            mnoc += 1 
+            nmo += cm.nco
+            ncam += cm.cam
+            cluster_grp.append(c.class_name)
+            ms_ms_grp[i].append(c.class_name)
+        # imc
+        for cl in cluster_grp:
+            imc_list = S101MetricRaw.objects.filter(project_id=project_id,class_from=cl).all()
+            for il in imc_list:
+                # if il.class_to != cl:
+                if ((il.class_to in cluster_grp) and (il.class_to != cl)):
+                    imc += il.weight
+
+
+        ncam = ncam / mnoc
+        imc = imc       
+        
+        fms = ClusteringMetric(
+            algo = 'agglomerative',
+            type = 'metric',
+            microservice = i,
+            mloc = mloc,
+            mnoc = mnoc,
+            ncam = ncam,
+            imc = imc,
+            nmo = nmo,
+            project_id = project_id
+        )
+        fms.save()
+
+    # wcbm
+
+    for key, val in ms_ms_grp.items():
+        ms_wcbm = 0
+        ms_trm = 0
+        if S101MetricRaw.objects.filter(class_from__in=val, project_id=project_id).count() > 0:
+            cf = S101MetricRaw.objects.filter(class_from__in=val, project_id=project_id).all()
+            for cc in cf:
+                if cc.class_to not in val:
+                    ms_wcbm += cc.weight
+                    if cc.usage == 'returns':
+                        ms_trm += cc.weight
+        ms_x = ClusteringMetric.objects.filter(project_id=project_id, microservice=key, algo='agglomerative').get()
+        ms_x.wcbm = ms_wcbm
+        ms_x.trm = ms_trm
+        ms_x.save()
+
+    # cbm
+    
+    for key, val in ms_ms_grp.items():
+        ms_cbm = 0
+        ms_acbm = 0
+ 
+        for i in range(ms_ms_len):
+            if key != i:
+                if S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_ms_grp[i], project_id=project_id):
+                    ms_cbm += 1
+                   
+                    if S101MetricRaw.objects.filter(class_from__in=ms_ms_grp[i], class_to__in=val, project_id=project_id):
+                        ms_from = S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_ms_grp[i], project_id=project_id).all()
+                        for mf in ms_from:
+                            ms_acbm += mf.weight
+                        ms_to = S101MetricRaw.objects.filter(class_from__in=ms_ms_grp[i], class_to__in=val, project_id=project_id).all()
+                        for mt in ms_to:
+                            ms_acbm += mt.weight
+
+        ms_x = ClusteringMetric.objects.filter(project_id=project_id, microservice=key, algo='agglomerative').get()
+        ms_x.cbm = ms_cbm
+        ms_x.acbm = ms_acbm
+        ms_x.save()
+
+    # TODO: separate as re-usable function? end ---------------------------------------------
+
+    # gaussian mixture
+
+    gaussian = GaussianMixture(k_value.elbow)
+    gaussian_cluster = gaussian.fit_predict(df_metric)
+    df_gaussian = df.iloc[:,1:2].copy()
+    df_gaussian['gaussian'] = gaussian_cluster
+    
+    # save into db
+    if Clustering.objects.filter(project_id=project_id,algo='gaussian').count() > 0:
+        Clustering.objects.filter(project_id=project_id,algo='gaussian').delete()
+
+    for k in df_gaussian.index:
+        c = Clustering(
+            class_name = df_gaussian['class_name'][k],
+            cluster = df_gaussian['gaussian'][k],
+            type = 'metric',
+            algo = 'gaussian',
+            project_id = project_id
+        )
+        c.save()
+    
+    gaussian_group = Clustering.objects.filter(project_id=project_id,algo='gaussian').order_by('cluster').all()
+
+    # gaussian summary
+    # TODO: separate as re-usable function? start ---------------------------------------------
+
+    if ClusteringMetric.objects.filter(project_id=project_id,algo='gaussian').count() > 0:
+        ClusteringMetric.objects.filter(project_id=project_id,algo='gaussian').delete()
+
+    ms_ms_grp = defaultdict(list)
+    ms_ms_len = Clustering.objects.filter(project_id=project_id,algo='gaussian').distinct('cluster').count()
+    for i in range(ms_ms_len):
+        mloc = 0
+        mnoc = 0
+        ncam = 0
+        imc = 0
+        nmo = 0
+        cluster_grp = []
+        cls = Clustering.objects.filter(project_id=project_id,algo='gaussian',cluster=i).all()
+        for c in cls:
+            cm = SdMetricRaw.objects.filter(project_id=project_id,class_name=c.class_name).get()
+            mloc += cm.loc
+            mnoc += 1 
+            nmo += cm.nco
+            ncam += cm.cam
+            cluster_grp.append(c.class_name)
+            ms_ms_grp[i].append(c.class_name)
+        # imc
+        for cl in cluster_grp:
+            imc_list = S101MetricRaw.objects.filter(project_id=project_id,class_from=cl).all()
+            for il in imc_list:
+                # if il.class_to != cl:
+                if ((il.class_to in cluster_grp) and (il.class_to != cl)):
+                    imc += il.weight
+
+
+        ncam = ncam / mnoc
+        imc = imc       
+        
+        fms = ClusteringMetric(
+            algo = 'gaussian',
+            type = 'metric',
+            microservice = i,
+            mloc = mloc,
+            mnoc = mnoc,
+            ncam = ncam,
+            imc = imc,
+            nmo = nmo,
+            project_id = project_id
+        )
+        fms.save()
+
+    # wcbm
+
+    for key, val in ms_ms_grp.items():
+        ms_wcbm = 0
+        ms_trm = 0
+        if S101MetricRaw.objects.filter(class_from__in=val, project_id=project_id).count() > 0:
+            cf = S101MetricRaw.objects.filter(class_from__in=val, project_id=project_id).all()
+            for cc in cf:
+                if cc.class_to not in val:
+                    ms_wcbm += cc.weight
+                    if cc.usage == 'returns':
+                        ms_trm += cc.weight
+        ms_x = ClusteringMetric.objects.filter(project_id=project_id, microservice=key, algo='gaussian').get()
+        ms_x.wcbm = ms_wcbm
+        ms_x.trm = ms_trm
+        ms_x.save()
+
+    # cbm
+    
+    for key, val in ms_ms_grp.items():
+        ms_cbm = 0
+        ms_acbm = 0
+ 
+        for i in range(ms_ms_len):
+            if key != i:
+                if S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_ms_grp[i], project_id=project_id):
+                    ms_cbm += 1
+                   
+                    if S101MetricRaw.objects.filter(class_from__in=ms_ms_grp[i], class_to__in=val, project_id=project_id):
+                        ms_from = S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_ms_grp[i], project_id=project_id).all()
+                        for mf in ms_from:
+                            ms_acbm += mf.weight
+                        ms_to = S101MetricRaw.objects.filter(class_from__in=ms_ms_grp[i], class_to__in=val, project_id=project_id).all()
+                        for mt in ms_to:
+                            ms_acbm += mt.weight
+
+        ms_x = ClusteringMetric.objects.filter(project_id=project_id, microservice=key, algo='gaussian').get()
+        ms_x.cbm = ms_cbm
+        ms_x.acbm = ms_acbm
+        ms_x.save()
+
+    # TODO: separate as re-usable function? end ---------------------------------------------
+
+    # ---------------
+
     ms_kmeans = ClusteringMetric.objects.filter(project_id=project_id, algo='kmeans').order_by('microservice').all()
     ms_mean_shift = ClusteringMetric.objects.filter(project_id=project_id, algo='mean_shift').order_by('microservice').all()
+    ms_agglomerative = ClusteringMetric.objects.filter(project_id=project_id, algo='agglomerative').order_by('microservice').all()
+    ms_gaussian = ClusteringMetric.objects.filter(project_id=project_id, algo='gaussian').order_by('microservice').all()
 
     # display page
 
@@ -711,12 +961,15 @@ def clustering_metric(request, project_id):
         'project': project,
         'sdmetrics': sdmetric_data,
         'state': state,
-        # 'df': df_kmeans.to_html(),
         'k': k_value.elbow,
         'kmeans_group': kmeans_group,
         'mshift_group': mshift_group,
         'ms_kmeans': ms_kmeans,
-        'ms_mean_shift': ms_mean_shift
+        'ms_mean_shift': ms_mean_shift,
+        'ms_agglomerative': ms_agglomerative,
+        'agglomerative_group': agglomerative_group,
+        'gaussian_group': gaussian_group,
+        'ms_gaussian': ms_gaussian,
     }
 
     return render(request, 'squality/project_cluster_metric.html', data)
@@ -811,139 +1064,147 @@ def clustering_network(request, project_id):
     # edgelist = Graph.TupleList(df_raw.itertuples(index=False), directed=False, weights=True)
     # print(edgelist_tmp)
 
-    # fast greedy
-
-    fg_clusters = edgelist.community_fastgreedy().as_clustering()
-    # print(fg_clusters)
-    # print(fg_clusters_tmp)
-    
-    fg_pal = igraph.drawing.colors.ClusterColoringPalette(len(fg_clusters))
-    edgelist.vs["color"] = fg_pal.get_many(fg_clusters.membership)
-    
     visual_style = {}
     visual_style['vertex_label'] = list(df_ref['class_name'])
     visual_style['vertex_label_dist'] = 1
     visual_style['bbox'] = (800,800)
     visual_style['margin'] = 50
-    igraph.plot(edgelist, "uploads/csv/fast_greedy.png", **visual_style)
- 
-    gi = GraphImages(
-        fullname = 'Fast-greedy Community Detection',
-        algo = 'fast_greedy',
-        fileurl = '/files/fast_greedy.png',
-        project_id = project_id
-    )
-    gi.save()
+    visual_style['edge_curved'] = False
 
-    # save into db
-    if Clustering.objects.filter(project_id=project_id,algo='fast_greedy').count() > 0:
-        Clustering.objects.filter(project_id=project_id,algo='fast_greedy').delete()
+    # fast greedy
 
-    i = 0
-    for nodes in list(fg_clusters):
-        for n in nodes:
-            nn = Clustering(
-                class_name = df_nr['class_name'].values[n],
-                cluster = i,
-                type = 'network',
-                algo = 'fast_greedy',
-                project_id = project_id
-            )
-            nn.save()
-        i += 1
-    
-    # fg_group = Clustering.objects.filter(project_id=project_id,algo='fast_greedy').order_by('cluster').all()
-
-    # TODO: separate as re-usable function? start ---------------------------------------------
-
-    if ClusteringMetric.objects.filter(project_id=project_id,algo='fast_greedy').count() > 0:
-        ClusteringMetric.objects.filter(project_id=project_id,algo='fast_greedy').delete()
-
-    ms_ms_grp = defaultdict(list)
-    ms_ms_len = Clustering.objects.filter(project_id=project_id,algo='fast_greedy').distinct('cluster').count()
-    for i in range(ms_ms_len):
-        mloc = 0
-        mnoc = 0
-        ncam = 0
-        imc = 0
-        nmo = 0
-        cluster_grp = []
-        cls = Clustering.objects.filter(project_id=project_id,algo='fast_greedy',cluster=i).all()
-        for c in cls:
-            cm = SdMetricRaw.objects.filter(project_id=project_id,class_name=c.class_name).get()
-            mloc += cm.loc
-            mnoc += 1 
-            nmo += cm.nco
-            ncam += cm.cam
-            cluster_grp.append(c.class_name)
-            ms_ms_grp[i].append(c.class_name)
-        # imc
-        for cl in cluster_grp:
-            imc_list = S101MetricRaw.objects.filter(project_id=project_id,class_from=cl).all()
-            for il in imc_list:
-                # if il.class_to != cl:
-                if ((il.class_to in cluster_grp) and (il.class_to != cl)):
-                    imc += il.weight
-
-
-        ncam = ncam / mnoc
-        imc = imc       
+    try:
+        fg_clusters = edgelist.community_fastgreedy().as_clustering()
+        # print(fg_clusters)
+        # print(fg_clusters_tmp)
         
-        fms = ClusteringMetric(
+        fg_pal = igraph.drawing.colors.ClusterColoringPalette(len(fg_clusters))
+        edgelist.vs["color"] = fg_pal.get_many(fg_clusters.membership)
+        # edgelist.es["curved"] = False
+        # edgelist.es['weight'] = list(df_s101['weight'])
+        # edgelist.es["label"] = list(df_s101['weight'])
+        
+        igraph.plot(edgelist, "uploads/csv/fast_greedy.png", **visual_style)
+
+        gi = GraphImages(
+            fullname = 'Fast-greedy Community Detection',
             algo = 'fast_greedy',
-            type = 'network',
-            microservice = i,
-            mloc = mloc,
-            mnoc = mnoc,
-            ncam = ncam,
-            imc = imc,
-            nmo = nmo,
+            fileurl = '/files/fast_greedy.png',
             project_id = project_id
         )
-        fms.save()
+        gi.save()
 
-    # wcbm
+        # save into db
+        if Clustering.objects.filter(project_id=project_id,algo='fast_greedy').count() > 0:
+            Clustering.objects.filter(project_id=project_id,algo='fast_greedy').delete()
 
-    for key, val in ms_ms_grp.items():
-        ms_wcbm = 0
-        ms_trm = 0
-        if S101MetricRaw.objects.filter(class_from__in=val, project_id=project_id).count() > 0:
-            cf = S101MetricRaw.objects.filter(class_from__in=val, project_id=project_id).all()
-            for cc in cf:
-                if cc.class_to not in val:
-                    ms_wcbm += cc.weight
-                    if cc.usage == 'returns':
-                        ms_trm += cc.weight
-        ms_x = ClusteringMetric.objects.filter(project_id=project_id, microservice=key, algo='fast_greedy').get()
-        ms_x.wcbm = ms_wcbm
-        ms_x.trm = ms_trm
-        ms_x.save()
+        i = 0
+        for nodes in list(fg_clusters):
+            for n in nodes:
+                nn = Clustering(
+                    class_name = df_nr['class_name'].values[n],
+                    cluster = i,
+                    type = 'network',
+                    algo = 'fast_greedy',
+                    project_id = project_id
+                )
+                nn.save()
+            i += 1
+        
+        # fg_group = Clustering.objects.filter(project_id=project_id,algo='fast_greedy').order_by('cluster').all()
 
-    # cbm
-    
-    for key, val in ms_ms_grp.items():
-        ms_cbm = 0
-        ms_acbm = 0
- 
+        # TODO: separate as re-usable function? start ---------------------------------------------
+
+        if ClusteringMetric.objects.filter(project_id=project_id,algo='fast_greedy').count() > 0:
+            ClusteringMetric.objects.filter(project_id=project_id,algo='fast_greedy').delete()
+
+        ms_ms_grp = defaultdict(list)
+        ms_ms_len = Clustering.objects.filter(project_id=project_id,algo='fast_greedy').distinct('cluster').count()
         for i in range(ms_ms_len):
-            if key != i:
-                if S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_ms_grp[i], project_id=project_id):
-                    ms_cbm += 1
-                   
-                    if S101MetricRaw.objects.filter(class_from__in=ms_ms_grp[i], class_to__in=val, project_id=project_id):
-                        ms_from = S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_ms_grp[i], project_id=project_id).all()
-                        for mf in ms_from:
-                            ms_acbm += mf.weight
-                        ms_to = S101MetricRaw.objects.filter(class_from__in=ms_ms_grp[i], class_to__in=val, project_id=project_id).all()
-                        for mt in ms_to:
-                            ms_acbm += mt.weight
+            mloc = 0
+            mnoc = 0
+            ncam = 0
+            imc = 0
+            nmo = 0
+            cluster_grp = []
+            cls = Clustering.objects.filter(project_id=project_id,algo='fast_greedy',cluster=i).all()
+            for c in cls:
+                cm = SdMetricRaw.objects.filter(project_id=project_id,class_name=c.class_name).get()
+                mloc += cm.loc
+                mnoc += 1 
+                nmo += cm.nco
+                ncam += cm.cam
+                cluster_grp.append(c.class_name)
+                ms_ms_grp[i].append(c.class_name)
+            # imc
+            for cl in cluster_grp:
+                imc_list = S101MetricRaw.objects.filter(project_id=project_id,class_from=cl).all()
+                for il in imc_list:
+                    # if il.class_to != cl:
+                    if ((il.class_to in cluster_grp) and (il.class_to != cl)):
+                        imc += il.weight
 
-        ms_x = ClusteringMetric.objects.filter(project_id=project_id, microservice=key, algo='fast_greedy').get()
-        ms_x.cbm = ms_cbm
-        ms_x.acbm = ms_acbm
-        ms_x.save()
 
-    # TODO: separate as re-usable function? end ---------------------------------------------
+            ncam = ncam / mnoc
+            imc = imc       
+            
+            fms = ClusteringMetric(
+                algo = 'fast_greedy',
+                type = 'network',
+                microservice = i,
+                mloc = mloc,
+                mnoc = mnoc,
+                ncam = ncam,
+                imc = imc,
+                nmo = nmo,
+                project_id = project_id
+            )
+            fms.save()
+
+        # wcbm
+
+        for key, val in ms_ms_grp.items():
+            ms_wcbm = 0
+            ms_trm = 0
+            if S101MetricRaw.objects.filter(class_from__in=val, project_id=project_id).count() > 0:
+                cf = S101MetricRaw.objects.filter(class_from__in=val, project_id=project_id).all()
+                for cc in cf:
+                    if cc.class_to not in val:
+                        ms_wcbm += cc.weight
+                        if cc.usage == 'returns':
+                            ms_trm += cc.weight
+            ms_x = ClusteringMetric.objects.filter(project_id=project_id, microservice=key, algo='fast_greedy').get()
+            ms_x.wcbm = ms_wcbm
+            ms_x.trm = ms_trm
+            ms_x.save()
+
+        # cbm
+        
+        for key, val in ms_ms_grp.items():
+            ms_cbm = 0
+            ms_acbm = 0
+
+            for i in range(ms_ms_len):
+                if key != i:
+                    if S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_ms_grp[i], project_id=project_id):
+                        ms_cbm += 1
+                    
+                        if S101MetricRaw.objects.filter(class_from__in=ms_ms_grp[i], class_to__in=val, project_id=project_id):
+                            ms_from = S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_ms_grp[i], project_id=project_id).all()
+                            for mf in ms_from:
+                                ms_acbm += mf.weight
+                            ms_to = S101MetricRaw.objects.filter(class_from__in=ms_ms_grp[i], class_to__in=val, project_id=project_id).all()
+                            for mt in ms_to:
+                                ms_acbm += mt.weight
+
+            ms_x = ClusteringMetric.objects.filter(project_id=project_id, microservice=key, algo='fast_greedy').get()
+            ms_x.cbm = ms_cbm
+            ms_x.acbm = ms_acbm
+            ms_x.save()
+
+        # TODO: separate as re-usable function? end ---------------------------------------------
+    except Exception:
+        pass
 
     # louvain
 
@@ -1193,128 +1454,131 @@ def clustering_network(request, project_id):
     # TODO: separate as re-usable function? end ---------------------------------------------
 
     # girvan-newman
+ 
+    try:
+        gn_clusters = edgelist.community_edge_betweenness().as_clustering()
+        # print(gn_clusters)
+        gn_pal = igraph.drawing.colors.ClusterColoringPalette(len(gn_clusters))
+        edgelist.vs["color"] = gn_pal.get_many(gn_clusters.membership)
+        igraph.plot(edgelist, "uploads/csv/gnewman.png", **visual_style)
 
-    gn_clusters = edgelist.community_edge_betweenness().as_clustering()
-    # print(gn_clusters)
-    gn_pal = igraph.drawing.colors.ClusterColoringPalette(len(gn_clusters))
-    edgelist.vs["color"] = gn_pal.get_many(gn_clusters.membership)
-    igraph.plot(edgelist, "uploads/csv/gnewman.png", **visual_style)
-
-    gi = GraphImages(
-        fullname = 'Girvan-Newman Betweenness',
-        algo = 'gnewman',
-        fileurl = '/files/gnewman.png',
-        project_id = project_id
-    )
-    gi.save()
-
-    # save into db
-    if Clustering.objects.filter(project_id=project_id,algo='gnewman').count() > 0:
-        Clustering.objects.filter(project_id=project_id,algo='gnewman').delete()
-
-    i = 0
-    for nodes in list(gn_clusters):
-        for n in nodes:
-            nn = Clustering(
-                class_name = df_nr['class_name'].values[n],
-                cluster = i,
-                type = 'network',
-                algo = 'gnewman',
-                project_id = project_id
-            )
-            nn.save()
-        i += 1
-
-    # TODO: separate as re-usable function? start ---------------------------------------------
-
-    if ClusteringMetric.objects.filter(project_id=project_id,algo='gnewman').count() > 0:
-        ClusteringMetric.objects.filter(project_id=project_id,algo='gnewman').delete()
-
-    ms_ms_grp = defaultdict(list)
-    ms_ms_len = Clustering.objects.filter(project_id=project_id,algo='gnewman').distinct('cluster').count()
-    for i in range(ms_ms_len):
-        mloc = 0
-        mnoc = 0
-        ncam = 0
-        imc = 0
-        nmo = 0
-        cluster_grp = []
-        cls = Clustering.objects.filter(project_id=project_id,algo='gnewman',cluster=i).all()
-        for c in cls:
-            cm = SdMetricRaw.objects.filter(project_id=project_id,class_name=c.class_name).get()
-            mloc += cm.loc
-            mnoc += 1 
-            nmo += cm.nco
-            ncam += cm.cam
-            cluster_grp.append(c.class_name)
-            ms_ms_grp[i].append(c.class_name)
-        # imc
-        for cl in cluster_grp:
-            imc_list = S101MetricRaw.objects.filter(project_id=project_id,class_from=cl).all()
-            for il in imc_list:
-                # if il.class_to != cl:
-                if ((il.class_to in cluster_grp) and (il.class_to != cl)):
-                    imc += il.weight
-
-
-        ncam = ncam / mnoc
-        imc = imc       
-        
-        fms = ClusteringMetric(
+        gi = GraphImages(
+            fullname = 'Girvan-Newman Betweenness',
             algo = 'gnewman',
-            type = 'network',
-            microservice = i,
-            mloc = mloc,
-            mnoc = mnoc,
-            ncam = ncam,
-            imc = imc,
-            nmo = nmo,
+            fileurl = '/files/gnewman.png',
             project_id = project_id
         )
-        fms.save()
+        gi.save()
 
-    # wcbm
+        # save into db
+        if Clustering.objects.filter(project_id=project_id,algo='gnewman').count() > 0:
+            Clustering.objects.filter(project_id=project_id,algo='gnewman').delete()
 
-    for key, val in ms_ms_grp.items():
-        ms_wcbm = 0
-        ms_trm = 0
-        if S101MetricRaw.objects.filter(class_from__in=val, project_id=project_id).count() > 0:
-            cf = S101MetricRaw.objects.filter(class_from__in=val, project_id=project_id).all()
-            for cc in cf:
-                if cc.class_to not in val:
-                    ms_wcbm += cc.weight
-                    if cc.usage == 'returns':
-                        ms_trm += cc.weight
-        ms_x = ClusteringMetric.objects.filter(project_id=project_id, microservice=key, algo='gnewman').get()
-        ms_x.wcbm = ms_wcbm
-        ms_x.trm = ms_trm
-        ms_x.save()
+        i = 0
+        for nodes in list(gn_clusters):
+            for n in nodes:
+                nn = Clustering(
+                    class_name = df_nr['class_name'].values[n],
+                    cluster = i,
+                    type = 'network',
+                    algo = 'gnewman',
+                    project_id = project_id
+                )
+                nn.save()
+            i += 1
 
-    # cbm
-    
-    for key, val in ms_ms_grp.items():
-        ms_cbm = 0
-        ms_acbm = 0
- 
+        # TODO: separate as re-usable function? start ---------------------------------------------
+
+        if ClusteringMetric.objects.filter(project_id=project_id,algo='gnewman').count() > 0:
+            ClusteringMetric.objects.filter(project_id=project_id,algo='gnewman').delete()
+
+        ms_ms_grp = defaultdict(list)
+        ms_ms_len = Clustering.objects.filter(project_id=project_id,algo='gnewman').distinct('cluster').count()
         for i in range(ms_ms_len):
-            if key != i:
-                if S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_ms_grp[i], project_id=project_id):
-                    ms_cbm += 1
-                   
-                    if S101MetricRaw.objects.filter(class_from__in=ms_ms_grp[i], class_to__in=val, project_id=project_id):
-                        ms_from = S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_ms_grp[i], project_id=project_id).all()
-                        for mf in ms_from:
-                            ms_acbm += mf.weight
-                        ms_to = S101MetricRaw.objects.filter(class_from__in=ms_ms_grp[i], class_to__in=val, project_id=project_id).all()
-                        for mt in ms_to:
-                            ms_acbm += mt.weight
+            mloc = 0
+            mnoc = 0
+            ncam = 0
+            imc = 0
+            nmo = 0
+            cluster_grp = []
+            cls = Clustering.objects.filter(project_id=project_id,algo='gnewman',cluster=i).all()
+            for c in cls:
+                cm = SdMetricRaw.objects.filter(project_id=project_id,class_name=c.class_name).get()
+                mloc += cm.loc
+                mnoc += 1 
+                nmo += cm.nco
+                ncam += cm.cam
+                cluster_grp.append(c.class_name)
+                ms_ms_grp[i].append(c.class_name)
+            # imc
+            for cl in cluster_grp:
+                imc_list = S101MetricRaw.objects.filter(project_id=project_id,class_from=cl).all()
+                for il in imc_list:
+                    # if il.class_to != cl:
+                    if ((il.class_to in cluster_grp) and (il.class_to != cl)):
+                        imc += il.weight
 
-        ms_x = ClusteringMetric.objects.filter(project_id=project_id, microservice=key, algo='gnewman').get()
-        ms_x.cbm = ms_cbm
-        ms_x.acbm = ms_acbm
-        ms_x.save()
 
-    # TODO: separate as re-usable function? end ---------------------------------------------
+            ncam = ncam / mnoc
+            imc = imc       
+            
+            fms = ClusteringMetric(
+                algo = 'gnewman',
+                type = 'network',
+                microservice = i,
+                mloc = mloc,
+                mnoc = mnoc,
+                ncam = ncam,
+                imc = imc,
+                nmo = nmo,
+                project_id = project_id
+            )
+            fms.save()
+
+        # wcbm
+
+        for key, val in ms_ms_grp.items():
+            ms_wcbm = 0
+            ms_trm = 0
+            if S101MetricRaw.objects.filter(class_from__in=val, project_id=project_id).count() > 0:
+                cf = S101MetricRaw.objects.filter(class_from__in=val, project_id=project_id).all()
+                for cc in cf:
+                    if cc.class_to not in val:
+                        ms_wcbm += cc.weight
+                        if cc.usage == 'returns':
+                            ms_trm += cc.weight
+            ms_x = ClusteringMetric.objects.filter(project_id=project_id, microservice=key, algo='gnewman').get()
+            ms_x.wcbm = ms_wcbm
+            ms_x.trm = ms_trm
+            ms_x.save()
+
+        # cbm
+        
+        for key, val in ms_ms_grp.items():
+            ms_cbm = 0
+            ms_acbm = 0
+    
+            for i in range(ms_ms_len):
+                if key != i:
+                    if S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_ms_grp[i], project_id=project_id):
+                        ms_cbm += 1
+                    
+                        if S101MetricRaw.objects.filter(class_from__in=ms_ms_grp[i], class_to__in=val, project_id=project_id):
+                            ms_from = S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_ms_grp[i], project_id=project_id).all()
+                            for mf in ms_from:
+                                ms_acbm += mf.weight
+                            ms_to = S101MetricRaw.objects.filter(class_from__in=ms_ms_grp[i], class_to__in=val, project_id=project_id).all()
+                            for mt in ms_to:
+                                ms_acbm += mt.weight
+
+            ms_x = ClusteringMetric.objects.filter(project_id=project_id, microservice=key, algo='gnewman').get()
+            ms_x.cbm = ms_cbm
+            ms_x.acbm = ms_acbm
+            ms_x.save()
+
+        # TODO: separate as re-usable function? end ---------------------------------------------
+    except Exception:
+        pass
 
     # main
 
@@ -1340,8 +1604,6 @@ def scoring_initialize(request, project_id):
     project = Project.objects.get(id=project_id)
 
     # k-means
-
-    ms_kmeans = ClusteringMetric.objects.filter(project_id=project_id, algo='kmeans').order_by('microservice').all()
 
     raw_data = ClusteringMetric.objects.filter(project_id=project_id, algo='kmeans').order_by('microservice').all().values()
     df = pd.DataFrame(raw_data)
@@ -1378,8 +1640,6 @@ def scoring_initialize(request, project_id):
 
     # mean shift
 
-    ms_mean_shift = ClusteringMetric.objects.filter(project_id=project_id, algo='mean_shift').order_by('microservice').all()
-
     raw_data_ms = ClusteringMetric.objects.filter(project_id=project_id, algo='mean_shift').order_by('microservice').all().values()
     df_ms = pd.DataFrame(raw_data_ms)
     df_metric_ms = df_ms.iloc[:,4:-1]
@@ -1413,9 +1673,9 @@ def scoring_initialize(request, project_id):
         )
         normalize.save()
 
-    # fast-greedy
+    # agglomerative
 
-    raw_data_ms = ClusteringMetric.objects.filter(project_id=project_id, algo='fast_greedy').order_by('microservice').all().values()
+    raw_data_ms = ClusteringMetric.objects.filter(project_id=project_id, algo='agglomerative').order_by('microservice').all().values()
     df_ms = pd.DataFrame(raw_data_ms)
     df_metric_ms = df_ms.iloc[:,4:-1]
     # normalize
@@ -1427,8 +1687,8 @@ def scoring_initialize(request, project_id):
     df_normalize.columns = ['id','cbm','wcbm','acbm','ncam','imc','nmo','trm','mloc','mnoc']
 
     # update db
-    if ClusteringNormalize.objects.filter(project_id=project_id,algo='fast_greedy').all().count() > 0:
-        ClusteringNormalize.objects.filter(project_id=project_id,algo='fast_greedy').delete()
+    if ClusteringNormalize.objects.filter(project_id=project_id,algo='agglomerative').all().count() > 0:
+        ClusteringNormalize.objects.filter(project_id=project_id,algo='agglomerative').delete()
     
     for df_row in df_normalize.index:
         normalize = ClusteringNormalize(
@@ -1442,11 +1702,82 @@ def scoring_initialize(request, project_id):
             trm = df_normalize['trm'][df_row],
             mloc = df_normalize['mloc'][df_row],
             mnoc = df_normalize['mnoc'][df_row],
-            algo = 'fast_greedy',
-            type = 'network',
+            algo = 'agglomerative',
+            type = 'metric',
             project_id = project_id
         )
         normalize.save()
+
+    # gaussian mixture
+
+    raw_data_ms = ClusteringMetric.objects.filter(project_id=project_id, algo='gaussian').order_by('microservice').all().values()
+    df_ms = pd.DataFrame(raw_data_ms)
+    df_metric_ms = df_ms.iloc[:,4:-1]
+    # normalize
+    scaler = MinMaxScaler() 
+    scaler_feature = scaler.fit_transform(df_metric_ms)
+    df_normalize_id = df_ms.iloc[:,0:1].copy()
+    df_normalize_metric = pd.DataFrame(scaler_feature)
+    df_normalize = pd.concat([df_normalize_id, df_normalize_metric], axis=1)
+    df_normalize.columns = ['id','cbm','wcbm','acbm','ncam','imc','nmo','trm','mloc','mnoc']
+
+    # update db
+    if ClusteringNormalize.objects.filter(project_id=project_id,algo='gaussian').all().count() > 0:
+        ClusteringNormalize.objects.filter(project_id=project_id,algo='gaussian').delete()
+    
+    for df_row in df_normalize.index:
+        normalize = ClusteringNormalize(
+            microservice = df_row,
+            cbm = df_normalize['cbm'][df_row],
+            wcbm = df_normalize['wcbm'][df_row],
+            acbm = df_normalize['acbm'][df_row],
+            ncam = df_normalize['ncam'][df_row],
+            imc = df_normalize['imc'][df_row],
+            nmo = df_normalize['nmo'][df_row],
+            trm = df_normalize['trm'][df_row],
+            mloc = df_normalize['mloc'][df_row],
+            mnoc = df_normalize['mnoc'][df_row],
+            algo = 'gaussian',
+            type = 'metric',
+            project_id = project_id
+        )
+        normalize.save()
+
+    # fast-greedy
+    if ClusteringMetric.objects.filter(project_id=project_id, algo='fast_greedy').order_by('microservice').all().count() > 0:
+        raw_data_ms = ClusteringMetric.objects.filter(project_id=project_id, algo='fast_greedy').order_by('microservice').all().values()
+        df_ms = pd.DataFrame(raw_data_ms)
+        df_metric_ms = df_ms.iloc[:,4:-1]
+        # normalize
+        scaler = MinMaxScaler() 
+        scaler_feature = scaler.fit_transform(df_metric_ms)
+        df_normalize_id = df_ms.iloc[:,0:1].copy()
+        df_normalize_metric = pd.DataFrame(scaler_feature)
+        df_normalize = pd.concat([df_normalize_id, df_normalize_metric], axis=1)
+        df_normalize.columns = ['id','cbm','wcbm','acbm','ncam','imc','nmo','trm','mloc','mnoc']
+
+        # update db
+        if ClusteringNormalize.objects.filter(project_id=project_id,algo='fast_greedy').all().count() > 0:
+            ClusteringNormalize.objects.filter(project_id=project_id,algo='fast_greedy').delete()
+        
+        for df_row in df_normalize.index:
+            normalize = ClusteringNormalize(
+                microservice = df_row,
+                cbm = df_normalize['cbm'][df_row],
+                wcbm = df_normalize['wcbm'][df_row],
+                acbm = df_normalize['acbm'][df_row],
+                ncam = df_normalize['ncam'][df_row],
+                imc = df_normalize['imc'][df_row],
+                nmo = df_normalize['nmo'][df_row],
+                trm = df_normalize['trm'][df_row],
+                mloc = df_normalize['mloc'][df_row],
+                mnoc = df_normalize['mnoc'][df_row],
+                algo = 'fast_greedy',
+                type = 'network',
+                project_id = project_id
+            )
+            normalize.save()
+
 
     # louvain
 
@@ -1520,38 +1851,39 @@ def scoring_initialize(request, project_id):
 
     # girvan-newman
 
-    raw_data_ms = ClusteringMetric.objects.filter(project_id=project_id, algo='gnewman').order_by('microservice').all().values()
-    df_ms = pd.DataFrame(raw_data_ms)
-    df_metric_ms = df_ms.iloc[:,4:-1]
-    # normalize
-    scaler = MinMaxScaler() 
-    scaler_feature = scaler.fit_transform(df_metric_ms)
-    df_normalize_id = df_ms.iloc[:,0:1].copy()
-    df_normalize_metric = pd.DataFrame(scaler_feature)
-    df_normalize = pd.concat([df_normalize_id, df_normalize_metric], axis=1)
-    df_normalize.columns = ['id','cbm','wcbm','acbm','ncam','imc','nmo','trm','mloc','mnoc']
+    if ClusteringMetric.objects.filter(project_id=project_id, algo='gnewman').order_by('microservice').all().count() > 0:
+        raw_data_ms = ClusteringMetric.objects.filter(project_id=project_id, algo='gnewman').order_by('microservice').all().values()
+        df_ms = pd.DataFrame(raw_data_ms)
+        df_metric_ms = df_ms.iloc[:,4:-1]
+        # normalize
+        scaler = MinMaxScaler() 
+        scaler_feature = scaler.fit_transform(df_metric_ms)
+        df_normalize_id = df_ms.iloc[:,0:1].copy()
+        df_normalize_metric = pd.DataFrame(scaler_feature)
+        df_normalize = pd.concat([df_normalize_id, df_normalize_metric], axis=1)
+        df_normalize.columns = ['id','cbm','wcbm','acbm','ncam','imc','nmo','trm','mloc','mnoc']
 
-    # update db
-    if ClusteringNormalize.objects.filter(project_id=project_id,algo='gnewman').all().count() > 0:
-        ClusteringNormalize.objects.filter(project_id=project_id,algo='gnewman').delete()
-    
-    for df_row in df_normalize.index:
-        normalize = ClusteringNormalize(
-            microservice = df_row,
-            cbm = df_normalize['cbm'][df_row],
-            wcbm = df_normalize['wcbm'][df_row],
-            acbm = df_normalize['acbm'][df_row],
-            ncam = df_normalize['ncam'][df_row],
-            imc = df_normalize['imc'][df_row],
-            nmo = df_normalize['nmo'][df_row],
-            trm = df_normalize['trm'][df_row],
-            mloc = df_normalize['mloc'][df_row],
-            mnoc = df_normalize['mnoc'][df_row],
-            algo = 'gnewman',
-            type = 'network',
-            project_id = project_id
-        )
-        normalize.save()
+        # update db
+        if ClusteringNormalize.objects.filter(project_id=project_id,algo='gnewman').all().count() > 0:
+            ClusteringNormalize.objects.filter(project_id=project_id,algo='gnewman').delete()
+        
+        for df_row in df_normalize.index:
+            normalize = ClusteringNormalize(
+                microservice = df_row,
+                cbm = df_normalize['cbm'][df_row],
+                wcbm = df_normalize['wcbm'][df_row],
+                acbm = df_normalize['acbm'][df_row],
+                ncam = df_normalize['ncam'][df_row],
+                imc = df_normalize['imc'][df_row],
+                nmo = df_normalize['nmo'][df_row],
+                trm = df_normalize['trm'][df_row],
+                mloc = df_normalize['mloc'][df_row],
+                mnoc = df_normalize['mnoc'][df_row],
+                algo = 'gnewman',
+                type = 'network',
+                project_id = project_id
+            )
+            normalize.save()
 
     return redirect('scoring', project_id=project_id)
 
@@ -1562,6 +1894,8 @@ def scoring(request, project_id):
 
     if ScoringAverage.objects.filter(project_id=project_id).all().count() > 0:
         ScoringAverage.objects.filter(project_id=project_id).delete()
+
+    # k-mean
 
     ms_kmeans_normalize = ClusteringNormalize.objects.filter(project_id=project_id,algo='kmeans').order_by('microservice').all()
 
@@ -1606,6 +1940,8 @@ def scoring(request, project_id):
     )
     avg_ms.save()
 
+    # mean-shift
+
     ms_mean_shift_normalize = ClusteringNormalize.objects.filter(project_id=project_id,algo='mean_shift').order_by('microservice').all()
 
     avg_cbm=0
@@ -1649,7 +1985,9 @@ def scoring(request, project_id):
     )
     avg_ms.save()
 
-    ms_fast_greedy_normalize = ClusteringNormalize.objects.filter(project_id=project_id,algo='fast_greedy').order_by('microservice').all()
+    # agglomerative
+
+    ms_agglomerative_normalize = ClusteringNormalize.objects.filter(project_id=project_id,algo='agglomerative').order_by('microservice').all()
 
     avg_cbm=0
     avg_wcbm=0
@@ -1663,7 +2001,7 @@ def scoring(request, project_id):
     algo = ''
     type = ''
 
-    for ms in ms_fast_greedy_normalize:
+    for ms in ms_agglomerative_normalize:
         avg_cbm += ms.cbm
         avg_wcbm += ms.wcbm
         avg_acbm += ms.acbm
@@ -1677,20 +2015,113 @@ def scoring(request, project_id):
         type = ms.type
 
     avg_ms = ScoringAverage(
-        cbm = avg_cbm/len(ms_fast_greedy_normalize),
-        wcbm = avg_wcbm/len(ms_fast_greedy_normalize),
-        acbm = avg_acbm/len(ms_fast_greedy_normalize),
-        ncam = avg_ncam/len(ms_fast_greedy_normalize),
-        imc = avg_imc/len(ms_fast_greedy_normalize),
-        nmo = avg_nmo/len(ms_fast_greedy_normalize),
-        trm = avg_trm/len(ms_fast_greedy_normalize),
-        mloc = avg_mloc/len(ms_fast_greedy_normalize),
-        mnoc = avg_mnoc/len(ms_fast_greedy_normalize),
+        cbm = avg_cbm/len(ms_agglomerative_normalize),
+        wcbm = avg_wcbm/len(ms_agglomerative_normalize),
+        acbm = avg_acbm/len(ms_agglomerative_normalize),
+        ncam = avg_ncam/len(ms_agglomerative_normalize),
+        imc = avg_imc/len(ms_agglomerative_normalize),
+        nmo = avg_nmo/len(ms_agglomerative_normalize),
+        trm = avg_trm/len(ms_agglomerative_normalize),
+        mloc = avg_mloc/len(ms_agglomerative_normalize),
+        mnoc = avg_mnoc/len(ms_agglomerative_normalize),
         algo = algo,
         type = type,
         project_id = project_id
     )
     avg_ms.save()
+
+    # gaussian-mixture
+
+    ms_gaussian_normalize = ClusteringNormalize.objects.filter(project_id=project_id,algo='gaussian').order_by('microservice').all()
+
+    avg_cbm=0
+    avg_wcbm=0
+    avg_acbm=0
+    avg_ncam=0
+    avg_imc=0
+    avg_nmo=0
+    avg_trm=0
+    avg_mloc=0
+    avg_mnoc=0
+    algo = ''
+    type = ''
+
+    for ms in ms_gaussian_normalize:
+        avg_cbm += ms.cbm
+        avg_wcbm += ms.wcbm
+        avg_acbm += ms.acbm
+        avg_ncam += ms.ncam
+        avg_imc += ms.imc
+        avg_nmo += ms.nmo
+        avg_trm += ms.trm
+        avg_mloc += ms.mloc
+        avg_mnoc += ms.mnoc
+        algo = ms.algo
+        type = ms.type
+
+    avg_ms = ScoringAverage(
+        cbm = avg_cbm/len(ms_gaussian_normalize),
+        wcbm = avg_wcbm/len(ms_gaussian_normalize),
+        acbm = avg_acbm/len(ms_gaussian_normalize),
+        ncam = avg_ncam/len(ms_gaussian_normalize),
+        imc = avg_imc/len(ms_gaussian_normalize),
+        nmo = avg_nmo/len(ms_gaussian_normalize),
+        trm = avg_trm/len(ms_gaussian_normalize),
+        mloc = avg_mloc/len(ms_gaussian_normalize),
+        mnoc = avg_mnoc/len(ms_gaussian_normalize),
+        algo = algo,
+        type = type,
+        project_id = project_id
+    )
+    avg_ms.save()
+
+    # fast-greedy
+
+    if ClusteringNormalize.objects.filter(project_id=project_id,algo='fast_greedy').order_by('microservice').all().count() > 0:
+        ms_fast_greedy_normalize = ClusteringNormalize.objects.filter(project_id=project_id,algo='fast_greedy').order_by('microservice').all()
+
+        avg_cbm=0
+        avg_wcbm=0
+        avg_acbm=0
+        avg_ncam=0
+        avg_imc=0
+        avg_nmo=0
+        avg_trm=0
+        avg_mloc=0
+        avg_mnoc=0
+        algo = ''
+        type = ''
+
+        for ms in ms_fast_greedy_normalize:
+            avg_cbm += ms.cbm
+            avg_wcbm += ms.wcbm
+            avg_acbm += ms.acbm
+            avg_ncam += ms.ncam
+            avg_imc += ms.imc
+            avg_nmo += ms.nmo
+            avg_trm += ms.trm
+            avg_mloc += ms.mloc
+            avg_mnoc += ms.mnoc
+            algo = ms.algo
+            type = ms.type
+
+        avg_ms = ScoringAverage(
+            cbm = avg_cbm/len(ms_fast_greedy_normalize),
+            wcbm = avg_wcbm/len(ms_fast_greedy_normalize),
+            acbm = avg_acbm/len(ms_fast_greedy_normalize),
+            ncam = avg_ncam/len(ms_fast_greedy_normalize),
+            imc = avg_imc/len(ms_fast_greedy_normalize),
+            nmo = avg_nmo/len(ms_fast_greedy_normalize),
+            trm = avg_trm/len(ms_fast_greedy_normalize),
+            mloc = avg_mloc/len(ms_fast_greedy_normalize),
+            mnoc = avg_mnoc/len(ms_fast_greedy_normalize),
+            algo = algo,
+            type = type,
+            project_id = project_id
+        )
+        avg_ms.save()
+    else:
+        ms_fast_greedy_normalize = {}
 
     ms_louvain_normalize = ClusteringNormalize.objects.filter(project_id=project_id,algo='louvain').order_by('microservice').all()
 
@@ -1778,48 +2209,51 @@ def scoring(request, project_id):
     )
     avg_ms.save()
 
-    ms_girvan_newman_normalize = ClusteringNormalize.objects.filter(project_id=project_id,algo='gnewman').order_by('microservice').all()
+    if ClusteringNormalize.objects.filter(project_id=project_id,algo='gnewman').order_by('microservice').all().count() > 0:
+        ms_girvan_newman_normalize = ClusteringNormalize.objects.filter(project_id=project_id,algo='gnewman').order_by('microservice').all()
 
-    avg_cbm=0
-    avg_wcbm=0
-    avg_acbm=0
-    avg_ncam=0
-    avg_imc=0
-    avg_nmo=0
-    avg_trm=0
-    avg_mloc=0
-    avg_mnoc=0
-    algo = ''
-    type = ''
+        avg_cbm=0
+        avg_wcbm=0
+        avg_acbm=0
+        avg_ncam=0
+        avg_imc=0
+        avg_nmo=0
+        avg_trm=0
+        avg_mloc=0
+        avg_mnoc=0
+        algo = ''
+        type = ''
 
-    for ms in ms_girvan_newman_normalize:
-        avg_cbm += ms.cbm
-        avg_wcbm += ms.wcbm
-        avg_acbm += ms.acbm
-        avg_ncam += ms.ncam
-        avg_imc += ms.imc
-        avg_nmo += ms.nmo
-        avg_trm += ms.trm
-        avg_mloc += ms.mloc
-        avg_mnoc += ms.mnoc
-        algo = ms.algo
-        type = ms.type
+        for ms in ms_girvan_newman_normalize:
+            avg_cbm += ms.cbm
+            avg_wcbm += ms.wcbm
+            avg_acbm += ms.acbm
+            avg_ncam += ms.ncam
+            avg_imc += ms.imc
+            avg_nmo += ms.nmo
+            avg_trm += ms.trm
+            avg_mloc += ms.mloc
+            avg_mnoc += ms.mnoc
+            algo = ms.algo
+            type = ms.type
 
-    avg_ms = ScoringAverage(
-        cbm = avg_cbm/len(ms_girvan_newman_normalize),
-        wcbm = avg_wcbm/len(ms_girvan_newman_normalize),
-        acbm = avg_acbm/len(ms_girvan_newman_normalize),
-        ncam = avg_ncam/len(ms_girvan_newman_normalize),
-        imc = avg_imc/len(ms_girvan_newman_normalize),
-        nmo = avg_nmo/len(ms_girvan_newman_normalize),
-        trm = avg_trm/len(ms_girvan_newman_normalize),
-        mloc = avg_mloc/len(ms_girvan_newman_normalize),
-        mnoc = avg_mnoc/len(ms_girvan_newman_normalize),
-        algo = algo,
-        type = type,
-        project_id = project_id
-    )
-    avg_ms.save()
+        avg_ms = ScoringAverage(
+            cbm = avg_cbm/len(ms_girvan_newman_normalize),
+            wcbm = avg_wcbm/len(ms_girvan_newman_normalize),
+            acbm = avg_acbm/len(ms_girvan_newman_normalize),
+            ncam = avg_ncam/len(ms_girvan_newman_normalize),
+            imc = avg_imc/len(ms_girvan_newman_normalize),
+            nmo = avg_nmo/len(ms_girvan_newman_normalize),
+            trm = avg_trm/len(ms_girvan_newman_normalize),
+            mloc = avg_mloc/len(ms_girvan_newman_normalize),
+            mnoc = avg_mnoc/len(ms_girvan_newman_normalize),
+            algo = algo,
+            type = type,
+            project_id = project_id
+        )
+        avg_ms.save()
+    else:
+        ms_girvan_newman_normalize = {}
 
     # scoring for metric
 
@@ -1827,15 +2261,15 @@ def scoring(request, project_id):
         ScoringFinale.objects.filter(project_id=project_id).delete()
 
     df_metric = pd.DataFrame(ScoringAverage.objects.filter(project_id=project_id,type='metric').all().values())
-    df_metric['rank_cbm'] = df_metric['cbm'].rank()
-    df_metric['rank_wcbm'] = df_metric['wcbm'].rank()
-    df_metric['rank_acbm'] = df_metric['acbm'].rank()
+    df_metric['rank_cbm'] = df_metric['cbm'].rank(ascending=False)
+    df_metric['rank_wcbm'] = df_metric['wcbm'].rank(ascending=False)
+    df_metric['rank_acbm'] = df_metric['acbm'].rank(ascending=False)
     df_metric['rank_ncam'] = df_metric['ncam'].rank()
     df_metric['rank_imc'] = df_metric['imc'].rank()
-    df_metric['rank_nmo'] = df_metric['nmo'].rank()
-    df_metric['rank_trm'] = df_metric['trm'].rank()
-    df_metric['rank_mloc'] = df_metric['mloc'].rank()
-    df_metric['rank_mnoc'] = df_metric['mnoc'].rank()
+    df_metric['rank_nmo'] = df_metric['nmo'].rank(ascending=False)
+    df_metric['rank_trm'] = df_metric['trm'].rank(ascending=False)
+    df_metric['rank_mloc'] = df_metric['mloc'].rank(ascending=False)
+    df_metric['rank_mnoc'] = df_metric['mnoc'].rank(ascending=False)
 
     df_metric_ranked = df_metric[['algo','type','rank_cbm','rank_wcbm','rank_acbm','rank_ncam','rank_imc','rank_nmo','rank_trm','rank_mloc','rank_mnoc']].copy()
 
@@ -1852,6 +2286,9 @@ def scoring(request, project_id):
             mnoc = df_metric_ranked['rank_mnoc'][df_row],
             algo = df_metric_ranked['algo'][df_row],
             type = df_metric_ranked['type'][df_row],
+            total = df_metric_ranked['rank_cbm'][df_row] + df_metric_ranked['rank_wcbm'][df_row] + df_metric_ranked['rank_acbm'][df_row] + df_metric_ranked['rank_ncam'][df_row]
+                        + df_metric_ranked['rank_imc'][df_row] + df_metric_ranked['rank_nmo'][df_row] + df_metric_ranked['rank_trm'][df_row] + df_metric_ranked['rank_mloc'][df_row]
+                        + df_metric_ranked['rank_mnoc'][df_row],
             project_id = project_id
         )
         scoring_finale.save()
@@ -1859,15 +2296,15 @@ def scoring(request, project_id):
     # scoring network
 
     df_network = pd.DataFrame(ScoringAverage.objects.filter(project_id=project_id,type='network').all().values())
-    df_network['rank_cbm'] = df_network['cbm'].rank()
-    df_network['rank_wcbm'] = df_network['wcbm'].rank()
-    df_network['rank_acbm'] = df_network['acbm'].rank()
+    df_network['rank_cbm'] = df_network['cbm'].rank(ascending=False)
+    df_network['rank_wcbm'] = df_network['wcbm'].rank(ascending=False)
+    df_network['rank_acbm'] = df_network['acbm'].rank(ascending=False)
     df_network['rank_ncam'] = df_network['ncam'].rank()
     df_network['rank_imc'] = df_network['imc'].rank()
-    df_network['rank_nmo'] = df_network['nmo'].rank()
-    df_network['rank_trm'] = df_network['trm'].rank()
-    df_network['rank_mloc'] = df_network['mloc'].rank()
-    df_network['rank_mnoc'] = df_network['mnoc'].rank()
+    df_network['rank_nmo'] = df_network['nmo'].rank(ascending=False)
+    df_network['rank_trm'] = df_network['trm'].rank(ascending=False)
+    df_network['rank_mloc'] = df_network['mloc'].rank(ascending=False)
+    df_network['rank_mnoc'] = df_network['mnoc'].rank(ascending=False)
 
     df_network_ranked = df_network[['algo','type','rank_cbm','rank_wcbm','rank_acbm','rank_ncam','rank_imc','rank_nmo','rank_trm','rank_mloc','rank_mnoc']].copy()
 
@@ -1884,13 +2321,16 @@ def scoring(request, project_id):
             mnoc = df_network_ranked['rank_mnoc'][df_row],
             algo = df_network_ranked['algo'][df_row],
             type = df_network_ranked['type'][df_row],
+            total = df_network_ranked['rank_cbm'][df_row] + df_network_ranked['rank_wcbm'][df_row] + df_network_ranked['rank_acbm'][df_row] + df_network_ranked['rank_ncam'][df_row]
+                        + df_network_ranked['rank_imc'][df_row] + df_network_ranked['rank_nmo'][df_row] + df_network_ranked['rank_trm'][df_row] + df_network_ranked['rank_mloc'][df_row]
+                        + df_network_ranked['rank_mnoc'][df_row],
             project_id = project_id
         )
         scoring_finale.save()
 
     # get scoring rank
-    scoring_metric = ScoringFinale.objects.filter(project_id=project_id,type='metric').all()
-    scoring_network = ScoringFinale.objects.filter(project_id=project_id,type='network').all()
+    scoring_metric = ScoringFinale.objects.filter(project_id=project_id,type='metric').order_by('-total').all()
+    scoring_network = ScoringFinale.objects.filter(project_id=project_id,type='network').order_by('-total').all()
 
     data = {
         'project': project,
@@ -1898,6 +2338,8 @@ def scoring(request, project_id):
         'scoring_network': scoring_network,
         'ms_kmeans_normalize': ms_kmeans_normalize,
         'ms_mean_shift_normalize': ms_mean_shift_normalize,
+        'ms_agglomerative_normalize': ms_agglomerative_normalize,
+        'ms_gaussian_normalize': ms_gaussian_normalize,
         'ms_fast_greedy_normalize': ms_fast_greedy_normalize,
         'ms_louvain_normalize': ms_louvain_normalize,
         'ms_leiden_normalize': ms_leiden_normalize,
@@ -1910,13 +2352,53 @@ def scoring(request, project_id):
 def summary(request, project_id):
     project = Project.objects.get(id=project_id)
 
+    # overall scoring
+
+    if ScoringFinale.objects.filter(project_id=project_id, type='overall').all().count() > 0:
+        ScoringFinale.objects.filter(project_id=project_id, type='overall').delete()
+
+    df_overall = pd.DataFrame(ScoringAverage.objects.filter(project_id=project_id).all().values())
+    df_overall['rank_cbm'] = df_overall['cbm'].rank(ascending=False)
+    df_overall['rank_wcbm'] = df_overall['wcbm'].rank(ascending=False)
+    df_overall['rank_acbm'] = df_overall['acbm'].rank(ascending=False)
+    df_overall['rank_ncam'] = df_overall['ncam'].rank()
+    df_overall['rank_imc'] = df_overall['imc'].rank()
+    df_overall['rank_nmo'] = df_overall['nmo'].rank(ascending=False)
+    df_overall['rank_trm'] = df_overall['trm'].rank(ascending=False)
+    df_overall['rank_mloc'] = df_overall['mloc'].rank(ascending=False)
+    df_overall['rank_mnoc'] = df_overall['mnoc'].rank(ascending=False)
+
+    df_overall_ranked = df_overall[['algo','type','rank_cbm','rank_wcbm','rank_acbm','rank_ncam','rank_imc','rank_nmo','rank_trm','rank_mloc','rank_mnoc']].copy()
+
+    for df_row in df_overall_ranked.index:
+        scoring_finale = ScoringFinale(
+            cbm = df_overall_ranked['rank_cbm'][df_row],
+            wcbm = df_overall_ranked['rank_wcbm'][df_row],
+            acbm = df_overall_ranked['rank_acbm'][df_row],
+            ncam = df_overall_ranked['rank_ncam'][df_row],
+            imc = df_overall_ranked['rank_imc'][df_row],
+            nmo = df_overall_ranked['rank_nmo'][df_row],
+            trm = df_overall_ranked['rank_trm'][df_row],
+            mloc = df_overall_ranked['rank_mloc'][df_row],
+            mnoc = df_overall_ranked['rank_mnoc'][df_row],
+            algo = df_overall_ranked['algo'][df_row],
+            total = df_overall_ranked['rank_cbm'][df_row] + df_overall_ranked['rank_wcbm'][df_row] + df_overall_ranked['rank_acbm'][df_row] + df_overall_ranked['rank_ncam'][df_row]
+                        + df_overall_ranked['rank_imc'][df_row] + df_overall_ranked['rank_nmo'][df_row] + df_overall_ranked['rank_trm'][df_row] + df_overall_ranked['rank_mloc'][df_row]
+                        + df_overall_ranked['rank_mnoc'][df_row],
+            type = 'overall',
+            project_id = project_id
+        )
+        scoring_finale.save()
+
     # get scoring rank
-    scoring_metric = ScoringFinale.objects.filter(project_id=project_id,type='metric').all()
-    scoring_network = ScoringFinale.objects.filter(project_id=project_id,type='network').all()
+    scoring_metric = ScoringFinale.objects.filter(project_id=project_id,type='metric').order_by('-total').all()
+    scoring_network = ScoringFinale.objects.filter(project_id=project_id,type='network').order_by('-total').all()
+    scoring_overall = ScoringFinale.objects.filter(project_id=project_id,type='overall').order_by('-total').all()
 
     data = {
         'project': project,
         'scoring_metric': scoring_metric,
         'scoring_network': scoring_network,
+        'scoring_overall': scoring_overall,
     }
     return render(request, 'squality/project_summary.html', data)

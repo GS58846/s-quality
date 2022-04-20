@@ -7,6 +7,9 @@ urlpatterns = [
 
     path('squality/', views.index, name='index'),
 
+    # about
+    path('squality/about', views.about, name='about'),
+
     # Import
     path('squality/project/create', views.project_create, name='project_create'),
     path('squality/project/delete/<int:id>', views.project_delete, name='project_delete'),
