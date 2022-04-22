@@ -12,9 +12,18 @@
   <a href="{% url 'index' %}" class="btn btn-info"><i class="bi-house"></i></a>
   <a href="{% url 'scoring' project.id %}" class="btn btn-secondary">Back: Network Clustering</a>
   <h2 class="col mt-2">Summary</h2>
-
+  <p class="font-monospace"><strong>No of Classes: </strong>{{project_classes}}</p>
+  <p class="font-monospace"><strong>No of Methods: </strong>{{ project_methods.nco__sum }}</p>
+  <p class="font-monospace"><strong>Lines of Code: </strong>{{ project_loc.loc__sum }}</p>
   <hr>
   <h3>Metric-based</h3>
+  <div class="row">
+    {% for x in scoring_metric %}
+    <div class="col">
+      <img src="{{ '/files/radar_' }}{{ x.algo }}.png" class="img-fluid" alt="">
+    </div>
+      {% endfor %}
+  </div>
   <div class="row">
     <div class="col">
       <div class="table-responsive">
@@ -59,6 +68,13 @@
   <hr>
 
   <h3>Network-based</h3>
+  <div class="row">
+    {% for x in scoring_network %}
+    <div class="col">
+      <img src="{{ '/files/radar_' }}{{ x.algo }}.png" class="img-fluid" alt="">
+    </div>
+      {% endfor %}
+  </div>
   <div class="row">
     <div class="col">
       <div class="table-responsive">

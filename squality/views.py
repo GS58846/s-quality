@@ -1,6 +1,6 @@
 from collections import defaultdict
 from locale import normalize
-from django.db.models import Q
+from django.db.models import Q, Sum
 from csv import DictReader, reader
 from fileinput import filename
 from functools import reduce
@@ -12,7 +12,10 @@ import random
 import re
 from statistics import mode
 import string
+from matplotlib.pyplot import title
 import numpy as np
+import plotly.express as px
+import plotly.graph_objects as go
 import pandas as pd
 from sklearn.cluster import KMeans
 from sklearn.cluster import MeanShift
@@ -37,8 +40,9 @@ from squality.models import ClocMetric, ClocMetricRaw, ClusteringNormalize, Clus
 # Create your views here.
 
 def index(request):
+    projects = Project.objects.all()
     data = {
-        'projects': Project.objects.all()
+        'projects': projects,
     }
 
     return render(request, 'squality/index.html', data)
@@ -2351,6 +2355,9 @@ def scoring(request, project_id):
 
 def summary(request, project_id):
     project = Project.objects.get(id=project_id)
+    project_classes = SdMetricRaw.objects.filter(project_id=project_id).all().count()
+    project_methods = SdMetricRaw.objects.filter(project_id=project_id).aggregate(Sum('nco'))
+    project_loc = SdMetricRaw.objects.filter(project_id=project_id).aggregate(Sum('loc'))
 
     # overall scoring
 
@@ -2395,10 +2402,51 @@ def summary(request, project_id):
     scoring_network = ScoringFinale.objects.filter(project_id=project_id,type='network').order_by('-total').all()
     scoring_overall = ScoringFinale.objects.filter(project_id=project_id,type='overall').order_by('-total').all()
 
+    # df_metric = pd.DataFrame(ScoringFinale.objects.filter(project_id=project_id,type='metric').order_by('-total').all().values())
+
+    for sm in scoring_metric:
+        df_metric = pd.DataFrame(ScoringFinale.objects.filter(project_id=project_id,type='metric',algo=sm.algo).order_by('-total').all().values())
+        r = [
+            int(df_metric['cbm'].to_string(index=False)),
+            int(df_metric['wcbm'].to_string(index=False)),
+            int(df_metric['acbm'].to_string(index=False)),
+            int(df_metric['ncam'].to_string(index=False)),
+            int(df_metric['imc'].to_string(index=False)),
+            int(df_metric['nmo'].to_string(index=False)),
+            int(df_metric['trm'].to_string(index=False)),
+            int(df_metric['mloc'].to_string(index=False)),
+            int(df_metric['mnoc'].to_string(index=False))]
+        t = ['CBM','WCBM','ACBM','NCAM','IMC','NMO','TRM','MLOC','MNOC']
+        fig = px.line_polar(df_metric,r=r,theta=t,line_close=True, title=sm.algo)
+        fig.update_traces(fill='toself')
+        filename = 'radar_' + sm.algo
+        fig.write_image("uploads/csv/" + filename + ".png")
+
+    for sn in scoring_network:
+        df_network = pd.DataFrame(ScoringFinale.objects.filter(project_id=project_id,type='network',algo=sn.algo).order_by('-total').all().values())
+        r = [
+            int(df_network['cbm'].to_string(index=False)),
+            int(df_network['wcbm'].to_string(index=False)),
+            int(df_network['acbm'].to_string(index=False)),
+            int(df_network['ncam'].to_string(index=False)),
+            int(df_network['imc'].to_string(index=False)),
+            int(df_network['nmo'].to_string(index=False)),
+            int(df_network['trm'].to_string(index=False)),
+            int(df_network['mloc'].to_string(index=False)),
+            int(df_network['mnoc'].to_string(index=False))]
+        t = ['CBM','WCBM','ACBM','NCAM','IMC','NMO','TRM','MLOC','MNOC']
+        fig = px.line_polar(df_network,r=r,theta=t,line_close=True, title=sn.algo)
+        fig.update_traces(fill='toself')
+        filename = 'radar_' + sn.algo
+        fig.write_image("uploads/csv/" + filename + ".png")
+
     data = {
         'project': project,
         'scoring_metric': scoring_metric,
         'scoring_network': scoring_network,
         'scoring_overall': scoring_overall,
+        'project_classes': project_classes,
+        'project_loc': project_loc,
+        'project_methods': project_methods,
     }
     return render(request, 'squality/project_summary.html', data)
