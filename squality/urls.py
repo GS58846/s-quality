@@ -42,5 +42,6 @@ urlpatterns = [
 
     # Summary
     path('squality/project/summary/<int:project_id>', views.summary, name='summary'),
+    path('squality/project/summary_remarks', views.summary_remarks, name='summary_remarks'),
     
 ]

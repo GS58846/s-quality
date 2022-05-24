@@ -1,0 +1,44 @@
+﻿spring-petclinic.org.springframework.samples.petclinic.model.NamedEntity,extends,spring-petclinic.org.springframework.samples.petclinic.model.BaseEntity,2
+spring-petclinic.org.springframework.samples.petclinic.model.Person,extends,spring-petclinic.org.springframework.samples.petclinic.model.BaseEntity,2
+spring-petclinic.org.springframework.samples.petclinic.owner.Owner,calls,spring-petclinic.org.springframework.samples.petclinic.model.BaseEntity,6
+spring-petclinic.org.springframework.samples.petclinic.owner.Owner,calls,spring-petclinic.org.springframework.samples.petclinic.model.NamedEntity,1
+spring-petclinic.org.springframework.samples.petclinic.owner.Owner,extends,spring-petclinic.org.springframework.samples.petclinic.model.Person,4
+spring-petclinic.org.springframework.samples.petclinic.owner.Owner,returns,spring-petclinic.org.springframework.samples.petclinic.owner.Pet,8
+spring-petclinic.org.springframework.samples.petclinic.owner.Owner,has param,spring-petclinic.org.springframework.samples.petclinic.owner.Visit,1
+spring-petclinic.org.springframework.samples.petclinic.owner.OwnerController,calls,spring-petclinic.org.springframework.samples.petclinic.model.BaseEntity,3
+spring-petclinic.org.springframework.samples.petclinic.owner.OwnerController,calls,spring-petclinic.org.springframework.samples.petclinic.model.Person,2
+spring-petclinic.org.springframework.samples.petclinic.owner.OwnerController,returns,spring-petclinic.org.springframework.samples.petclinic.owner.Owner,13
+spring-petclinic.org.springframework.samples.petclinic.owner.OwnerController,has param,spring-petclinic.org.springframework.samples.petclinic.owner.OwnerRepository,8
+spring-petclinic.org.springframework.samples.petclinic.owner.OwnerRepository,returns,spring-petclinic.org.springframework.samples.petclinic.owner.Owner,5
+spring-petclinic.org.springframework.samples.petclinic.owner.OwnerRepository,references,spring-petclinic.org.springframework.samples.petclinic.owner.PetType,1
+spring-petclinic.org.springframework.samples.petclinic.owner.Pet,extends,spring-petclinic.org.springframework.samples.petclinic.model.NamedEntity,2
+spring-petclinic.org.springframework.samples.petclinic.owner.Pet,returns,spring-petclinic.org.springframework.samples.petclinic.owner.PetType,3
+spring-petclinic.org.springframework.samples.petclinic.owner.Pet,has param,spring-petclinic.org.springframework.samples.petclinic.owner.Visit,3
+spring-petclinic.org.springframework.samples.petclinic.owner.PetController,calls,spring-petclinic.org.springframework.samples.petclinic.model.BaseEntity,1
+spring-petclinic.org.springframework.samples.petclinic.owner.PetController,calls,spring-petclinic.org.springframework.samples.petclinic.model.NamedEntity,1
+spring-petclinic.org.springframework.samples.petclinic.owner.PetController,returns,spring-petclinic.org.springframework.samples.petclinic.owner.Owner,12
+spring-petclinic.org.springframework.samples.petclinic.owner.PetController,has param,spring-petclinic.org.springframework.samples.petclinic.owner.OwnerRepository,7
+spring-petclinic.org.springframework.samples.petclinic.owner.PetController,returns,spring-petclinic.org.springframework.samples.petclinic.owner.Pet,7
+spring-petclinic.org.springframework.samples.petclinic.owner.PetController,references,spring-petclinic.org.springframework.samples.petclinic.owner.PetType,1
+spring-petclinic.org.springframework.samples.petclinic.owner.PetController,references,spring-petclinic.org.springframework.samples.petclinic.owner.PetValidator,2
+spring-petclinic.org.springframework.samples.petclinic.owner.PetType,extends,spring-petclinic.org.springframework.samples.petclinic.model.NamedEntity,2
+spring-petclinic.org.springframework.samples.petclinic.owner.PetTypeFormatter,calls,spring-petclinic.org.springframework.samples.petclinic.model.NamedEntity,2
+spring-petclinic.org.springframework.samples.petclinic.owner.PetTypeFormatter,has param,spring-petclinic.org.springframework.samples.petclinic.owner.OwnerRepository,3
+spring-petclinic.org.springframework.samples.petclinic.owner.PetTypeFormatter,returns,spring-petclinic.org.springframework.samples.petclinic.owner.PetType,5
+spring-petclinic.org.springframework.samples.petclinic.owner.PetValidator,calls,spring-petclinic.org.springframework.samples.petclinic.model.BaseEntity,1
+spring-petclinic.org.springframework.samples.petclinic.owner.PetValidator,calls,spring-petclinic.org.springframework.samples.petclinic.model.NamedEntity,1
+spring-petclinic.org.springframework.samples.petclinic.owner.PetValidator,references,spring-petclinic.org.springframework.samples.petclinic.owner.Pet,4
+spring-petclinic.org.springframework.samples.petclinic.owner.PetValidator,references,spring-petclinic.org.springframework.samples.petclinic.owner.PetType,1
+spring-petclinic.org.springframework.samples.petclinic.owner.Visit,extends,spring-petclinic.org.springframework.samples.petclinic.model.BaseEntity,2
+spring-petclinic.org.springframework.samples.petclinic.owner.VisitController,has param,spring-petclinic.org.springframework.samples.petclinic.owner.Owner,4
+spring-petclinic.org.springframework.samples.petclinic.owner.VisitController,has param,spring-petclinic.org.springframework.samples.petclinic.owner.OwnerRepository,4
+spring-petclinic.org.springframework.samples.petclinic.owner.VisitController,references,spring-petclinic.org.springframework.samples.petclinic.owner.Pet,2
+spring-petclinic.org.springframework.samples.petclinic.owner.VisitController,returns,spring-petclinic.org.springframework.samples.petclinic.owner.Visit,3
+spring-petclinic.org.springframework.samples.petclinic.vet.Specialty,extends,spring-petclinic.org.springframework.samples.petclinic.model.NamedEntity,2
+spring-petclinic.org.springframework.samples.petclinic.vet.Vet,extends,spring-petclinic.org.springframework.samples.petclinic.model.Person,2
+spring-petclinic.org.springframework.samples.petclinic.vet.Vet,has param,spring-petclinic.org.springframework.samples.petclinic.vet.Specialty,5
+spring-petclinic.org.springframework.samples.petclinic.vet.VetController,references,spring-petclinic.org.springframework.samples.petclinic.vet.Vet,2
+spring-petclinic.org.springframework.samples.petclinic.vet.VetController,has param,spring-petclinic.org.springframework.samples.petclinic.vet.VetRepository,4
+spring-petclinic.org.springframework.samples.petclinic.vet.VetController,returns,spring-petclinic.org.springframework.samples.petclinic.vet.Vets,6
+spring-petclinic.org.springframework.samples.petclinic.vet.VetRepository,references,spring-petclinic.org.springframework.samples.petclinic.vet.Vet,3
+spring-petclinic.org.springframework.samples.petclinic.vet.Vets,references,spring-petclinic.org.springframework.samples.petclinic.vet.Vet,2

@@ -2450,3 +2450,9 @@ def summary(request, project_id):
         'project_methods': project_methods,
     }
     return render(request, 'squality/project_summary.html', data)
+
+def summary_remarks(request: HttpRequest):
+    project_id = request.POST['pid']
+    return redirect('summary', project_id=project_id)
+
+    
