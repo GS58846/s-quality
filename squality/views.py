@@ -559,17 +559,17 @@ def clustering_metric(request, project_id):
 
         # mcd
         sample_sum += (mnoc - sample_mean)**2
-        print(str(i) + ' sample sum ' + str((mnoc - sample_mean)**2))
+        # print(str(i) + ' sample sum ' + str((mnoc - sample_mean)**2))
 
-    print('sample sum ' + str(sample_sum))
+    # print('sample sum ' + str(sample_sum))
     sample_variance = sample_sum / (class_count - 1)
-    print('sample_variance ' + str(sample_variance))
+    # print('sample_variance ' + str(sample_variance))
     sample_std_deviation = math.sqrt(sample_variance)
-    print('sample std deviation ' + str(sample_std_deviation))
+    # print('sample std deviation ' + str(sample_std_deviation))
     lower_bound = sample_mean - sample_std_deviation 
     higher_bound = sample_mean + sample_std_deviation
-    print('ned bound ' + str(lower_bound) + ',' + str(higher_bound))
-    print('-------------------------------------')
+    # print('ned bound ' + str(lower_bound) + ',' + str(higher_bound))
+    # print('-------------------------------------')
 
     # assigning is_ned based on calculated std_deviation
     ms_ned = ClusteringMetric.objects.filter(algo='kmeans', project_id=project_id).all()
@@ -1183,7 +1183,9 @@ def clustering_network(request, project_id):
     visual_style['margin'] = 50
     visual_style['edge_curved'] = False
 
+    #####################
     # fast greedy
+    #####################
 
     try:
         fg_clusters = edgelist.community_fastgreedy().as_clustering()
@@ -1227,13 +1229,18 @@ def clustering_network(request, project_id):
 
         # TODO: separate as re-usable function? start ---------------------------------------------
 
-        sample_sum = 0
 
         if ClusteringMetric.objects.filter(project_id=project_id,algo='fast_greedy').count() > 0:
             ClusteringMetric.objects.filter(project_id=project_id,algo='fast_greedy').delete()
 
         ms_ms_grp = defaultdict(list)
         ms_ms_len = Clustering.objects.filter(project_id=project_id,algo='fast_greedy').distinct('cluster').count()
+
+        sample_sum_nx = 0
+        class_count_nx = len(sdm)
+        sample_mean_nx = class_count_nx / ms_ms_len
+        # print('nx average ' + str(sample_mean_nx))
+
         for i in range(ms_ms_len):
             mloc = 0
             mnoc = 0
@@ -1275,19 +1282,27 @@ def clustering_network(request, project_id):
             )
             fms.save()
 
-        #     # mcd
-        #     sample_sum += (mnoc - sample_mean)**2
-        #     # print(str(i) + ' sample sum ' + str((mnoc - sample_mean)**2))
+            # mcd
+            sample_sum_nx += (mnoc - sample_mean_nx)**2
+    
+        # print('sample sum nx ' + str(sample_sum_nx))
+        sample_variance_nx = sample_sum_nx / (class_count_nx - 1)
+        # print('sample_variance nx ' + str(sample_variance_nx))
+        sample_std_deviation_nx = math.sqrt(sample_variance_nx)
+        # print('sample std deviation nx ' + str(sample_std_deviation_nx))
+        lower_bound_nx = sample_mean_nx - sample_std_deviation_nx 
+        higher_bound_nx = sample_mean_nx + sample_std_deviation_nx
+        # print('ned bound nx ' + str(lower_bound_nx) + ',' + str(higher_bound_nx))
+        # print('-------------------------------------')
 
-        # # print('sample sum ' + str(sample_sum))
-        # sample_variance = sample_sum / (class_count - 1)
-        # # print('sample_variance ' + str(sample_variance))
-        # sample_std_deviation = math.sqrt(sample_variance)
-        # # print('sample std deviation ' + str(sample_std_deviation))
-        # lower_bound = sample_mean - sample_std_deviation 
-        # higher_bound = sample_mean + sample_std_deviation
-        # # print('ned bound ' + str(lower_bound) + ',' + str(higher_bound))
-        # # print('-------------------------------------')
+        # assigning is_ned based on calculated std_deviation
+        msnx_ned = ClusteringMetric.objects.filter(algo='fast_greedy', project_id=project_id).all()
+        for mn in msnx_ned:
+            if mn.mnoc <= higher_bound_nx and mn.mnoc >= lower_bound_nx:
+                # print('ms ' + str(mn.microservice) + ' is ned')
+                mn.is_ned = 1
+                mn.save()
+
 
         # wcbm
 
@@ -1334,7 +1349,9 @@ def clustering_network(request, project_id):
     except Exception:
         pass
 
+    ###############
     # louvain
+    ###############
 
     lv_clusters = edgelist.community_multilevel()
     # print(lv_clusters)
@@ -1374,6 +1391,11 @@ def clustering_network(request, project_id):
 
     ms_ms_grp = defaultdict(list)
     ms_ms_len = Clustering.objects.filter(project_id=project_id,algo='louvain').distinct('cluster').count()
+
+    sample_sum_nx = 0
+    class_count_nx = len(sdm)
+    sample_mean_nx = class_count_nx / ms_ms_len
+
     for i in range(ms_ms_len):
         mloc = 0
         mnoc = 0
@@ -1415,6 +1437,27 @@ def clustering_network(request, project_id):
         )
         fms.save()
 
+        # mcd
+        sample_sum_nx += (mnoc - sample_mean_nx)**2
+    
+    # print('sample sum nx ' + str(sample_sum_nx))
+    sample_variance_nx = sample_sum_nx / (class_count_nx - 1)
+    # print('sample_variance nx ' + str(sample_variance_nx))
+    sample_std_deviation_nx = math.sqrt(sample_variance_nx)
+    # print('sample std deviation nx ' + str(sample_std_deviation_nx))
+    lower_bound_nx = sample_mean_nx - sample_std_deviation_nx 
+    higher_bound_nx = sample_mean_nx + sample_std_deviation_nx
+    # print('ned bound nx ' + str(lower_bound_nx) + ',' + str(higher_bound_nx))
+    # print('-------------------------------------')
+
+    # assigning is_ned based on calculated std_deviation
+    msnx_ned = ClusteringMetric.objects.filter(algo='louvain', project_id=project_id).all()
+    for mn in msnx_ned:
+        if mn.mnoc <= higher_bound_nx and mn.mnoc >= lower_bound_nx:
+            # print('ms ' + str(mn.microservice) + ' is ned')
+            mn.is_ned = 1
+            mn.save()
+
     # wcbm
 
     for key, val in ms_ms_grp.items():
@@ -1458,7 +1501,9 @@ def clustering_network(request, project_id):
 
     # TODO: separate as re-usable function? end ---------------------------------------------
 
+    ##############
     # leiden
+    ##############
 
     le_clusters = edgelist.community_leiden(objective_function="modularity")
     le_pal = igraph.drawing.colors.ClusterColoringPalette(len(le_clusters))
@@ -1497,6 +1542,11 @@ def clustering_network(request, project_id):
 
     ms_ms_grp = defaultdict(list)
     ms_ms_len = Clustering.objects.filter(project_id=project_id,algo='leiden').distinct('cluster').count()
+
+    sample_sum_nx = 0
+    class_count_nx = len(sdm)
+    sample_mean_nx = class_count_nx / ms_ms_len
+
     for i in range(ms_ms_len):
         mloc = 0
         mnoc = 0
@@ -1538,6 +1588,27 @@ def clustering_network(request, project_id):
         )
         fms.save()
 
+        # mcd
+        sample_sum_nx += (mnoc - sample_mean_nx)**2
+    
+    # print('sample sum nx ' + str(sample_sum_nx))
+    sample_variance_nx = sample_sum_nx / (class_count_nx - 1)
+    # print('sample_variance nx ' + str(sample_variance_nx))
+    sample_std_deviation_nx = math.sqrt(sample_variance_nx)
+    # print('sample std deviation nx ' + str(sample_std_deviation_nx))
+    lower_bound_nx = sample_mean_nx - sample_std_deviation_nx 
+    higher_bound_nx = sample_mean_nx + sample_std_deviation_nx
+    # print('ned bound nx ' + str(lower_bound_nx) + ',' + str(higher_bound_nx))
+    # print('-------------------------------------')
+
+    # assigning is_ned based on calculated std_deviation
+    msnx_ned = ClusteringMetric.objects.filter(algo='leiden', project_id=project_id).all()
+    for mn in msnx_ned:
+        if mn.mnoc <= higher_bound_nx and mn.mnoc >= lower_bound_nx:
+            # print('ms ' + str(mn.microservice) + ' is ned')
+            mn.is_ned = 1
+            mn.save()
+
     # wcbm
 
     for key, val in ms_ms_grp.items():
@@ -1581,7 +1652,9 @@ def clustering_network(request, project_id):
 
     # TODO: separate as re-usable function? end ---------------------------------------------
 
+    ####################
     # girvan-newman
+    ####################
  
     try:
         gn_clusters = edgelist.community_edge_betweenness().as_clustering()
@@ -1622,6 +1695,11 @@ def clustering_network(request, project_id):
 
         ms_ms_grp = defaultdict(list)
         ms_ms_len = Clustering.objects.filter(project_id=project_id,algo='gnewman').distinct('cluster').count()
+
+        sample_sum_nx = 0
+        class_count_nx = len(sdm)
+        sample_mean_nx = class_count_nx / ms_ms_len
+
         for i in range(ms_ms_len):
             mloc = 0
             mnoc = 0
@@ -1662,6 +1740,27 @@ def clustering_network(request, project_id):
                 project_id = project_id
             )
             fms.save()
+
+            # mcd
+            sample_sum_nx += (mnoc - sample_mean_nx)**2
+        
+        # print('sample sum nx ' + str(sample_sum_nx))
+        sample_variance_nx = sample_sum_nx / (class_count_nx - 1)
+        # print('sample_variance nx ' + str(sample_variance_nx))
+        sample_std_deviation_nx = math.sqrt(sample_variance_nx)
+        # print('sample std deviation nx ' + str(sample_std_deviation_nx))
+        lower_bound_nx = sample_mean_nx - sample_std_deviation_nx 
+        higher_bound_nx = sample_mean_nx + sample_std_deviation_nx
+        # print('ned bound nx ' + str(lower_bound_nx) + ',' + str(higher_bound_nx))
+        # print('-------------------------------------')
+
+        # assigning is_ned based on calculated std_deviation
+        msnx_ned = ClusteringMetric.objects.filter(algo='gnewman', project_id=project_id).all()
+        for mn in msnx_ned:
+            if mn.mnoc <= higher_bound_nx and mn.mnoc >= lower_bound_nx:
+                # print('ms ' + str(mn.microservice) + ' is ned')
+                mn.is_ned = 1
+                mn.save()
 
         # wcbm
 
