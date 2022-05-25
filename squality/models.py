@@ -112,6 +112,7 @@ class ClusteringMetric(models.Model):
     trm = models.IntegerField(default=0)
     mloc = models.IntegerField(default=0)
     mnoc = models.IntegerField(default=0)
+    is_ned = models.IntegerField(default=0)
     project_id = models.IntegerField()
 
 # class NetworkMetric(models.Model):

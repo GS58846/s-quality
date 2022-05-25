@@ -448,13 +448,17 @@ def clustering_metric(request, project_id):
     else:
         state = ''
 
+    ######################
     # k-mean
+    ######################
 
     raw_data = MetricNormalize.objects.filter(project_id=project_id).all().values()
     df = pd.DataFrame(raw_data)
     df_metric = df.iloc[:,2:-2]
 
     class_count = MetricNormalize.objects.order_by('class_name').filter(project_id=project_id).count()
+
+    print('class count = ' + str(class_count))
 
     # the elbow method
     kmeans_args = {
@@ -475,6 +479,10 @@ def clustering_metric(request, project_id):
 
     k_value = KneeLocator(range(1,class_count), sse_list, curve="convex", direction="decreasing")
     k_value.elbow  
+
+    # sample mean / average
+    sample_mean = class_count / k_value.elbow
+    print('sample mean = ' + str(sample_mean))
     
     kmeans_minmax = KMeans(k_value.elbow).fit(df_metric)
     kmeans_clusters = kmeans_minmax.fit_predict(df_metric)
@@ -504,6 +512,8 @@ def clustering_metric(request, project_id):
     if ClusteringMetric.objects.filter(project_id=project_id,algo='kmeans').count() > 0:
         ClusteringMetric.objects.filter(project_id=project_id,algo='kmeans').delete()
 
+    sample_sum = 0
+
     ms_grp = defaultdict(list)
     ms_len = Clustering.objects.filter(project_id=project_id,algo='kmeans').distinct('cluster').count()
     for i in range(ms_len):
@@ -532,7 +542,7 @@ def clustering_metric(request, project_id):
 
 
         ncam = ncam / mnoc
-        imc = imc       
+        imc = imc 
         
         fms = ClusteringMetric(
             algo = 'kmeans',
@@ -546,6 +556,28 @@ def clustering_metric(request, project_id):
             project_id = project_id
         )
         fms.save()
+
+        # mcd
+        sample_sum += (mnoc - sample_mean)**2
+        print(str(i) + ' sample sum ' + str((mnoc - sample_mean)**2))
+
+    print('sample sum ' + str(sample_sum))
+    sample_variance = sample_sum / (class_count - 1)
+    print('sample_variance ' + str(sample_variance))
+    sample_std_deviation = math.sqrt(sample_variance)
+    print('sample std deviation ' + str(sample_std_deviation))
+    lower_bound = sample_mean - sample_std_deviation 
+    higher_bound = sample_mean + sample_std_deviation
+    print('ned bound ' + str(lower_bound) + ',' + str(higher_bound))
+    print('-------------------------------------')
+
+    # assigning is_ned based on calculated std_deviation
+    ms_ned = ClusteringMetric.objects.filter(algo='kmeans', project_id=project_id).all()
+    for mn in ms_ned:
+        if mn.mnoc <= higher_bound and mn.mnoc >= lower_bound:
+            print('ms ' + str(mn.microservice) + ' is ned')
+            mn.is_ned = 1
+            mn.save()
 
     # wcbm
 
@@ -608,7 +640,9 @@ def clustering_metric(request, project_id):
  
     # print(ms_grp[0])
 
+    ######################
     # mean-shift
+    ######################
 
     mshift = MeanShift()
     mshift_cluster = mshift.fit_predict(df_metric)
@@ -639,6 +673,10 @@ def clustering_metric(request, project_id):
 
     ms_ms_grp = defaultdict(list)
     ms_ms_len = Clustering.objects.filter(project_id=project_id,algo='mean_shift').distinct('cluster').count()
+
+    sample_nxsum = 0
+    sample_mean_nx = class_count / ms_ms_len
+
     for i in range(ms_ms_len):
         mloc = 0
         mnoc = 0
@@ -679,6 +717,28 @@ def clustering_metric(request, project_id):
             project_id = project_id
         )
         fms.save()
+
+        # mcd
+        sample_nxsum += (mnoc - sample_mean_nx)**2
+
+    # print('sample mean nx ' + str(sample_mean_nx))    
+    # print('sample sum nx ' + str(sample_nxsum))
+    samplenx_variance = sample_nxsum / (class_count - 1)
+    # print('sample_variance nx ' + str(samplenx_variance))
+    samplenx_std_deviation = math.sqrt(samplenx_variance)
+    # print('sample std deviation nx ' + str(samplenx_std_deviation))
+    lower_bound_nx = sample_mean_nx - samplenx_std_deviation 
+    higher_bound_nx = sample_mean_nx + samplenx_std_deviation
+    # print('ned bound nx ' + str(lower_bound_nx) + ',' + str(higher_bound_nx))
+    # print('-------------------------------------')
+
+    # assigning is_ned based on calculated std_deviation
+    msnx_ned = ClusteringMetric.objects.filter(algo='mean_shift', project_id=project_id).all()
+    for mn in msnx_ned:
+        if mn.mnoc <= higher_bound_nx and mn.mnoc >= lower_bound_nx:
+            # print('ms ' + str(mn.microservice) + ' is ned')
+            mn.is_ned = 1
+            mn.save()
 
     # wcbm
 
@@ -748,6 +808,8 @@ def clustering_metric(request, project_id):
     # agglomerative summary
     # TODO: separate as re-usable function? start ---------------------------------------------
 
+    sample_sum = 0
+
     if ClusteringMetric.objects.filter(project_id=project_id,algo='agglomerative').count() > 0:
         ClusteringMetric.objects.filter(project_id=project_id,algo='agglomerative').delete()
 
@@ -793,6 +855,28 @@ def clustering_metric(request, project_id):
             project_id = project_id
         )
         fms.save()
+
+        # mcd
+        sample_sum += (mnoc - sample_mean)**2
+        # print(str(i) + ' sample sum ' + str((mnoc - sample_mean)**2))
+
+    # print('sample sum ' + str(sample_sum))
+    sample_variance = sample_sum / (class_count - 1)
+    # print('sample_variance ' + str(sample_variance))
+    sample_std_deviation = math.sqrt(sample_variance)
+    # print('sample std deviation ' + str(sample_std_deviation))
+    lower_bound = sample_mean - sample_std_deviation 
+    higher_bound = sample_mean + sample_std_deviation
+    # print('ned bound ' + str(lower_bound) + ',' + str(higher_bound))
+    # print('-------------------------------------')
+
+    # assigning is_ned based on calculated std_deviation
+    ms_ned = ClusteringMetric.objects.filter(algo='agglomerative', project_id=project_id).all()
+    for mn in ms_ned:
+        if mn.mnoc <= higher_bound and mn.mnoc >= lower_bound:
+            # print('ms ' + str(mn.microservice) + ' is ned')
+            mn.is_ned = 1
+            mn.save()
 
     # wcbm
 
@@ -863,6 +947,8 @@ def clustering_metric(request, project_id):
     # gaussian summary
     # TODO: separate as re-usable function? start ---------------------------------------------
 
+    sample_sum = 0
+
     if ClusteringMetric.objects.filter(project_id=project_id,algo='gaussian').count() > 0:
         ClusteringMetric.objects.filter(project_id=project_id,algo='gaussian').delete()
 
@@ -908,6 +994,28 @@ def clustering_metric(request, project_id):
             project_id = project_id
         )
         fms.save()
+
+        # mcd
+        sample_sum += (mnoc - sample_mean)**2
+        # print(str(i) + ' sample sum ' + str((mnoc - sample_mean)**2))
+
+    # print('sample sum ' + str(sample_sum))
+    sample_variance = sample_sum / (class_count - 1)
+    # print('sample_variance ' + str(sample_variance))
+    sample_std_deviation = math.sqrt(sample_variance)
+    # print('sample std deviation ' + str(sample_std_deviation))
+    lower_bound = sample_mean - sample_std_deviation 
+    higher_bound = sample_mean + sample_std_deviation
+    # print('ned bound ' + str(lower_bound) + ',' + str(higher_bound))
+    # print('-------------------------------------')
+
+    # assigning is_ned based on calculated std_deviation
+    ms_ned = ClusteringMetric.objects.filter(algo='gaussian', project_id=project_id).all()
+    for mn in ms_ned:
+        if mn.mnoc <= higher_bound and mn.mnoc >= lower_bound:
+            # print('ms ' + str(mn.microservice) + ' is ned')
+            mn.is_ned = 1
+            mn.save()
 
     # wcbm
 
@@ -1119,6 +1227,8 @@ def clustering_network(request, project_id):
 
         # TODO: separate as re-usable function? start ---------------------------------------------
 
+        sample_sum = 0
+
         if ClusteringMetric.objects.filter(project_id=project_id,algo='fast_greedy').count() > 0:
             ClusteringMetric.objects.filter(project_id=project_id,algo='fast_greedy').delete()
 
@@ -1164,6 +1274,20 @@ def clustering_network(request, project_id):
                 project_id = project_id
             )
             fms.save()
+
+        #     # mcd
+        #     sample_sum += (mnoc - sample_mean)**2
+        #     # print(str(i) + ' sample sum ' + str((mnoc - sample_mean)**2))
+
+        # # print('sample sum ' + str(sample_sum))
+        # sample_variance = sample_sum / (class_count - 1)
+        # # print('sample_variance ' + str(sample_variance))
+        # sample_std_deviation = math.sqrt(sample_variance)
+        # # print('sample std deviation ' + str(sample_std_deviation))
+        # lower_bound = sample_mean - sample_std_deviation 
+        # higher_bound = sample_mean + sample_std_deviation
+        # # print('ned bound ' + str(lower_bound) + ',' + str(higher_bound))
+        # # print('-------------------------------------')
 
         # wcbm
 
