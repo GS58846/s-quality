@@ -1,4 +1,5 @@
 from collections import defaultdict
+import csv
 from locale import normalize
 from django.db.models import Q, Sum
 from csv import DictReader, reader
@@ -442,6 +443,20 @@ def migrate_raw_normalize(request, project_id):
 def clustering_metric(request, project_id):
     project = Project.objects.get(id=project_id)
     sdmetric_data = MetricNormalize.objects.order_by('class_name').all().filter(project_id=project_id)
+
+    # save for export data
+    export_metric = 'EXPORT-METRIC.csv' #str(random.choices(string.ascii_uppercase + string.digits, k = 10)) + '.csv'
+    csv_folder = os.path.join(settings.BASE_DIR, 'uploads/csv/')
+    local_csv = csv_folder
+    with open(local_csv+export_metric, 'w', newline='') as f_handle:
+        writer = csv.writer(f_handle)
+        # Add the header/column names
+        header = ['classname','CBO','IC','OC','CAM','NCO','DIT','RFC','LOC','NCA']
+        writer.writerow(header)
+        # Iterate over `data`  and  write to the csv file
+        for sd in sdmetric_data:
+            row = [sd.class_name,sd.cbo,sd.ic,sd.oc,sd.cam,sd.nco,sd.dit,sd.rfc,sd.loc,sd.nca]
+            writer.writerow(row)
 
     if MetricNormalize.objects.order_by('class_name').filter(project_id=project_id, normalized=1).count() > 0:
         state = 'disabled'
@@ -1083,6 +1098,7 @@ def clustering_metric(request, project_id):
         'agglomerative_group': agglomerative_group,
         'gaussian_group': gaussian_group,
         'ms_gaussian': ms_gaussian,
+        'export_metric': export_metric
     }
 
     return render(request, 'squality/project_cluster_metric.html', data)
