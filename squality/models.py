@@ -11,6 +11,17 @@ class Project(models.Model):
 
 # Input
 
+class EaMetric(models.Model):
+    filename = models.TextField(unique=True)
+    fileurl = models.TextField()
+    created_at = models.DateTimeField(auto_now=True)
+    # csvfile = models.FileField(upload_to='csv')
+
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f'{self.filename}'
+
 class SdMetric(models.Model):
     filename = models.TextField(unique=True)
     fileurl = models.TextField()
@@ -47,6 +58,11 @@ class S101Metric(models.Model):
 
 # Collected metrics
 
+class EaMethod(models.Model):
+    class_name = models.TextField()
+    method_name = models.TextField()
+    project_id = models.IntegerField()
+
 class SdMetricRaw(models.Model):
     class_name = models.TextField()
     cbo = models.IntegerField(default=0, blank=True, null=True)
@@ -59,6 +75,7 @@ class SdMetricRaw(models.Model):
     loc = models.IntegerField(default=0, blank=True, null=True)
     nca = models.IntegerField(default=0, blank=True, null=True)
     project_id = models.IntegerField()
+    xmi_id = models.TextField()
 
 class MetricNormalize(models.Model):
     class_name = models.TextField()

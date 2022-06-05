@@ -14,6 +14,7 @@ urlpatterns = [
     path('squality/project/create', views.project_create, name='project_create'),
     path('squality/project/delete/<int:id>', views.project_delete, name='project_delete'),
     path('squality/project/details/<int:id>', views.project_details, name='project_details'),
+    path('squality/project/details/<int:id>/eaupload', views.ea_upload, name='eametrics_upload'),
     path('squality/project/details/<int:id>/sdupload', views.sdmetrics_upload, name='sdmetrics_upload'),
     path('squality/project/details/<int:id>/s101upload', views.s101_upload, name='s101_upload'),
     path('squality/project/details/<int:id>/clocupload', views.cloc_upload, name='cloc_upload'),

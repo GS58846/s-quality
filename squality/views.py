@@ -1,5 +1,6 @@
 from collections import defaultdict
 import csv
+from bs4 import BeautifulSoup
 from locale import normalize
 from django.db.models import Q, Sum
 from csv import DictReader, reader
@@ -35,7 +36,7 @@ from igraph import *
 from sklearn.metrics import silhouette_score
 
 
-from squality.models import ClocMetric, ClocMetricRaw, ClusteringNormalize, Clustering, ClusteringMetric, GraphImages, MetricNormalize, Project, S101Metric, S101MetricRaw, ScoringAverage, ScoringFinale, SdMetric, SdMetricRaw
+from squality.models import ClocMetric, ClocMetricRaw, ClusteringNormalize, Clustering, ClusteringMetric, EaMethod, EaMetric, GraphImages, MetricNormalize, Project, S101Metric, S101MetricRaw, ScoringAverage, ScoringFinale, SdMetric, SdMetricRaw
 
 
 # Create your views here.
@@ -80,30 +81,51 @@ def project_details(request, id):
     try:
         project = Project.objects.get(id=id)
 
+        eao = EaMetric.objects.filter(project=project)
         sdo = SdMetric.objects.filter(project=project)
         s101o = S101Metric.objects.filter(project=project)
         cloco = ClocMetric.objects.filter(project=project)
 
+        completed_file = 0
+
+        if eao.count() > 0:
+            eametric_file = eao.get()
+            completed_file += 1
+        else:
+            eametric_file = False
+
         if sdo.count() > 0:
             sdmetric_file = sdo.get()
+            completed_file += 1
         else:
             sdmetric_file = False
 
         if s101o.count() > 0:
             s101_file = s101o.get()
+            completed_file += 1
         else:
             s101_file = False
 
         if cloco.count() > 0:
             cloco_file = cloco.get()
+            completed_file += 1
         else:
             cloco_file = False
 
+        if completed_file != 4:
+            btn_state = 'disabled'
+        else:
+            btn_state = ''
+
+        print('button state '+btn_state)
+
         data = {
             'project': project,
+            'eametric_file': eametric_file,
             'sdmetric_file': sdmetric_file,
             's101_file': s101_file,
-            'cloc_file': cloco_file
+            'cloc_file': cloco_file,
+            'btn_state': btn_state
         }
 
         return render(request, 'squality/project_details.html', data)
@@ -112,6 +134,35 @@ def project_details(request, id):
 
 
 # EXTRACT
+
+def ea_upload(request, id):
+    if request.method == 'POST' and request.FILES['eaupload']:
+
+        # upload csv file
+        upload = request.FILES['eaupload']
+        fss = FileSystemStorage()
+        new_name = 'EA-'+''.join(random.choices(string.ascii_uppercase + string.digits, k = 10)) + '.xml'
+        file = fss.save(new_name, upload)
+        file_url = fss.url(file)
+
+        project = Project.objects.get(id=id)
+
+        if EaMetric.objects.filter(project=project).count() > 0:
+            p = EaMetric.objects.filter(project=project).get()
+            p.filename = new_name
+            p.fileurl = file_url
+            p.save()
+
+        else:
+            eametric = EaMetric(
+                filename = new_name,
+                fileurl = file_url,
+                project = Project.objects.get(id=id)
+            )
+            eametric.save()
+
+        return redirect('project_details', id=id)
+    return redirect('/squality')
 
 def sdmetrics_upload(request, id):
     if request.method == 'POST' and request.FILES['sdupload']:
@@ -162,6 +213,7 @@ def sdmetrics_upload(request, id):
                 # sdmetric_raw.loc = row['LOC']
                 sdmetric_raw.nca = row['NumAttr']
                 sdmetric_raw.project_id = id
+                sdmetric_raw.xmi_id = row['xmi_id']
                 sdmetric_raw.save()
 
         return redirect('project_details', id=id)
@@ -438,7 +490,42 @@ def migrate_raw_normalize(request, project_id):
             project_id = project_id
         )
         normalize_data.save()
+
+    # extract methods for selected classes
+    extract_methods(project_id)
+
     return redirect('clustering_metric', project_id=project_id)
+
+def extract_methods(project_id):
+    if EaMethod.objects.filter(project_id=project_id).count() > 0:
+        EaMethod.objects.filter(project_id=project_id).delete()
+
+    xml_name = EaMetric.objects.filter(project_id=project_id).get().filename
+    # print('xml filename: '+xml_name)
+
+    local_xml = os.path.join(settings.BASE_DIR, 'uploads/csv/' + xml_name)
+    with open(local_xml, 'r') as f:
+        ea_xml = f.read()
+
+    soup = BeautifulSoup(ea_xml, 'xml')
+
+    classes_list = SdMetricRaw.objects.filter(project_id=project_id).all()
+    for cl in classes_list:
+        class_context = soup.find_all('Foundation.Core.Class', {'xmi.id':cl.xmi_id})
+        class_name = soup.find('Foundation.Core.Class', {'xmi.id':cl.xmi_id}).find('Foundation.Core.ModelElement.name').text
+        # print('['+class_name+']')
+        for cc in class_context:
+            ops = cc.find_all('Foundation.Core.Operation')
+            for op in ops:
+                op_name = op.find('Foundation.Core.ModelElement.name').text
+                # print(op_name)
+                methods = EaMethod(
+                    class_name = class_name,
+                    method_name = op_name,
+                    project_id = project_id
+                )
+                methods.save()
+
 
 def clustering_metric(request, project_id):
     project = Project.objects.get(id=project_id)
