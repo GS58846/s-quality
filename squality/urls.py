@@ -37,6 +37,9 @@ urlpatterns = [
     # Cluster Network
     path('squality/project/cluster/<int:project_id>/network', views.clustering_network, name='clustering_network'),
 
+    # Cluster Combo
+    path('squality/project/cluster/<int:project_id>/combo', views.clustering_combo, name='clustering_combo'),
+
     # Scoring
     path('squality/project/scoring/<int:project_id>/initialize', views.scoring_initialize, name='scoring_initialize'),
     path('squality/project/scoring/<int:project_id>', views.scoring, name='scoring'),

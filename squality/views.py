@@ -532,7 +532,7 @@ def clustering_metric(request, project_id):
     sdmetric_data = MetricNormalize.objects.order_by('class_name').all().filter(project_id=project_id)
 
     # save for export data
-    export_metric = 'EXPORT-METRIC.csv' #str(random.choices(string.ascii_uppercase + string.digits, k = 10)) + '.csv'
+    export_metric = 'EXPORT-METRIC.csv'
     csv_folder = os.path.join(settings.BASE_DIR, 'uploads/csv/')
     local_csv = csv_folder
     with open(local_csv+export_metric, 'w', newline='') as f_handle:
@@ -886,7 +886,10 @@ def clustering_metric(request, project_id):
 
     # TODO: separate as re-usable function? end ---------------------------------------------
 
+    ###################
     # agglomerative
+    ###################
+
     agglomerative = AgglomerativeClustering(k_value.elbow)
     agglomerative_cluster = agglomerative.fit_predict(df_metric)
     df_agglomerative = df.iloc[:,1:2].copy()
@@ -1024,7 +1027,9 @@ def clustering_metric(request, project_id):
 
     # TODO: separate as re-usable function? end ---------------------------------------------
 
+    #######################
     # gaussian mixture
+    #######################
 
     gaussian = GaussianMixture(k_value.elbow)
     gaussian_cluster = gaussian.fit_predict(df_metric)
@@ -1224,7 +1229,6 @@ def clustering_normalize(request, project_id):
         normalize.save()
 
     return redirect('clustering_metric', project_id=project_id)
-    # return render(request, 'squality/project_test.html',context=mydict)
 
 
 def clustering_network(request, project_id):
@@ -1931,14 +1935,179 @@ def clustering_network(request, project_id):
     }
     return render(request, 'squality/project_cluster_network.html', data)
 
-def scoring_initialize(request, project_id):
+def clustering_combo(request, project_id):
+
     project = Project.objects.get(id=project_id)
 
-    #################
-    # k-means
-    #################
+    if Clustering.objects.filter(project_id=project_id,algo='ga_kmeans').count() > 0:
+            Clustering.objects.filter(project_id=project_id,algo='ga_kmeans').delete()
 
-    raw_data = ClusteringMetric.objects.filter(project_id=project_id, algo='kmeans').order_by('microservice').all().values()
+    # read combo csv file
+    combo_csv = "uploads/weka/jpetstore-combo.csv"
+    with open(combo_csv, mode='r', encoding="utf-8-sig") as csv_file:
+        csv_reader = DictReader(csv_file)
+        for row in csv_reader:
+            # print(row['class_name'])
+            cf = Clustering()
+            cf.class_name = row['class_name']
+            cf.cluster = row['cluster']
+            cf.type = row['type']
+            cf.algo = 'ga_kmeans'
+            cf.project_id = project_id
+            cf.save()
+
+    # calculate clustering metric
+    clustering_metric_calculation(project_id, 'combo', 'ga_kmeans')
+
+    # display
+    ga_kmeans_group = Clustering.objects.filter(project_id=project_id,algo='ga_kmeans').order_by('cluster').all()
+    ms_ga_kmeans = ClusteringMetric.objects.filter(project_id=project_id, algo='ga_kmeans').order_by('microservice').all()
+
+    data = {
+        'project': project,
+        'ga_kmeans': ms_ga_kmeans,
+        'ga_kmeans_group': ga_kmeans_group
+    }
+
+    return render(request, 'squality/project_cluster_combo.html', data)
+
+
+###################
+# START: reusable #
+###################
+
+def clustering_metric_calculation(project_id, type, algo):
+
+    if ClusteringMetric.objects.filter(project_id=project_id,algo=algo).count() > 0:
+        ClusteringMetric.objects.filter(project_id=project_id,algo=algo).delete()
+
+    sample_sum = 0
+
+    ms_grp = defaultdict(list)
+    ms_len = Clustering.objects.filter(project_id=project_id,algo=algo).distinct('cluster').count()
+
+    class_count = MetricNormalize.objects.order_by('class_name').filter(project_id=project_id).count()
+
+    # sample mean / average
+    sample_mean = class_count / ms_len
+    # print('sample mean for combo = ' + str(sample_mean))
+
+    for i in range(ms_len):
+        mloc = 0
+        mnoc = 0
+        ncam = 0
+        imc = 0
+        nmo = 0
+        cluster_grp = []
+        cls = Clustering.objects.filter(project_id=project_id,algo=algo,cluster=i).all()
+        for c in cls:
+            cm = SdMetricRaw.objects.filter(project_id=project_id,class_name=c.class_name).get()
+            mloc += cm.loc
+            mnoc += 1 
+            nmo += cm.nco
+            ncam += cm.cam
+            cluster_grp.append(c.class_name)
+            ms_grp[i].append(c.class_name)
+        # imc
+        for cl in cluster_grp:
+            imc_list = S101MetricRaw.objects.filter(project_id=project_id,class_from=cl).all()
+            for il in imc_list:
+                # if il.class_to != cl:
+                if ((il.class_to in cluster_grp) and (il.class_to != cl)):
+                    imc += il.weight
+
+
+        ncam = ncam / mnoc
+        imc = imc 
+        
+        fms = ClusteringMetric(
+            algo = algo,
+            type = type,
+            microservice = i,
+            mloc = mloc,
+            mnoc = mnoc,
+            ncam = ncam,
+            imc = imc,
+            nmo = nmo,
+            project_id = project_id
+        )
+        fms.save()
+
+        # mcd
+        sample_sum += (mnoc - sample_mean)**2
+        # print(str(i) + ' sample sum ' + str((mnoc - sample_mean)**2))
+
+    # print('sample sum ' + str(sample_sum))
+    sample_variance = sample_sum / (class_count - 1)
+    # print('sample_variance ' + str(sample_variance))
+    sample_std_deviation = math.sqrt(sample_variance)
+    # print('sample std deviation ' + str(sample_std_deviation))
+    lower_bound = sample_mean - sample_std_deviation 
+    higher_bound = sample_mean + sample_std_deviation
+    # print('ned bound ' + str(lower_bound) + ',' + str(higher_bound))
+    # print('-------------------------------------')
+
+    # assigning is_ned based on calculated std_deviation
+    ms_ned = ClusteringMetric.objects.filter(algo=algo, project_id=project_id).all()
+    for mn in ms_ned:
+        if mn.mnoc <= higher_bound and mn.mnoc >= lower_bound:
+            # print('ms ' + str(mn.microservice) + ' is ned')
+            mn.is_ned = 1
+            mn.save()
+
+    # wcbm
+
+    for key, val in ms_grp.items():
+        ms_wcbm = 0
+        ms_trm = 0
+        if S101MetricRaw.objects.filter(class_from__in=val, project_id=project_id).count() > 0:
+            cf = S101MetricRaw.objects.filter(class_from__in=val, project_id=project_id).all()
+            for cc in cf:
+                if cc.class_to not in val:
+                    ms_wcbm += cc.weight
+                    if cc.usage == 'returns':
+                        ms_trm += cc.weight
+        ms_x = ClusteringMetric.objects.filter(project_id=project_id, microservice=key, algo=algo).get()
+        ms_x.wcbm = ms_wcbm
+        ms_x.trm = ms_trm
+        ms_x.save()
+
+    # cbm
+    
+    for key, val in ms_grp.items():
+        ms_cbm = 0
+        ms_acbm = 0
+        # print('MS'+str(key)+' ===========================================')
+        # print(val)
+        for i in range(ms_len):
+            if key != i:
+                if S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_grp[i], project_id=project_id):
+                    ms_cbm += 1
+                   
+                    if S101MetricRaw.objects.filter(class_from__in=ms_grp[i], class_to__in=val, project_id=project_id):
+                        # print('     MS'+str(i)) 
+                        # print(ms_grp[i])
+                        # print('---------------')
+                        ms_from = S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_grp[i], project_id=project_id).all()
+                        for mf in ms_from:
+                            ms_acbm += mf.weight
+                            # print(mf.class_from + '-' + str(mf.weight))
+                        # print('...............')
+                        ms_to = S101MetricRaw.objects.filter(class_from__in=ms_grp[i], class_to__in=val, project_id=project_id).all()
+                        for mt in ms_to:
+                            ms_acbm += mt.weight
+                            # print(mt.class_from + '-' + str(mt.weight))
+
+        ms_x = ClusteringMetric.objects.filter(project_id=project_id, microservice=key, algo=algo).get()
+        ms_x.cbm = ms_cbm
+        ms_x.acbm = ms_acbm
+        ms_x.save()
+
+    return 'OK'
+
+def normalize_minmax(project_id, type, algo):
+
+    raw_data = ClusteringMetric.objects.filter(project_id=project_id, algo=algo).order_by('microservice').all().values()
     df = pd.DataFrame(raw_data)
     df_metric = df.iloc[:,4:-2]
     # normalize
@@ -1950,8 +2119,8 @@ def scoring_initialize(request, project_id):
     df_normalize.columns = ['id','cbm','wcbm','acbm','ncam','imc','nmo','trm','mloc','mnoc']
 
     # update db
-    if ClusteringNormalize.objects.filter(project_id=project_id,algo='kmeans').all().count() > 0:
-        ClusteringNormalize.objects.filter(project_id=project_id,algo='kmeans').delete()
+    if ClusteringNormalize.objects.filter(project_id=project_id,algo=algo).all().count() > 0:
+        ClusteringNormalize.objects.filter(project_id=project_id,algo=algo).delete()
     
     for df_row in df_normalize.index:
         normalize = ClusteringNormalize(
@@ -1965,274 +2134,334 @@ def scoring_initialize(request, project_id):
             trm = df_normalize['trm'][df_row],
             mloc = df_normalize['mloc'][df_row],
             mnoc = df_normalize['mnoc'][df_row],
-            algo = 'kmeans',
-            type = 'metric',
+            algo = algo,
+            type = type,
             project_id = project_id
         )
         normalize.save()
+
+#################
+# END: reusable #
+#################
+
+def scoring_initialize(request, project_id):
+    # project = Project.objects.get(id=project_id)
+
+    metric_algo = ['kmeans', 'mean_shift', 'agglomerative', 'gaussian']
+
+    for ma in metric_algo:
+        normalize_minmax(project_id, 'metric', ma)
+
+    network_algo = ['fast_greedy', 'louvain', 'leiden', 'gnewman']
+
+    for na in network_algo:
+        normalize_minmax(project_id, 'network', na)
+
+    combo_algo = ['ga_kmeans']
+
+    for ca in combo_algo:
+        normalize_minmax(project_id, 'combo', ca)
+
+    #################
+    # k-means
+    #################
+
+    # raw_data = ClusteringMetric.objects.filter(project_id=project_id, algo='kmeans').order_by('microservice').all().values()
+    # df = pd.DataFrame(raw_data)
+    # df_metric = df.iloc[:,4:-2]
+    # # normalize
+    # scaler = MinMaxScaler() 
+    # scaler_feature = scaler.fit_transform(df_metric)
+    # df_normalize_id = df.iloc[:,0:1].copy()
+    # df_normalize_metric = pd.DataFrame(scaler_feature)
+    # df_normalize = pd.concat([df_normalize_id, df_normalize_metric], axis=1)
+    # df_normalize.columns = ['id','cbm','wcbm','acbm','ncam','imc','nmo','trm','mloc','mnoc']
+
+    # # update db
+    # if ClusteringNormalize.objects.filter(project_id=project_id,algo='kmeans').all().count() > 0:
+    #     ClusteringNormalize.objects.filter(project_id=project_id,algo='kmeans').delete()
+    
+    # for df_row in df_normalize.index:
+    #     normalize = ClusteringNormalize(
+    #         microservice = df_row,
+    #         cbm = df_normalize['cbm'][df_row],
+    #         wcbm = df_normalize['wcbm'][df_row],
+    #         acbm = df_normalize['acbm'][df_row],
+    #         ncam = df_normalize['ncam'][df_row],
+    #         imc = df_normalize['imc'][df_row],
+    #         nmo = df_normalize['nmo'][df_row],
+    #         trm = df_normalize['trm'][df_row],
+    #         mloc = df_normalize['mloc'][df_row],
+    #         mnoc = df_normalize['mnoc'][df_row],
+    #         algo = 'kmeans',
+    #         type = 'metric',
+    #         project_id = project_id
+    #     )
+    #     normalize.save()
 
     ################
     # mean shift
     ################
 
-    raw_data_ms = ClusteringMetric.objects.filter(project_id=project_id, algo='mean_shift').order_by('microservice').all().values()
-    df_ms = pd.DataFrame(raw_data_ms)
-    df_metric_ms = df_ms.iloc[:,4:-2]
-    # normalize
-    scaler = MinMaxScaler() 
-    scaler_feature = scaler.fit_transform(df_metric_ms)
-    df_normalize_id = df_ms.iloc[:,0:1].copy()
-    df_normalize_metric = pd.DataFrame(scaler_feature)
-    df_normalize = pd.concat([df_normalize_id, df_normalize_metric], axis=1)
-    df_normalize.columns = ['id','cbm','wcbm','acbm','ncam','imc','nmo','trm','mloc','mnoc']
+    # raw_data_ms = ClusteringMetric.objects.filter(project_id=project_id, algo='mean_shift').order_by('microservice').all().values()
+    # df_ms = pd.DataFrame(raw_data_ms)
+    # df_metric_ms = df_ms.iloc[:,4:-2]
+    # # normalize
+    # scaler = MinMaxScaler() 
+    # scaler_feature = scaler.fit_transform(df_metric_ms)
+    # df_normalize_id = df_ms.iloc[:,0:1].copy()
+    # df_normalize_metric = pd.DataFrame(scaler_feature)
+    # df_normalize = pd.concat([df_normalize_id, df_normalize_metric], axis=1)
+    # df_normalize.columns = ['id','cbm','wcbm','acbm','ncam','imc','nmo','trm','mloc','mnoc']
 
-    # update db
-    if ClusteringNormalize.objects.filter(project_id=project_id,algo='mean_shift').all().count() > 0:
-        ClusteringNormalize.objects.filter(project_id=project_id,algo='mean_shift').delete()
+    # # update db
+    # if ClusteringNormalize.objects.filter(project_id=project_id,algo='mean_shift').all().count() > 0:
+    #     ClusteringNormalize.objects.filter(project_id=project_id,algo='mean_shift').delete()
     
-    for df_row in df_normalize.index:
-        normalize = ClusteringNormalize(
-            microservice = df_row,
-            cbm = df_normalize['cbm'][df_row],
-            wcbm = df_normalize['wcbm'][df_row],
-            acbm = df_normalize['acbm'][df_row],
-            ncam = df_normalize['ncam'][df_row],
-            imc = df_normalize['imc'][df_row],
-            nmo = df_normalize['nmo'][df_row],
-            trm = df_normalize['trm'][df_row],
-            mloc = df_normalize['mloc'][df_row],
-            mnoc = df_normalize['mnoc'][df_row],
-            algo = 'mean_shift',
-            type = 'metric',
-            project_id = project_id
-        )
-        normalize.save()
+    # for df_row in df_normalize.index:
+    #     normalize = ClusteringNormalize(
+    #         microservice = df_row,
+    #         cbm = df_normalize['cbm'][df_row],
+    #         wcbm = df_normalize['wcbm'][df_row],
+    #         acbm = df_normalize['acbm'][df_row],
+    #         ncam = df_normalize['ncam'][df_row],
+    #         imc = df_normalize['imc'][df_row],
+    #         nmo = df_normalize['nmo'][df_row],
+    #         trm = df_normalize['trm'][df_row],
+    #         mloc = df_normalize['mloc'][df_row],
+    #         mnoc = df_normalize['mnoc'][df_row],
+    #         algo = 'mean_shift',
+    #         type = 'metric',
+    #         project_id = project_id
+    #     )
+    #     normalize.save()
 
     ####################
     # agglomerative
     ####################
 
-    raw_data_ms = ClusteringMetric.objects.filter(project_id=project_id, algo='agglomerative').order_by('microservice').all().values()
-    df_ms = pd.DataFrame(raw_data_ms)
-    df_metric_ms = df_ms.iloc[:,4:-2]
-    # normalize
-    scaler = MinMaxScaler() 
-    scaler_feature = scaler.fit_transform(df_metric_ms)
-    df_normalize_id = df_ms.iloc[:,0:1].copy()
-    df_normalize_metric = pd.DataFrame(scaler_feature)
-    df_normalize = pd.concat([df_normalize_id, df_normalize_metric], axis=1)
-    df_normalize.columns = ['id','cbm','wcbm','acbm','ncam','imc','nmo','trm','mloc','mnoc']
+    # raw_data_ms = ClusteringMetric.objects.filter(project_id=project_id, algo='agglomerative').order_by('microservice').all().values()
+    # df_ms = pd.DataFrame(raw_data_ms)
+    # df_metric_ms = df_ms.iloc[:,4:-2]
+    # # normalize
+    # scaler = MinMaxScaler() 
+    # scaler_feature = scaler.fit_transform(df_metric_ms)
+    # df_normalize_id = df_ms.iloc[:,0:1].copy()
+    # df_normalize_metric = pd.DataFrame(scaler_feature)
+    # df_normalize = pd.concat([df_normalize_id, df_normalize_metric], axis=1)
+    # df_normalize.columns = ['id','cbm','wcbm','acbm','ncam','imc','nmo','trm','mloc','mnoc']
 
-    # update db
-    if ClusteringNormalize.objects.filter(project_id=project_id,algo='agglomerative').all().count() > 0:
-        ClusteringNormalize.objects.filter(project_id=project_id,algo='agglomerative').delete()
+    # # update db
+    # if ClusteringNormalize.objects.filter(project_id=project_id,algo='agglomerative').all().count() > 0:
+    #     ClusteringNormalize.objects.filter(project_id=project_id,algo='agglomerative').delete()
     
-    for df_row in df_normalize.index:
-        normalize = ClusteringNormalize(
-            microservice = df_row,
-            cbm = df_normalize['cbm'][df_row],
-            wcbm = df_normalize['wcbm'][df_row],
-            acbm = df_normalize['acbm'][df_row],
-            ncam = df_normalize['ncam'][df_row],
-            imc = df_normalize['imc'][df_row],
-            nmo = df_normalize['nmo'][df_row],
-            trm = df_normalize['trm'][df_row],
-            mloc = df_normalize['mloc'][df_row],
-            mnoc = df_normalize['mnoc'][df_row],
-            algo = 'agglomerative',
-            type = 'metric',
-            project_id = project_id
-        )
-        normalize.save()
+    # for df_row in df_normalize.index:
+    #     normalize = ClusteringNormalize(
+    #         microservice = df_row,
+    #         cbm = df_normalize['cbm'][df_row],
+    #         wcbm = df_normalize['wcbm'][df_row],
+    #         acbm = df_normalize['acbm'][df_row],
+    #         ncam = df_normalize['ncam'][df_row],
+    #         imc = df_normalize['imc'][df_row],
+    #         nmo = df_normalize['nmo'][df_row],
+    #         trm = df_normalize['trm'][df_row],
+    #         mloc = df_normalize['mloc'][df_row],
+    #         mnoc = df_normalize['mnoc'][df_row],
+    #         algo = 'agglomerative',
+    #         type = 'metric',
+    #         project_id = project_id
+    #     )
+    #     normalize.save()
 
     ####################
     # gaussian mixture
     ####################
 
-    raw_data_ms = ClusteringMetric.objects.filter(project_id=project_id, algo='gaussian').order_by('microservice').all().values()
-    df_ms = pd.DataFrame(raw_data_ms)
-    df_metric_ms = df_ms.iloc[:,4:-2]
-    # normalize
-    scaler = MinMaxScaler() 
-    scaler_feature = scaler.fit_transform(df_metric_ms)
-    df_normalize_id = df_ms.iloc[:,0:1].copy()
-    df_normalize_metric = pd.DataFrame(scaler_feature)
-    df_normalize = pd.concat([df_normalize_id, df_normalize_metric], axis=1)
-    df_normalize.columns = ['id','cbm','wcbm','acbm','ncam','imc','nmo','trm','mloc','mnoc']
+    # raw_data_ms = ClusteringMetric.objects.filter(project_id=project_id, algo='gaussian').order_by('microservice').all().values()
+    # df_ms = pd.DataFrame(raw_data_ms)
+    # df_metric_ms = df_ms.iloc[:,4:-2]
+    # # normalize
+    # scaler = MinMaxScaler() 
+    # scaler_feature = scaler.fit_transform(df_metric_ms)
+    # df_normalize_id = df_ms.iloc[:,0:1].copy()
+    # df_normalize_metric = pd.DataFrame(scaler_feature)
+    # df_normalize = pd.concat([df_normalize_id, df_normalize_metric], axis=1)
+    # df_normalize.columns = ['id','cbm','wcbm','acbm','ncam','imc','nmo','trm','mloc','mnoc']
 
-    # update db
-    if ClusteringNormalize.objects.filter(project_id=project_id,algo='gaussian').all().count() > 0:
-        ClusteringNormalize.objects.filter(project_id=project_id,algo='gaussian').delete()
+    # # update db
+    # if ClusteringNormalize.objects.filter(project_id=project_id,algo='gaussian').all().count() > 0:
+    #     ClusteringNormalize.objects.filter(project_id=project_id,algo='gaussian').delete()
     
-    for df_row in df_normalize.index:
-        normalize = ClusteringNormalize(
-            microservice = df_row,
-            cbm = df_normalize['cbm'][df_row],
-            wcbm = df_normalize['wcbm'][df_row],
-            acbm = df_normalize['acbm'][df_row],
-            ncam = df_normalize['ncam'][df_row],
-            imc = df_normalize['imc'][df_row],
-            nmo = df_normalize['nmo'][df_row],
-            trm = df_normalize['trm'][df_row],
-            mloc = df_normalize['mloc'][df_row],
-            mnoc = df_normalize['mnoc'][df_row],
-            algo = 'gaussian',
-            type = 'metric',
-            project_id = project_id
-        )
-        normalize.save()
+    # for df_row in df_normalize.index:
+    #     normalize = ClusteringNormalize(
+    #         microservice = df_row,
+    #         cbm = df_normalize['cbm'][df_row],
+    #         wcbm = df_normalize['wcbm'][df_row],
+    #         acbm = df_normalize['acbm'][df_row],
+    #         ncam = df_normalize['ncam'][df_row],
+    #         imc = df_normalize['imc'][df_row],
+    #         nmo = df_normalize['nmo'][df_row],
+    #         trm = df_normalize['trm'][df_row],
+    #         mloc = df_normalize['mloc'][df_row],
+    #         mnoc = df_normalize['mnoc'][df_row],
+    #         algo = 'gaussian',
+    #         type = 'metric',
+    #         project_id = project_id
+    #     )
+    #     normalize.save()
 
     ####################
     # fast-greedy
     ####################
     
-    if ClusteringMetric.objects.filter(project_id=project_id, algo='fast_greedy').order_by('microservice').all().count() > 0:
-        raw_data_ms = ClusteringMetric.objects.filter(project_id=project_id, algo='fast_greedy').order_by('microservice').all().values()
-        df_ms = pd.DataFrame(raw_data_ms)
-        df_metric_ms = df_ms.iloc[:,4:-2]
-        # normalize
-        scaler = MinMaxScaler() 
-        scaler_feature = scaler.fit_transform(df_metric_ms)
-        df_normalize_id = df_ms.iloc[:,0:1].copy()
-        df_normalize_metric = pd.DataFrame(scaler_feature)
-        df_normalize = pd.concat([df_normalize_id, df_normalize_metric], axis=1)
-        df_normalize.columns = ['id','cbm','wcbm','acbm','ncam','imc','nmo','trm','mloc','mnoc']
+    # if ClusteringMetric.objects.filter(project_id=project_id, algo='fast_greedy').order_by('microservice').all().count() > 0:
+    #     raw_data_ms = ClusteringMetric.objects.filter(project_id=project_id, algo='fast_greedy').order_by('microservice').all().values()
+    #     df_ms = pd.DataFrame(raw_data_ms)
+    #     df_metric_ms = df_ms.iloc[:,4:-2]
+    #     # normalize
+    #     scaler = MinMaxScaler() 
+    #     scaler_feature = scaler.fit_transform(df_metric_ms)
+    #     df_normalize_id = df_ms.iloc[:,0:1].copy()
+    #     df_normalize_metric = pd.DataFrame(scaler_feature)
+    #     df_normalize = pd.concat([df_normalize_id, df_normalize_metric], axis=1)
+    #     df_normalize.columns = ['id','cbm','wcbm','acbm','ncam','imc','nmo','trm','mloc','mnoc']
 
-        # update db
-        if ClusteringNormalize.objects.filter(project_id=project_id,algo='fast_greedy').all().count() > 0:
-            ClusteringNormalize.objects.filter(project_id=project_id,algo='fast_greedy').delete()
+    #     # update db
+    #     if ClusteringNormalize.objects.filter(project_id=project_id,algo='fast_greedy').all().count() > 0:
+    #         ClusteringNormalize.objects.filter(project_id=project_id,algo='fast_greedy').delete()
         
-        for df_row in df_normalize.index:
-            normalize = ClusteringNormalize(
-                microservice = df_row,
-                cbm = df_normalize['cbm'][df_row],
-                wcbm = df_normalize['wcbm'][df_row],
-                acbm = df_normalize['acbm'][df_row],
-                ncam = df_normalize['ncam'][df_row],
-                imc = df_normalize['imc'][df_row],
-                nmo = df_normalize['nmo'][df_row],
-                trm = df_normalize['trm'][df_row],
-                mloc = df_normalize['mloc'][df_row],
-                mnoc = df_normalize['mnoc'][df_row],
-                algo = 'fast_greedy',
-                type = 'network',
-                project_id = project_id
-            )
-            normalize.save()
+    #     for df_row in df_normalize.index:
+    #         normalize = ClusteringNormalize(
+    #             microservice = df_row,
+    #             cbm = df_normalize['cbm'][df_row],
+    #             wcbm = df_normalize['wcbm'][df_row],
+    #             acbm = df_normalize['acbm'][df_row],
+    #             ncam = df_normalize['ncam'][df_row],
+    #             imc = df_normalize['imc'][df_row],
+    #             nmo = df_normalize['nmo'][df_row],
+    #             trm = df_normalize['trm'][df_row],
+    #             mloc = df_normalize['mloc'][df_row],
+    #             mnoc = df_normalize['mnoc'][df_row],
+    #             algo = 'fast_greedy',
+    #             type = 'network',
+    #             project_id = project_id
+    #         )
+    #         normalize.save()
 
     ####################
     # louvain
     ####################
 
-    raw_data_ms = ClusteringMetric.objects.filter(project_id=project_id, algo='louvain').order_by('microservice').all().values()
-    df_ms = pd.DataFrame(raw_data_ms)
-    df_metric_ms = df_ms.iloc[:,4:-2]
-    # normalize
-    scaler = MinMaxScaler() 
-    scaler_feature = scaler.fit_transform(df_metric_ms)
-    df_normalize_id = df_ms.iloc[:,0:1].copy()
-    df_normalize_metric = pd.DataFrame(scaler_feature)
-    df_normalize = pd.concat([df_normalize_id, df_normalize_metric], axis=1)
-    df_normalize.columns = ['id','cbm','wcbm','acbm','ncam','imc','nmo','trm','mloc','mnoc']
+    # raw_data_ms = ClusteringMetric.objects.filter(project_id=project_id, algo='louvain').order_by('microservice').all().values()
+    # df_ms = pd.DataFrame(raw_data_ms)
+    # df_metric_ms = df_ms.iloc[:,4:-2]
+    # # normalize
+    # scaler = MinMaxScaler() 
+    # scaler_feature = scaler.fit_transform(df_metric_ms)
+    # df_normalize_id = df_ms.iloc[:,0:1].copy()
+    # df_normalize_metric = pd.DataFrame(scaler_feature)
+    # df_normalize = pd.concat([df_normalize_id, df_normalize_metric], axis=1)
+    # df_normalize.columns = ['id','cbm','wcbm','acbm','ncam','imc','nmo','trm','mloc','mnoc']
 
-    # update db
-    if ClusteringNormalize.objects.filter(project_id=project_id,algo='louvain').all().count() > 0:
-        ClusteringNormalize.objects.filter(project_id=project_id,algo='louvain').delete()
+    # # update db
+    # if ClusteringNormalize.objects.filter(project_id=project_id,algo='louvain').all().count() > 0:
+    #     ClusteringNormalize.objects.filter(project_id=project_id,algo='louvain').delete()
     
-    for df_row in df_normalize.index:
-        normalize = ClusteringNormalize(
-            microservice = df_row,
-            cbm = df_normalize['cbm'][df_row],
-            wcbm = df_normalize['wcbm'][df_row],
-            acbm = df_normalize['acbm'][df_row],
-            ncam = df_normalize['ncam'][df_row],
-            imc = df_normalize['imc'][df_row],
-            nmo = df_normalize['nmo'][df_row],
-            trm = df_normalize['trm'][df_row],
-            mloc = df_normalize['mloc'][df_row],
-            mnoc = df_normalize['mnoc'][df_row],
-            algo = 'louvain',
-            type = 'network',
-            project_id = project_id
-        )
-        normalize.save()
+    # for df_row in df_normalize.index:
+    #     normalize = ClusteringNormalize(
+    #         microservice = df_row,
+    #         cbm = df_normalize['cbm'][df_row],
+    #         wcbm = df_normalize['wcbm'][df_row],
+    #         acbm = df_normalize['acbm'][df_row],
+    #         ncam = df_normalize['ncam'][df_row],
+    #         imc = df_normalize['imc'][df_row],
+    #         nmo = df_normalize['nmo'][df_row],
+    #         trm = df_normalize['trm'][df_row],
+    #         mloc = df_normalize['mloc'][df_row],
+    #         mnoc = df_normalize['mnoc'][df_row],
+    #         algo = 'louvain',
+    #         type = 'network',
+    #         project_id = project_id
+    #     )
+    #     normalize.save()
 
     ####################
     # leiden
     ####################
 
-    raw_data_ms = ClusteringMetric.objects.filter(project_id=project_id, algo='leiden').order_by('microservice').all().values()
-    df_ms = pd.DataFrame(raw_data_ms)
-    df_metric_ms = df_ms.iloc[:,4:-2]
-    # normalize
-    scaler = MinMaxScaler() 
-    scaler_feature = scaler.fit_transform(df_metric_ms)
-    df_normalize_id = df_ms.iloc[:,0:1].copy()
-    df_normalize_metric = pd.DataFrame(scaler_feature)
-    df_normalize = pd.concat([df_normalize_id, df_normalize_metric], axis=1)
-    df_normalize.columns = ['id','cbm','wcbm','acbm','ncam','imc','nmo','trm','mloc','mnoc']
+    # raw_data_ms = ClusteringMetric.objects.filter(project_id=project_id, algo='leiden').order_by('microservice').all().values()
+    # df_ms = pd.DataFrame(raw_data_ms)
+    # df_metric_ms = df_ms.iloc[:,4:-2]
+    # # normalize
+    # scaler = MinMaxScaler() 
+    # scaler_feature = scaler.fit_transform(df_metric_ms)
+    # df_normalize_id = df_ms.iloc[:,0:1].copy()
+    # df_normalize_metric = pd.DataFrame(scaler_feature)
+    # df_normalize = pd.concat([df_normalize_id, df_normalize_metric], axis=1)
+    # df_normalize.columns = ['id','cbm','wcbm','acbm','ncam','imc','nmo','trm','mloc','mnoc']
 
-    # update db
-    if ClusteringNormalize.objects.filter(project_id=project_id,algo='leiden').all().count() > 0:
-        ClusteringNormalize.objects.filter(project_id=project_id,algo='leiden').delete()
+    # # update db
+    # if ClusteringNormalize.objects.filter(project_id=project_id,algo='leiden').all().count() > 0:
+    #     ClusteringNormalize.objects.filter(project_id=project_id,algo='leiden').delete()
     
-    for df_row in df_normalize.index:
-        normalize = ClusteringNormalize(
-            microservice = df_row,
-            cbm = df_normalize['cbm'][df_row],
-            wcbm = df_normalize['wcbm'][df_row],
-            acbm = df_normalize['acbm'][df_row],
-            ncam = df_normalize['ncam'][df_row],
-            imc = df_normalize['imc'][df_row],
-            nmo = df_normalize['nmo'][df_row],
-            trm = df_normalize['trm'][df_row],
-            mloc = df_normalize['mloc'][df_row],
-            mnoc = df_normalize['mnoc'][df_row],
-            algo = 'leiden',
-            type = 'network',
-            project_id = project_id
-        )
-        normalize.save()
+    # for df_row in df_normalize.index:
+    #     normalize = ClusteringNormalize(
+    #         microservice = df_row,
+    #         cbm = df_normalize['cbm'][df_row],
+    #         wcbm = df_normalize['wcbm'][df_row],
+    #         acbm = df_normalize['acbm'][df_row],
+    #         ncam = df_normalize['ncam'][df_row],
+    #         imc = df_normalize['imc'][df_row],
+    #         nmo = df_normalize['nmo'][df_row],
+    #         trm = df_normalize['trm'][df_row],
+    #         mloc = df_normalize['mloc'][df_row],
+    #         mnoc = df_normalize['mnoc'][df_row],
+    #         algo = 'leiden',
+    #         type = 'network',
+    #         project_id = project_id
+    #     )
+    #     normalize.save()
 
     ####################
     # girvan-newman
     ####################
 
-    if ClusteringMetric.objects.filter(project_id=project_id, algo='gnewman').order_by('microservice').all().count() > 0:
-        raw_data_ms = ClusteringMetric.objects.filter(project_id=project_id, algo='gnewman').order_by('microservice').all().values()
-        df_ms = pd.DataFrame(raw_data_ms)
-        df_metric_ms = df_ms.iloc[:,4:-2]
-        # normalize
-        scaler = MinMaxScaler() 
-        scaler_feature = scaler.fit_transform(df_metric_ms)
-        df_normalize_id = df_ms.iloc[:,0:1].copy()
-        df_normalize_metric = pd.DataFrame(scaler_feature)
-        df_normalize = pd.concat([df_normalize_id, df_normalize_metric], axis=1)
-        df_normalize.columns = ['id','cbm','wcbm','acbm','ncam','imc','nmo','trm','mloc','mnoc']
+    # if ClusteringMetric.objects.filter(project_id=project_id, algo='gnewman').order_by('microservice').all().count() > 0:
+    #     raw_data_ms = ClusteringMetric.objects.filter(project_id=project_id, algo='gnewman').order_by('microservice').all().values()
+    #     df_ms = pd.DataFrame(raw_data_ms)
+    #     df_metric_ms = df_ms.iloc[:,4:-2]
+    #     # normalize
+    #     scaler = MinMaxScaler() 
+    #     scaler_feature = scaler.fit_transform(df_metric_ms)
+    #     df_normalize_id = df_ms.iloc[:,0:1].copy()
+    #     df_normalize_metric = pd.DataFrame(scaler_feature)
+    #     df_normalize = pd.concat([df_normalize_id, df_normalize_metric], axis=1)
+    #     df_normalize.columns = ['id','cbm','wcbm','acbm','ncam','imc','nmo','trm','mloc','mnoc']
 
-        # update db
-        if ClusteringNormalize.objects.filter(project_id=project_id,algo='gnewman').all().count() > 0:
-            ClusteringNormalize.objects.filter(project_id=project_id,algo='gnewman').delete()
+    #     # update db
+    #     if ClusteringNormalize.objects.filter(project_id=project_id,algo='gnewman').all().count() > 0:
+    #         ClusteringNormalize.objects.filter(project_id=project_id,algo='gnewman').delete()
         
-        for df_row in df_normalize.index:
-            normalize = ClusteringNormalize(
-                microservice = df_row,
-                cbm = df_normalize['cbm'][df_row],
-                wcbm = df_normalize['wcbm'][df_row],
-                acbm = df_normalize['acbm'][df_row],
-                ncam = df_normalize['ncam'][df_row],
-                imc = df_normalize['imc'][df_row],
-                nmo = df_normalize['nmo'][df_row],
-                trm = df_normalize['trm'][df_row],
-                mloc = df_normalize['mloc'][df_row],
-                mnoc = df_normalize['mnoc'][df_row],
-                algo = 'gnewman',
-                type = 'network',
-                project_id = project_id
-            )
-            normalize.save()
+    #     for df_row in df_normalize.index:
+    #         normalize = ClusteringNormalize(
+    #             microservice = df_row,
+    #             cbm = df_normalize['cbm'][df_row],
+    #             wcbm = df_normalize['wcbm'][df_row],
+    #             acbm = df_normalize['acbm'][df_row],
+    #             ncam = df_normalize['ncam'][df_row],
+    #             imc = df_normalize['imc'][df_row],
+    #             nmo = df_normalize['nmo'][df_row],
+    #             trm = df_normalize['trm'][df_row],
+    #             mloc = df_normalize['mloc'][df_row],
+    #             mnoc = df_normalize['mnoc'][df_row],
+    #             algo = 'gnewman',
+    #             type = 'network',
+    #             project_id = project_id
+    #         )
+    #         normalize.save()
 
     return redirect('scoring', project_id=project_id)
+
 
 def scoring(request, project_id):
     project = Project.objects.get(id=project_id)
