@@ -385,6 +385,9 @@ def clean_syn_cloc(request, project_id):
 
     sd_classes = SdMetricRaw.objects.filter(project_id=project_id).all()
     # cloc_list = ClocMetricRaw.objects.filter(project_id=project_id).all()
+
+    # reset as 0 back
+    ClocMetricRaw.objects.filter(project_id=project_id).update(ok=0)
     
     for sd in sd_classes:
         if ClocMetricRaw.objects.filter(class_name=sd.class_name,project_id=project_id):
@@ -405,6 +408,10 @@ def clean_remove_usage(request, project_id, type):
     return redirect('project_clean', id=project_id)
 
 def clean_syn_s101(request, project_id):
+
+    # reset as 0 back
+    S101MetricRaw.objects.filter(project_id=project_id).update(ok_from=0, ok_to=0)
+
     # clean from
     sd_classes = SdMetricRaw.objects.filter(project_id=project_id).all()
     # sync with sdmetric class list
@@ -501,7 +508,7 @@ def extract_methods(project_id):
         EaMethod.objects.filter(project_id=project_id).delete()
 
     xml_name = EaMetric.objects.filter(project_id=project_id).get().filename
-    # print('xml filename: '+xml_name)
+    print('reading xml filename: '+xml_name)
 
     local_xml = os.path.join(settings.BASE_DIR, 'uploads/csv/' + xml_name)
     with open(local_xml, 'r') as f:
@@ -512,19 +519,22 @@ def extract_methods(project_id):
     classes_list = SdMetricRaw.objects.filter(project_id=project_id).all()
     for cl in classes_list:
         class_context = soup.find_all('Foundation.Core.Class', {'xmi.id':cl.xmi_id})
-        class_name = soup.find('Foundation.Core.Class', {'xmi.id':cl.xmi_id}).find('Foundation.Core.ModelElement.name').text
-        # print('['+class_name+']')
-        for cc in class_context:
-            ops = cc.find_all('Foundation.Core.Operation')
-            for op in ops:
-                op_name = op.find('Foundation.Core.ModelElement.name').text
-                # print(op_name)
-                methods = EaMethod(
-                    class_name = class_name,
-                    method_name = op_name,
-                    project_id = project_id
-                )
-                methods.save()
+        try:
+            class_name = soup.find('Foundation.Core.Class', {'xmi.id':cl.xmi_id}).find('Foundation.Core.ModelElement.name').text
+            # print('['+class_name+']')
+            for cc in class_context:
+                ops = cc.find_all('Foundation.Core.Operation')
+                for op in ops:
+                    op_name = op.find('Foundation.Core.ModelElement.name').text
+                    # print(op_name)
+                    methods = EaMethod(
+                        class_name = class_name,
+                        method_name = op_name,
+                        project_id = project_id
+                    )
+                    methods.save()
+        except Exception as e:
+            print('opsss something error with soup..or is it because of classes with no method?')
 
 
 def clustering_metric(request, project_id):
@@ -1943,7 +1953,16 @@ def clustering_combo(request, project_id):
             Clustering.objects.filter(project_id=project_id,algo='ga_kmeans').delete()
 
     # read combo csv file
-    combo_csv = "uploads/weka/jpetstore-combo.csv"
+    # this file is manually generated using weka
+    # TODO: execute weka from command line to automate this step
+
+    # combo_csv = "uploads/weka/jpetstore-combo.csv"
+    # combo_csv = "uploads/weka/cargotracker-combo.csv"
+    combo_csv = "uploads/weka/daytrader-combo.csv"
+    # combo_csv = "uploads/weka/acmeair-combo.csv"
+    # combo_csv = "uploads/weka/petclinic-combo.csv"
+    # combo_csv = "uploads/weka/plants-combo.csv"
+
     with open(combo_csv, mode='r', encoding="utf-8-sig") as csv_file:
         csv_reader = DictReader(csv_file)
         for row in csv_reader:
@@ -2107,38 +2126,148 @@ def clustering_metric_calculation(project_id, type, algo):
 
 def normalize_minmax(project_id, type, algo):
 
-    raw_data = ClusteringMetric.objects.filter(project_id=project_id, algo=algo).order_by('microservice').all().values()
-    df = pd.DataFrame(raw_data)
-    df_metric = df.iloc[:,4:-2]
-    # normalize
-    scaler = MinMaxScaler() 
-    scaler_feature = scaler.fit_transform(df_metric)
-    df_normalize_id = df.iloc[:,0:1].copy()
-    df_normalize_metric = pd.DataFrame(scaler_feature)
-    df_normalize = pd.concat([df_normalize_id, df_normalize_metric], axis=1)
-    df_normalize.columns = ['id','cbm','wcbm','acbm','ncam','imc','nmo','trm','mloc','mnoc']
+    if ClusteringMetric.objects.filter(project_id=project_id, algo=algo).order_by('microservice').all().count() > 0:
+        raw_data = ClusteringMetric.objects.filter(project_id=project_id, algo=algo).order_by('microservice').all().values()
+        df = pd.DataFrame(raw_data)
+        df_metric = df.iloc[:,4:-2]
+        # normalize
+        scaler = MinMaxScaler() 
+        scaler_feature = scaler.fit_transform(df_metric)
+        df_normalize_id = df.iloc[:,0:1].copy()
+        df_normalize_metric = pd.DataFrame(scaler_feature)
+        df_normalize = pd.concat([df_normalize_id, df_normalize_metric], axis=1)
+        df_normalize.columns = ['id','cbm','wcbm','acbm','ncam','imc','nmo','trm','mloc','mnoc']
 
-    # update db
-    if ClusteringNormalize.objects.filter(project_id=project_id,algo=algo).all().count() > 0:
-        ClusteringNormalize.objects.filter(project_id=project_id,algo=algo).delete()
-    
-    for df_row in df_normalize.index:
-        normalize = ClusteringNormalize(
-            microservice = df_row,
-            cbm = df_normalize['cbm'][df_row],
-            wcbm = df_normalize['wcbm'][df_row],
-            acbm = df_normalize['acbm'][df_row],
-            ncam = df_normalize['ncam'][df_row],
-            imc = df_normalize['imc'][df_row],
-            nmo = df_normalize['nmo'][df_row],
-            trm = df_normalize['trm'][df_row],
-            mloc = df_normalize['mloc'][df_row],
-            mnoc = df_normalize['mnoc'][df_row],
+        # update db
+        if ClusteringNormalize.objects.filter(project_id=project_id,algo=algo).all().count() > 0:
+            ClusteringNormalize.objects.filter(project_id=project_id,algo=algo).delete()
+        
+        for df_row in df_normalize.index:
+            normalize = ClusteringNormalize(
+                microservice = df_row,
+                cbm = df_normalize['cbm'][df_row],
+                wcbm = df_normalize['wcbm'][df_row],
+                acbm = df_normalize['acbm'][df_row],
+                ncam = df_normalize['ncam'][df_row],
+                imc = df_normalize['imc'][df_row],
+                nmo = df_normalize['nmo'][df_row],
+                trm = df_normalize['trm'][df_row],
+                mloc = df_normalize['mloc'][df_row],
+                mnoc = df_normalize['mnoc'][df_row],
+                algo = algo,
+                type = type,
+                project_id = project_id
+            )
+            normalize.save()
+
+def calculate_scoring_average(project_id, algo):
+    project = Project.objects.get(id=project_id)
+
+    if ClusteringMetric.objects.filter(project_id=project_id, algo=algo).order_by('microservice').all().count() > 0:
+        ms_normalize = ClusteringNormalize.objects.filter(project_id=project_id,algo=algo).order_by('microservice').all()
+
+        avg_cbm=0
+        avg_wcbm=0
+        avg_acbm=0
+        avg_ncam=0
+        avg_imc=0
+        avg_nmo=0
+        avg_trm=0
+        avg_mloc=0
+        avg_mnoc=0
+        algo = ''
+        type = ''
+
+        for ms in ms_normalize:
+            avg_cbm += ms.cbm
+            avg_wcbm += ms.wcbm
+            avg_acbm += ms.acbm
+            avg_ncam += ms.ncam
+            avg_imc += ms.imc
+            avg_nmo += ms.nmo
+            avg_trm += ms.trm
+            avg_mloc += ms.mloc
+            avg_mnoc += ms.mnoc
+            algo = ms.algo
+            type = ms.type
+
+        ms_list = ClusteringMetric.objects.filter(project_id=project_id, algo=algo).all()
+        ms_ned = 0
+        ms_all = 0
+        # print('ms count ' + str(ms_count))
+        for msl in ms_list:
+            if msl.is_ned == 1:
+                ms_ned += msl.mnoc
+                ms_all += msl.mnoc
+            else:
+                ms_all += msl.mnoc
+
+        # print('ms ned ' + str(ms_ned))
+        # print('ms all ' + str(ms_all))
+        ned = ms_ned / ms_all
+        # print('ned ' + str(ned))
+        mcd = 1 - ned
+        # print('mcd ' + str(mcd))
+
+        avg_ms = ScoringAverage(
+            cbm = avg_cbm/len(ms_normalize),
+            wcbm = avg_wcbm/len(ms_normalize),
+            acbm = avg_acbm/len(ms_normalize),
+            ncam = avg_ncam/len(ms_normalize),
+            imc = avg_imc/len(ms_normalize),
+            nmo = avg_nmo/len(ms_normalize),
+            trm = avg_trm/len(ms_normalize),
+            mloc = avg_mloc/len(ms_normalize),
+            mnoc = avg_mnoc/len(ms_normalize),
+            mcd = mcd,
             algo = algo,
             type = type,
             project_id = project_id
         )
-        normalize.save()
+        avg_ms.save()
+
+        return ms_normalize
+    else:
+        return {}
+
+def calculate_scoring_type(project_id, type):
+
+    df_metric = pd.DataFrame(ScoringAverage.objects.filter(project_id=project_id,type=type).all().values())
+    df_metric['rank_cbm'] = df_metric['cbm'].rank(ascending=False)
+    df_metric['rank_wcbm'] = df_metric['wcbm'].rank(ascending=False)
+    df_metric['rank_acbm'] = df_metric['acbm'].rank(ascending=False)
+    df_metric['rank_ncam'] = df_metric['ncam'].rank()
+    df_metric['rank_imc'] = df_metric['imc'].rank()
+    df_metric['rank_nmo'] = df_metric['nmo'].rank(ascending=False)
+    df_metric['rank_trm'] = df_metric['trm'].rank(ascending=False)
+    df_metric['rank_mloc'] = df_metric['mloc'].rank(ascending=False)
+    df_metric['rank_mnoc'] = df_metric['mnoc'].rank(ascending=False)
+    df_metric['rank_mcd'] = df_metric['mcd'].rank(ascending=False)
+
+    df_metric_ranked = df_metric[['algo','type','rank_cbm','rank_wcbm','rank_acbm','rank_ncam','rank_imc','rank_nmo','rank_trm','rank_mloc','rank_mnoc','rank_mcd']].copy()
+
+    for df_row in df_metric_ranked.index:
+        scoring_finale = ScoringFinale(
+            cbm = df_metric_ranked['rank_cbm'][df_row],
+            wcbm = df_metric_ranked['rank_wcbm'][df_row],
+            acbm = df_metric_ranked['rank_acbm'][df_row],
+            ncam = df_metric_ranked['rank_ncam'][df_row],
+            imc = df_metric_ranked['rank_imc'][df_row],
+            nmo = df_metric_ranked['rank_nmo'][df_row],
+            trm = df_metric_ranked['rank_trm'][df_row],
+            mloc = df_metric_ranked['rank_mloc'][df_row],
+            mnoc = df_metric_ranked['rank_mnoc'][df_row],
+            mcd = df_metric_ranked['rank_mcd'][df_row],
+            algo = df_metric_ranked['algo'][df_row],
+            type = df_metric_ranked['type'][df_row],
+            total = df_metric_ranked['rank_cbm'][df_row] + df_metric_ranked['rank_wcbm'][df_row] + df_metric_ranked['rank_acbm'][df_row] + df_metric_ranked['rank_ncam'][df_row]
+                        + df_metric_ranked['rank_imc'][df_row] + df_metric_ranked['rank_nmo'][df_row] + df_metric_ranked['rank_trm'][df_row] + df_metric_ranked['rank_mloc'][df_row]
+                        + df_metric_ranked['rank_mnoc'][df_row] + df_metric_ranked['rank_mcd'][df_row],
+            project_id = project_id
+        )
+        xtotal = df_metric_ranked['rank_cbm'][df_row] + df_metric_ranked['rank_wcbm'][df_row] + df_metric_ranked['rank_acbm'][df_row] + df_metric_ranked['rank_ncam'][df_row] + df_metric_ranked['rank_imc'][df_row] + df_metric_ranked['rank_nmo'][df_row] + df_metric_ranked['rank_trm'][df_row] + df_metric_ranked['rank_mloc'][df_row] + df_metric_ranked['rank_mnoc'][df_row] + df_metric_ranked['rank_mcd'][df_row]
+        print(str(df_metric_ranked['algo'][df_row]) + ' = ' + str(xtotal))
+        scoring_finale.save()
 
 #################
 # END: reusable #
@@ -2150,16 +2279,19 @@ def scoring_initialize(request, project_id):
     metric_algo = ['kmeans', 'mean_shift', 'agglomerative', 'gaussian']
 
     for ma in metric_algo:
+        print(ma)
         normalize_minmax(project_id, 'metric', ma)
 
     network_algo = ['fast_greedy', 'louvain', 'leiden', 'gnewman']
 
     for na in network_algo:
+        print(na)
         normalize_minmax(project_id, 'network', na)
 
     combo_algo = ['ga_kmeans']
 
     for ca in combo_algo:
+        print(ca)
         normalize_minmax(project_id, 'combo', ca)
 
     #################
@@ -2471,628 +2603,660 @@ def scoring(request, project_id):
     if ScoringAverage.objects.filter(project_id=project_id).all().count() > 0:
         ScoringAverage.objects.filter(project_id=project_id).delete()
 
+
+    # metric_algo = ['kmeans','mean_shift','agglomerative','gaussian','fast_greedy', 'louvain', 'leiden', 'gnewman','ga_kmeans']
+
+    # for ma in metric_algo:
+    #     calculate_scoring_average(project_id, ma)
+
     ##############
     # k-mean
     ##############
 
-    ms_kmeans_normalize = ClusteringNormalize.objects.filter(project_id=project_id,algo='kmeans').order_by('microservice').all()
+    # ms_kmeans_normalize = ClusteringNormalize.objects.filter(project_id=project_id,algo='kmeans').order_by('microservice').all()
 
-    avg_cbm=0
-    avg_wcbm=0
-    avg_acbm=0
-    avg_ncam=0
-    avg_imc=0
-    avg_nmo=0
-    avg_trm=0
-    avg_mloc=0
-    avg_mnoc=0
-    algo = ''
-    type = ''
+    # avg_cbm=0
+    # avg_wcbm=0
+    # avg_acbm=0
+    # avg_ncam=0
+    # avg_imc=0
+    # avg_nmo=0
+    # avg_trm=0
+    # avg_mloc=0
+    # avg_mnoc=0
+    # algo = ''
+    # type = ''
 
-    for ms in ms_kmeans_normalize:
-        avg_cbm += ms.cbm
-        avg_wcbm += ms.wcbm
-        avg_acbm += ms.acbm
-        avg_ncam += ms.ncam
-        avg_imc += ms.imc
-        avg_nmo += ms.nmo
-        avg_trm += ms.trm
-        avg_mloc += ms.mloc
-        avg_mnoc += ms.mnoc
-        algo = ms.algo
-        type = ms.type
+    # for ms in ms_kmeans_normalize:
+    #     avg_cbm += ms.cbm
+    #     avg_wcbm += ms.wcbm
+    #     avg_acbm += ms.acbm
+    #     avg_ncam += ms.ncam
+    #     avg_imc += ms.imc
+    #     avg_nmo += ms.nmo
+    #     avg_trm += ms.trm
+    #     avg_mloc += ms.mloc
+    #     avg_mnoc += ms.mnoc
+    #     algo = ms.algo
+    #     type = ms.type
 
-    ms_list = ClusteringMetric.objects.filter(project_id=project_id, algo='kmeans').all()
-    ms_ned = 0
-    ms_all = 0
-    # print('ms count ' + str(ms_count))
-    for msl in ms_list:
-        if msl.is_ned == 1:
-            ms_ned += msl.mnoc
-            ms_all += msl.mnoc
-        else:
-            ms_all += msl.mnoc
+    # ms_list = ClusteringMetric.objects.filter(project_id=project_id, algo='kmeans').all()
+    # ms_ned = 0
+    # ms_all = 0
+    # # print('ms count ' + str(ms_count))
+    # for msl in ms_list:
+    #     if msl.is_ned == 1:
+    #         ms_ned += msl.mnoc
+    #         ms_all += msl.mnoc
+    #     else:
+    #         ms_all += msl.mnoc
 
-    # print('ms ned ' + str(ms_ned))
-    # print('ms all ' + str(ms_all))
-    ned = ms_ned / ms_all
-    # print('ned ' + str(ned))
-    mcd = 1 - ned
-    # print('mcd ' + str(mcd))
+    # # print('ms ned ' + str(ms_ned))
+    # # print('ms all ' + str(ms_all))
+    # ned = ms_ned / ms_all
+    # # print('ned ' + str(ned))
+    # mcd = 1 - ned
+    # # print('mcd ' + str(mcd))
 
-    avg_ms = ScoringAverage(
-        cbm = avg_cbm/len(ms_kmeans_normalize),
-        wcbm = avg_wcbm/len(ms_kmeans_normalize),
-        acbm = avg_acbm/len(ms_kmeans_normalize),
-        ncam = avg_ncam/len(ms_kmeans_normalize),
-        imc = avg_imc/len(ms_kmeans_normalize),
-        nmo = avg_nmo/len(ms_kmeans_normalize),
-        trm = avg_trm/len(ms_kmeans_normalize),
-        mloc = avg_mloc/len(ms_kmeans_normalize),
-        mnoc = avg_mnoc/len(ms_kmeans_normalize),
-        mcd = mcd,
-        algo = algo,
-        type = type,
-        project_id = project_id
-    )
-    avg_ms.save()
+    # avg_ms = ScoringAverage(
+    #     cbm = avg_cbm/len(ms_kmeans_normalize),
+    #     wcbm = avg_wcbm/len(ms_kmeans_normalize),
+    #     acbm = avg_acbm/len(ms_kmeans_normalize),
+    #     ncam = avg_ncam/len(ms_kmeans_normalize),
+    #     imc = avg_imc/len(ms_kmeans_normalize),
+    #     nmo = avg_nmo/len(ms_kmeans_normalize),
+    #     trm = avg_trm/len(ms_kmeans_normalize),
+    #     mloc = avg_mloc/len(ms_kmeans_normalize),
+    #     mnoc = avg_mnoc/len(ms_kmeans_normalize),
+    #     mcd = mcd,
+    #     algo = algo,
+    #     type = type,
+    #     project_id = project_id
+    # )
+    # avg_ms.save()
 
     ##################
     # mean-shift
     ##################
 
-    ms_mean_shift_normalize = ClusteringNormalize.objects.filter(project_id=project_id,algo='mean_shift').order_by('microservice').all()
+    # ms_mean_shift_normalize = ClusteringNormalize.objects.filter(project_id=project_id,algo='mean_shift').order_by('microservice').all()
 
-    avg_cbm=0
-    avg_wcbm=0
-    avg_acbm=0
-    avg_ncam=0
-    avg_imc=0
-    avg_nmo=0
-    avg_trm=0
-    avg_mloc=0
-    avg_mnoc=0
-    algo = ''
-    type = ''
+    # avg_cbm=0
+    # avg_wcbm=0
+    # avg_acbm=0
+    # avg_ncam=0
+    # avg_imc=0
+    # avg_nmo=0
+    # avg_trm=0
+    # avg_mloc=0
+    # avg_mnoc=0
+    # algo = ''
+    # type = ''
 
-    for ms in ms_mean_shift_normalize:
-        avg_cbm += ms.cbm
-        avg_wcbm += ms.wcbm
-        avg_acbm += ms.acbm
-        avg_ncam += ms.ncam
-        avg_imc += ms.imc
-        avg_nmo += ms.nmo
-        avg_trm += ms.trm
-        avg_mloc += ms.mloc
-        avg_mnoc += ms.mnoc
-        algo = ms.algo
-        type = ms.type
+    # for ms in ms_mean_shift_normalize:
+    #     avg_cbm += ms.cbm
+    #     avg_wcbm += ms.wcbm
+    #     avg_acbm += ms.acbm
+    #     avg_ncam += ms.ncam
+    #     avg_imc += ms.imc
+    #     avg_nmo += ms.nmo
+    #     avg_trm += ms.trm
+    #     avg_mloc += ms.mloc
+    #     avg_mnoc += ms.mnoc
+    #     algo = ms.algo
+    #     type = ms.type
 
-    ms_list = ClusteringMetric.objects.filter(project_id=project_id, algo='mean_shift').all()
-    ms_ned = 0
-    ms_all = 0
-    # print('ms count ' + str(ms_count))
-    for msl in ms_list:
-        if msl.is_ned == 1:
-            ms_ned += msl.mnoc
-            ms_all += msl.mnoc
-        else:
-            ms_all += msl.mnoc
+    # ms_list = ClusteringMetric.objects.filter(project_id=project_id, algo='mean_shift').all()
+    # ms_ned = 0
+    # ms_all = 0
+    # # print('ms count ' + str(ms_count))
+    # for msl in ms_list:
+    #     if msl.is_ned == 1:
+    #         ms_ned += msl.mnoc
+    #         ms_all += msl.mnoc
+    #     else:
+    #         ms_all += msl.mnoc
 
-    # print('ms ned ' + str(ms_ned))
-    # print('ms all ' + str(ms_all))
-    ned = ms_ned / ms_all
-    # print('ned ' + str(ned))
-    mcd = 1 - ned
-    # print('mcd ' + str(mcd))
+    # # print('ms ned ' + str(ms_ned))
+    # # print('ms all ' + str(ms_all))
+    # ned = ms_ned / ms_all
+    # # print('ned ' + str(ned))
+    # mcd = 1 - ned
+    # # print('mcd ' + str(mcd))
 
-    avg_ms = ScoringAverage(
-        cbm = avg_cbm/len(ms_mean_shift_normalize),
-        wcbm = avg_wcbm/len(ms_mean_shift_normalize),
-        acbm = avg_acbm/len(ms_mean_shift_normalize),
-        ncam = avg_ncam/len(ms_mean_shift_normalize),
-        imc = avg_imc/len(ms_mean_shift_normalize),
-        nmo = avg_nmo/len(ms_mean_shift_normalize),
-        trm = avg_trm/len(ms_mean_shift_normalize),
-        mloc = avg_mloc/len(ms_mean_shift_normalize),
-        mnoc = avg_mnoc/len(ms_mean_shift_normalize),
-        mcd = mcd,
-        algo = algo,
-        type = type,
-        project_id = project_id
-    )
-    avg_ms.save()
+    # avg_ms = ScoringAverage(
+    #     cbm = avg_cbm/len(ms_mean_shift_normalize),
+    #     wcbm = avg_wcbm/len(ms_mean_shift_normalize),
+    #     acbm = avg_acbm/len(ms_mean_shift_normalize),
+    #     ncam = avg_ncam/len(ms_mean_shift_normalize),
+    #     imc = avg_imc/len(ms_mean_shift_normalize),
+    #     nmo = avg_nmo/len(ms_mean_shift_normalize),
+    #     trm = avg_trm/len(ms_mean_shift_normalize),
+    #     mloc = avg_mloc/len(ms_mean_shift_normalize),
+    #     mnoc = avg_mnoc/len(ms_mean_shift_normalize),
+    #     mcd = mcd,
+    #     algo = algo,
+    #     type = type,
+    #     project_id = project_id
+    # )
+    # avg_ms.save()
 
-    #####################
-    # agglomerative
-    #####################
+    # #####################
+    # # agglomerative
+    # #####################
 
-    ms_agglomerative_normalize = ClusteringNormalize.objects.filter(project_id=project_id,algo='agglomerative').order_by('microservice').all()
+    # ms_agglomerative_normalize = ClusteringNormalize.objects.filter(project_id=project_id,algo='agglomerative').order_by('microservice').all()
 
-    avg_cbm=0
-    avg_wcbm=0
-    avg_acbm=0
-    avg_ncam=0
-    avg_imc=0
-    avg_nmo=0
-    avg_trm=0
-    avg_mloc=0
-    avg_mnoc=0
-    algo = ''
-    type = ''
+    # avg_cbm=0
+    # avg_wcbm=0
+    # avg_acbm=0
+    # avg_ncam=0
+    # avg_imc=0
+    # avg_nmo=0
+    # avg_trm=0
+    # avg_mloc=0
+    # avg_mnoc=0
+    # algo = ''
+    # type = ''
 
-    for ms in ms_agglomerative_normalize:
-        avg_cbm += ms.cbm
-        avg_wcbm += ms.wcbm
-        avg_acbm += ms.acbm
-        avg_ncam += ms.ncam
-        avg_imc += ms.imc
-        avg_nmo += ms.nmo
-        avg_trm += ms.trm
-        avg_mloc += ms.mloc
-        avg_mnoc += ms.mnoc
-        algo = ms.algo
-        type = ms.type
+    # for ms in ms_agglomerative_normalize:
+    #     avg_cbm += ms.cbm
+    #     avg_wcbm += ms.wcbm
+    #     avg_acbm += ms.acbm
+    #     avg_ncam += ms.ncam
+    #     avg_imc += ms.imc
+    #     avg_nmo += ms.nmo
+    #     avg_trm += ms.trm
+    #     avg_mloc += ms.mloc
+    #     avg_mnoc += ms.mnoc
+    #     algo = ms.algo
+    #     type = ms.type
 
-    ms_list = ClusteringMetric.objects.filter(project_id=project_id, algo='agglomerative').all()
-    ms_ned = 0
-    ms_all = 0
-    # print('ms count ' + str(ms_count))
-    for msl in ms_list:
-        if msl.is_ned == 1:
-            ms_ned += msl.mnoc
-            ms_all += msl.mnoc
-        else:
-            ms_all += msl.mnoc
+    # ms_list = ClusteringMetric.objects.filter(project_id=project_id, algo='agglomerative').all()
+    # ms_ned = 0
+    # ms_all = 0
+    # # print('ms count ' + str(ms_count))
+    # for msl in ms_list:
+    #     if msl.is_ned == 1:
+    #         ms_ned += msl.mnoc
+    #         ms_all += msl.mnoc
+    #     else:
+    #         ms_all += msl.mnoc
 
-    # print('ms ned ' + str(ms_ned))
-    # print('ms all ' + str(ms_all))
-    ned = ms_ned / ms_all
-    # print('ned ' + str(ned))
-    mcd = 1 - ned
-    # print('mcd ' + str(mcd))
+    # # print('ms ned ' + str(ms_ned))
+    # # print('ms all ' + str(ms_all))
+    # ned = ms_ned / ms_all
+    # # print('ned ' + str(ned))
+    # mcd = 1 - ned
+    # # print('mcd ' + str(mcd))
 
-    avg_ms = ScoringAverage(
-        cbm = avg_cbm/len(ms_agglomerative_normalize),
-        wcbm = avg_wcbm/len(ms_agglomerative_normalize),
-        acbm = avg_acbm/len(ms_agglomerative_normalize),
-        ncam = avg_ncam/len(ms_agglomerative_normalize),
-        imc = avg_imc/len(ms_agglomerative_normalize),
-        nmo = avg_nmo/len(ms_agglomerative_normalize),
-        trm = avg_trm/len(ms_agglomerative_normalize),
-        mloc = avg_mloc/len(ms_agglomerative_normalize),
-        mnoc = avg_mnoc/len(ms_agglomerative_normalize),
-        mcd = mcd,
-        algo = algo,
-        type = type,
-        project_id = project_id
-    )
-    avg_ms.save()
+    # avg_ms = ScoringAverage(
+    #     cbm = avg_cbm/len(ms_agglomerative_normalize),
+    #     wcbm = avg_wcbm/len(ms_agglomerative_normalize),
+    #     acbm = avg_acbm/len(ms_agglomerative_normalize),
+    #     ncam = avg_ncam/len(ms_agglomerative_normalize),
+    #     imc = avg_imc/len(ms_agglomerative_normalize),
+    #     nmo = avg_nmo/len(ms_agglomerative_normalize),
+    #     trm = avg_trm/len(ms_agglomerative_normalize),
+    #     mloc = avg_mloc/len(ms_agglomerative_normalize),
+    #     mnoc = avg_mnoc/len(ms_agglomerative_normalize),
+    #     mcd = mcd,
+    #     algo = algo,
+    #     type = type,
+    #     project_id = project_id
+    # )
+    # avg_ms.save()
 
-    ########################
-    # gaussian-mixture
-    ########################
+    # ########################
+    # # gaussian-mixture
+    # ########################
 
-    ms_gaussian_normalize = ClusteringNormalize.objects.filter(project_id=project_id,algo='gaussian').order_by('microservice').all()
+    # ms_gaussian_normalize = ClusteringNormalize.objects.filter(project_id=project_id,algo='gaussian').order_by('microservice').all()
 
-    avg_cbm=0
-    avg_wcbm=0
-    avg_acbm=0
-    avg_ncam=0
-    avg_imc=0
-    avg_nmo=0
-    avg_trm=0
-    avg_mloc=0
-    avg_mnoc=0
-    algo = ''
-    type = ''
+    # avg_cbm=0
+    # avg_wcbm=0
+    # avg_acbm=0
+    # avg_ncam=0
+    # avg_imc=0
+    # avg_nmo=0
+    # avg_trm=0
+    # avg_mloc=0
+    # avg_mnoc=0
+    # algo = ''
+    # type = ''
 
-    for ms in ms_gaussian_normalize:
-        avg_cbm += ms.cbm
-        avg_wcbm += ms.wcbm
-        avg_acbm += ms.acbm
-        avg_ncam += ms.ncam
-        avg_imc += ms.imc
-        avg_nmo += ms.nmo
-        avg_trm += ms.trm
-        avg_mloc += ms.mloc
-        avg_mnoc += ms.mnoc
-        algo = ms.algo
-        type = ms.type
+    # for ms in ms_gaussian_normalize:
+    #     avg_cbm += ms.cbm
+    #     avg_wcbm += ms.wcbm
+    #     avg_acbm += ms.acbm
+    #     avg_ncam += ms.ncam
+    #     avg_imc += ms.imc
+    #     avg_nmo += ms.nmo
+    #     avg_trm += ms.trm
+    #     avg_mloc += ms.mloc
+    #     avg_mnoc += ms.mnoc
+    #     algo = ms.algo
+    #     type = ms.type
 
-    ms_list = ClusteringMetric.objects.filter(project_id=project_id, algo='gaussian').all()
-    ms_ned = 0
-    ms_all = 0
-    # print('ms count ' + str(ms_count))
-    for msl in ms_list:
-        if msl.is_ned == 1:
-            ms_ned += msl.mnoc
-            ms_all += msl.mnoc
-        else:
-            ms_all += msl.mnoc
+    # ms_list = ClusteringMetric.objects.filter(project_id=project_id, algo='gaussian').all()
+    # ms_ned = 0
+    # ms_all = 0
+    # # print('ms count ' + str(ms_count))
+    # for msl in ms_list:
+    #     if msl.is_ned == 1:
+    #         ms_ned += msl.mnoc
+    #         ms_all += msl.mnoc
+    #     else:
+    #         ms_all += msl.mnoc
 
-    # print('ms ned ' + str(ms_ned))
-    # print('ms all ' + str(ms_all))
-    ned = ms_ned / ms_all
-    # print('ned ' + str(ned))
-    mcd = 1 - ned
-    # print('mcd ' + str(mcd))
+    # # print('ms ned ' + str(ms_ned))
+    # # print('ms all ' + str(ms_all))
+    # ned = ms_ned / ms_all
+    # # print('ned ' + str(ned))
+    # mcd = 1 - ned
+    # # print('mcd ' + str(mcd))
 
-    avg_ms = ScoringAverage(
-        cbm = avg_cbm/len(ms_gaussian_normalize),
-        wcbm = avg_wcbm/len(ms_gaussian_normalize),
-        acbm = avg_acbm/len(ms_gaussian_normalize),
-        ncam = avg_ncam/len(ms_gaussian_normalize),
-        imc = avg_imc/len(ms_gaussian_normalize),
-        nmo = avg_nmo/len(ms_gaussian_normalize),
-        trm = avg_trm/len(ms_gaussian_normalize),
-        mloc = avg_mloc/len(ms_gaussian_normalize),
-        mnoc = avg_mnoc/len(ms_gaussian_normalize),
-        mcd = mcd,
-        algo = algo,
-        type = type,
-        project_id = project_id
-    )
-    avg_ms.save()
+    # avg_ms = ScoringAverage(
+    #     cbm = avg_cbm/len(ms_gaussian_normalize),
+    #     wcbm = avg_wcbm/len(ms_gaussian_normalize),
+    #     acbm = avg_acbm/len(ms_gaussian_normalize),
+    #     ncam = avg_ncam/len(ms_gaussian_normalize),
+    #     imc = avg_imc/len(ms_gaussian_normalize),
+    #     nmo = avg_nmo/len(ms_gaussian_normalize),
+    #     trm = avg_trm/len(ms_gaussian_normalize),
+    #     mloc = avg_mloc/len(ms_gaussian_normalize),
+    #     mnoc = avg_mnoc/len(ms_gaussian_normalize),
+    #     mcd = mcd,
+    #     algo = algo,
+    #     type = type,
+    #     project_id = project_id
+    # )
+    # avg_ms.save()
 
-    #######################
-    # fast-greedy
-    #######################
+    # #######################
+    # # fast-greedy
+    # #######################
 
-    if ClusteringNormalize.objects.filter(project_id=project_id,algo='fast_greedy').order_by('microservice').all().count() > 0:
-        ms_fast_greedy_normalize = ClusteringNormalize.objects.filter(project_id=project_id,algo='fast_greedy').order_by('microservice').all()
+    # if ClusteringNormalize.objects.filter(project_id=project_id,algo='fast_greedy').order_by('microservice').all().count() > 0:
+    #     ms_fast_greedy_normalize = ClusteringNormalize.objects.filter(project_id=project_id,algo='fast_greedy').order_by('microservice').all()
 
-        avg_cbm=0
-        avg_wcbm=0
-        avg_acbm=0
-        avg_ncam=0
-        avg_imc=0
-        avg_nmo=0
-        avg_trm=0
-        avg_mloc=0
-        avg_mnoc=0
-        algo = ''
-        type = ''
+    #     avg_cbm=0
+    #     avg_wcbm=0
+    #     avg_acbm=0
+    #     avg_ncam=0
+    #     avg_imc=0
+    #     avg_nmo=0
+    #     avg_trm=0
+    #     avg_mloc=0
+    #     avg_mnoc=0
+    #     algo = ''
+    #     type = ''
 
-        for ms in ms_fast_greedy_normalize:
-            avg_cbm += ms.cbm
-            avg_wcbm += ms.wcbm
-            avg_acbm += ms.acbm
-            avg_ncam += ms.ncam
-            avg_imc += ms.imc
-            avg_nmo += ms.nmo
-            avg_trm += ms.trm
-            avg_mloc += ms.mloc
-            avg_mnoc += ms.mnoc
-            algo = ms.algo
-            type = ms.type
+    #     for ms in ms_fast_greedy_normalize:
+    #         avg_cbm += ms.cbm
+    #         avg_wcbm += ms.wcbm
+    #         avg_acbm += ms.acbm
+    #         avg_ncam += ms.ncam
+    #         avg_imc += ms.imc
+    #         avg_nmo += ms.nmo
+    #         avg_trm += ms.trm
+    #         avg_mloc += ms.mloc
+    #         avg_mnoc += ms.mnoc
+    #         algo = ms.algo
+    #         type = ms.type
 
-        ms_list = ClusteringMetric.objects.filter(project_id=project_id, algo='fast_greedy').all()
-        ms_ned = 0
-        ms_all = 0
-        # print('ms count ' + str(ms_count))
-        for msl in ms_list:
-            if msl.is_ned == 1:
-                ms_ned += msl.mnoc
-                ms_all += msl.mnoc
-            else:
-                ms_all += msl.mnoc
+    #     ms_list = ClusteringMetric.objects.filter(project_id=project_id, algo='fast_greedy').all()
+    #     ms_ned = 0
+    #     ms_all = 0
+    #     # print('ms count ' + str(ms_count))
+    #     for msl in ms_list:
+    #         if msl.is_ned == 1:
+    #             ms_ned += msl.mnoc
+    #             ms_all += msl.mnoc
+    #         else:
+    #             ms_all += msl.mnoc
 
-        # print('ms ned ' + str(ms_ned))
-        # print('ms all ' + str(ms_all))
-        ned = ms_ned / ms_all
-        # print('ned ' + str(ned))
-        mcd = 1 - ned
-        # print('mcd ' + str(mcd))
+    #     # print('ms ned ' + str(ms_ned))
+    #     # print('ms all ' + str(ms_all))
+    #     ned = ms_ned / ms_all
+    #     # print('ned ' + str(ned))
+    #     mcd = 1 - ned
+    #     # print('mcd ' + str(mcd))
 
-        avg_ms = ScoringAverage(
-            cbm = avg_cbm/len(ms_fast_greedy_normalize),
-            wcbm = avg_wcbm/len(ms_fast_greedy_normalize),
-            acbm = avg_acbm/len(ms_fast_greedy_normalize),
-            ncam = avg_ncam/len(ms_fast_greedy_normalize),
-            imc = avg_imc/len(ms_fast_greedy_normalize),
-            nmo = avg_nmo/len(ms_fast_greedy_normalize),
-            trm = avg_trm/len(ms_fast_greedy_normalize),
-            mloc = avg_mloc/len(ms_fast_greedy_normalize),
-            mnoc = avg_mnoc/len(ms_fast_greedy_normalize),
-            mcd = mcd,
-            algo = algo,
-            type = type,
-            project_id = project_id
-        )
-        avg_ms.save()
-    else:
-        ms_fast_greedy_normalize = {}
+    #     avg_ms = ScoringAverage(
+    #         cbm = avg_cbm/len(ms_fast_greedy_normalize),
+    #         wcbm = avg_wcbm/len(ms_fast_greedy_normalize),
+    #         acbm = avg_acbm/len(ms_fast_greedy_normalize),
+    #         ncam = avg_ncam/len(ms_fast_greedy_normalize),
+    #         imc = avg_imc/len(ms_fast_greedy_normalize),
+    #         nmo = avg_nmo/len(ms_fast_greedy_normalize),
+    #         trm = avg_trm/len(ms_fast_greedy_normalize),
+    #         mloc = avg_mloc/len(ms_fast_greedy_normalize),
+    #         mnoc = avg_mnoc/len(ms_fast_greedy_normalize),
+    #         mcd = mcd,
+    #         algo = algo,
+    #         type = type,
+    #         project_id = project_id
+    #     )
+    #     avg_ms.save()
+    # else:
+    #     ms_fast_greedy_normalize = {}
 
 
-    ##################
-    # louvain
-    #################
+    # ##################
+    # # louvain
+    # #################
 
-    ms_louvain_normalize = ClusteringNormalize.objects.filter(project_id=project_id,algo='louvain').order_by('microservice').all()
+    # ms_louvain_normalize = ClusteringNormalize.objects.filter(project_id=project_id,algo='louvain').order_by('microservice').all()
 
-    avg_cbm=0
-    avg_wcbm=0
-    avg_acbm=0
-    avg_ncam=0
-    avg_imc=0
-    avg_nmo=0
-    avg_trm=0
-    avg_mloc=0
-    avg_mnoc=0
-    algo = ''
-    type = ''
+    # avg_cbm=0
+    # avg_wcbm=0
+    # avg_acbm=0
+    # avg_ncam=0
+    # avg_imc=0
+    # avg_nmo=0
+    # avg_trm=0
+    # avg_mloc=0
+    # avg_mnoc=0
+    # algo = ''
+    # type = ''
 
-    for ms in ms_louvain_normalize:
-        avg_cbm += ms.cbm
-        avg_wcbm += ms.wcbm
-        avg_acbm += ms.acbm
-        avg_ncam += ms.ncam
-        avg_imc += ms.imc
-        avg_nmo += ms.nmo
-        avg_trm += ms.trm
-        avg_mloc += ms.mloc
-        avg_mnoc += ms.mnoc
-        algo = ms.algo
-        type = ms.type
+    # for ms in ms_louvain_normalize:
+    #     avg_cbm += ms.cbm
+    #     avg_wcbm += ms.wcbm
+    #     avg_acbm += ms.acbm
+    #     avg_ncam += ms.ncam
+    #     avg_imc += ms.imc
+    #     avg_nmo += ms.nmo
+    #     avg_trm += ms.trm
+    #     avg_mloc += ms.mloc
+    #     avg_mnoc += ms.mnoc
+    #     algo = ms.algo
+    #     type = ms.type
 
-    ms_list = ClusteringMetric.objects.filter(project_id=project_id, algo='louvain').all()
-    ms_ned = 0
-    ms_all = 0
-    # print('ms count ' + str(ms_count))
-    for msl in ms_list:
-        if msl.is_ned == 1:
-            ms_ned += msl.mnoc
-            ms_all += msl.mnoc
-        else:
-            ms_all += msl.mnoc
+    # ms_list = ClusteringMetric.objects.filter(project_id=project_id, algo='louvain').all()
+    # ms_ned = 0
+    # ms_all = 0
+    # # print('ms count ' + str(ms_count))
+    # for msl in ms_list:
+    #     if msl.is_ned == 1:
+    #         ms_ned += msl.mnoc
+    #         ms_all += msl.mnoc
+    #     else:
+    #         ms_all += msl.mnoc
 
-    # print('ms ned ' + str(ms_ned))
-    # print('ms all ' + str(ms_all))
-    ned = ms_ned / ms_all
-    # print('ned ' + str(ned))
-    mcd = 1 - ned
-    # print('mcd ' + str(mcd))
+    # # print('ms ned ' + str(ms_ned))
+    # # print('ms all ' + str(ms_all))
+    # ned = ms_ned / ms_all
+    # # print('ned ' + str(ned))
+    # mcd = 1 - ned
+    # # print('mcd ' + str(mcd))
 
-    avg_ms = ScoringAverage(
-        cbm = avg_cbm/len(ms_louvain_normalize),
-        wcbm = avg_wcbm/len(ms_louvain_normalize),
-        acbm = avg_acbm/len(ms_louvain_normalize),
-        ncam = avg_ncam/len(ms_louvain_normalize),
-        imc = avg_imc/len(ms_louvain_normalize),
-        nmo = avg_nmo/len(ms_louvain_normalize),
-        trm = avg_trm/len(ms_louvain_normalize),
-        mloc = avg_mloc/len(ms_louvain_normalize),
-        mnoc = avg_mnoc/len(ms_louvain_normalize),
-        mcd = mcd, 
-        algo = algo,
-        type = type,
-        project_id = project_id
-    )
-    avg_ms.save()
+    # avg_ms = ScoringAverage(
+    #     cbm = avg_cbm/len(ms_louvain_normalize),
+    #     wcbm = avg_wcbm/len(ms_louvain_normalize),
+    #     acbm = avg_acbm/len(ms_louvain_normalize),
+    #     ncam = avg_ncam/len(ms_louvain_normalize),
+    #     imc = avg_imc/len(ms_louvain_normalize),
+    #     nmo = avg_nmo/len(ms_louvain_normalize),
+    #     trm = avg_trm/len(ms_louvain_normalize),
+    #     mloc = avg_mloc/len(ms_louvain_normalize),
+    #     mnoc = avg_mnoc/len(ms_louvain_normalize),
+    #     mcd = mcd, 
+    #     algo = algo,
+    #     type = type,
+    #     project_id = project_id
+    # )
+    # avg_ms.save()
 
-    ###############
-    # leiden
-    ###############
+    # ###############
+    # # leiden
+    # ###############
 
-    ms_leiden_normalize = ClusteringNormalize.objects.filter(project_id=project_id,algo='leiden').order_by('microservice').all()
+    # ms_leiden_normalize = ClusteringNormalize.objects.filter(project_id=project_id,algo='leiden').order_by('microservice').all()
 
-    avg_cbm=0
-    avg_wcbm=0
-    avg_acbm=0
-    avg_ncam=0
-    avg_imc=0
-    avg_nmo=0
-    avg_trm=0
-    avg_mloc=0
-    avg_mnoc=0
-    algo = ''
-    type = ''
+    # avg_cbm=0
+    # avg_wcbm=0
+    # avg_acbm=0
+    # avg_ncam=0
+    # avg_imc=0
+    # avg_nmo=0
+    # avg_trm=0
+    # avg_mloc=0
+    # avg_mnoc=0
+    # algo = ''
+    # type = ''
 
-    for ms in ms_leiden_normalize:
-        avg_cbm += ms.cbm
-        avg_wcbm += ms.wcbm
-        avg_acbm += ms.acbm
-        avg_ncam += ms.ncam
-        avg_imc += ms.imc
-        avg_nmo += ms.nmo
-        avg_trm += ms.trm
-        avg_mloc += ms.mloc
-        avg_mnoc += ms.mnoc
-        algo = ms.algo
-        type = ms.type
+    # for ms in ms_leiden_normalize:
+    #     avg_cbm += ms.cbm
+    #     avg_wcbm += ms.wcbm
+    #     avg_acbm += ms.acbm
+    #     avg_ncam += ms.ncam
+    #     avg_imc += ms.imc
+    #     avg_nmo += ms.nmo
+    #     avg_trm += ms.trm
+    #     avg_mloc += ms.mloc
+    #     avg_mnoc += ms.mnoc
+    #     algo = ms.algo
+    #     type = ms.type
 
-    ms_list = ClusteringMetric.objects.filter(project_id=project_id, algo='leiden').all()
-    ms_ned = 0
-    ms_all = 0
-    # print('ms count ' + str(ms_count))
-    for msl in ms_list:
-        if msl.is_ned == 1:
-            ms_ned += msl.mnoc
-            ms_all += msl.mnoc
-        else:
-            ms_all += msl.mnoc
+    # ms_list = ClusteringMetric.objects.filter(project_id=project_id, algo='leiden').all()
+    # ms_ned = 0
+    # ms_all = 0
+    # # print('ms count ' + str(ms_count))
+    # for msl in ms_list:
+    #     if msl.is_ned == 1:
+    #         ms_ned += msl.mnoc
+    #         ms_all += msl.mnoc
+    #     else:
+    #         ms_all += msl.mnoc
 
-    # print('ms ned ' + str(ms_ned))
-    # print('ms all ' + str(ms_all))
-    ned = ms_ned / ms_all
-    # print('ned ' + str(ned))
-    mcd = 1 - ned
-    # print('mcd ' + str(mcd))
+    # # print('ms ned ' + str(ms_ned))
+    # # print('ms all ' + str(ms_all))
+    # ned = ms_ned / ms_all
+    # # print('ned ' + str(ned))
+    # mcd = 1 - ned
+    # # print('mcd ' + str(mcd))
 
-    avg_ms = ScoringAverage(
-        cbm = avg_cbm/len(ms_leiden_normalize),
-        wcbm = avg_wcbm/len(ms_leiden_normalize),
-        acbm = avg_acbm/len(ms_leiden_normalize),
-        ncam = avg_ncam/len(ms_leiden_normalize),
-        imc = avg_imc/len(ms_leiden_normalize),
-        nmo = avg_nmo/len(ms_leiden_normalize),
-        trm = avg_trm/len(ms_leiden_normalize),
-        mloc = avg_mloc/len(ms_leiden_normalize),
-        mnoc = avg_mnoc/len(ms_leiden_normalize),
-        mcd = mcd,
-        algo = algo,
-        type = type,
-        project_id = project_id
-    )
-    avg_ms.save()
+    # avg_ms = ScoringAverage(
+    #     cbm = avg_cbm/len(ms_leiden_normalize),
+    #     wcbm = avg_wcbm/len(ms_leiden_normalize),
+    #     acbm = avg_acbm/len(ms_leiden_normalize),
+    #     ncam = avg_ncam/len(ms_leiden_normalize),
+    #     imc = avg_imc/len(ms_leiden_normalize),
+    #     nmo = avg_nmo/len(ms_leiden_normalize),
+    #     trm = avg_trm/len(ms_leiden_normalize),
+    #     mloc = avg_mloc/len(ms_leiden_normalize),
+    #     mnoc = avg_mnoc/len(ms_leiden_normalize),
+    #     mcd = mcd,
+    #     algo = algo,
+    #     type = type,
+    #     project_id = project_id
+    # )
+    # avg_ms.save()
 
-    ############
-    # gnewman
-    ############
+    # ############
+    # # gnewman
+    # ############
 
-    if ClusteringNormalize.objects.filter(project_id=project_id,algo='gnewman').order_by('microservice').all().count() > 0:
-        ms_girvan_newman_normalize = ClusteringNormalize.objects.filter(project_id=project_id,algo='gnewman').order_by('microservice').all()
+    # if ClusteringNormalize.objects.filter(project_id=project_id,algo='gnewman').order_by('microservice').all().count() > 0:
+    #     ms_girvan_newman_normalize = ClusteringNormalize.objects.filter(project_id=project_id,algo='gnewman').order_by('microservice').all()
 
-        avg_cbm=0
-        avg_wcbm=0
-        avg_acbm=0
-        avg_ncam=0
-        avg_imc=0
-        avg_nmo=0
-        avg_trm=0
-        avg_mloc=0
-        avg_mnoc=0
-        algo = ''
-        type = ''
+    #     avg_cbm=0
+    #     avg_wcbm=0
+    #     avg_acbm=0
+    #     avg_ncam=0
+    #     avg_imc=0
+    #     avg_nmo=0
+    #     avg_trm=0
+    #     avg_mloc=0
+    #     avg_mnoc=0
+    #     algo = ''
+    #     type = ''
 
-        for ms in ms_girvan_newman_normalize:
-            avg_cbm += ms.cbm
-            avg_wcbm += ms.wcbm
-            avg_acbm += ms.acbm
-            avg_ncam += ms.ncam
-            avg_imc += ms.imc
-            avg_nmo += ms.nmo
-            avg_trm += ms.trm
-            avg_mloc += ms.mloc
-            avg_mnoc += ms.mnoc
-            algo = ms.algo
-            type = ms.type
+    #     for ms in ms_girvan_newman_normalize:
+    #         avg_cbm += ms.cbm
+    #         avg_wcbm += ms.wcbm
+    #         avg_acbm += ms.acbm
+    #         avg_ncam += ms.ncam
+    #         avg_imc += ms.imc
+    #         avg_nmo += ms.nmo
+    #         avg_trm += ms.trm
+    #         avg_mloc += ms.mloc
+    #         avg_mnoc += ms.mnoc
+    #         algo = ms.algo
+    #         type = ms.type
 
-        ms_list = ClusteringMetric.objects.filter(project_id=project_id, algo='gnewman').all()
-        ms_ned = 0
-        ms_all = 0
-        # print('ms count ' + str(ms_count))
-        for msl in ms_list:
-            if msl.is_ned == 1:
-                ms_ned += msl.mnoc
-                ms_all += msl.mnoc
-            else:
-                ms_all += msl.mnoc
+    #     ms_list = ClusteringMetric.objects.filter(project_id=project_id, algo='gnewman').all()
+    #     ms_ned = 0
+    #     ms_all = 0
+    #     # print('ms count ' + str(ms_count))
+    #     for msl in ms_list:
+    #         if msl.is_ned == 1:
+    #             ms_ned += msl.mnoc
+    #             ms_all += msl.mnoc
+    #         else:
+    #             ms_all += msl.mnoc
 
-        # print('ms ned ' + str(ms_ned))
-        # print('ms all ' + str(ms_all))
-        ned = ms_ned / ms_all
-        # print('ned ' + str(ned))
-        mcd = 1 - ned
-        # print('mcd ' + str(mcd))
+    #     # print('ms ned ' + str(ms_ned))
+    #     # print('ms all ' + str(ms_all))
+    #     ned = ms_ned / ms_all
+    #     # print('ned ' + str(ned))
+    #     mcd = 1 - ned
+    #     # print('mcd ' + str(mcd))
 
-        avg_ms = ScoringAverage(
-            cbm = avg_cbm/len(ms_girvan_newman_normalize),
-            wcbm = avg_wcbm/len(ms_girvan_newman_normalize),
-            acbm = avg_acbm/len(ms_girvan_newman_normalize),
-            ncam = avg_ncam/len(ms_girvan_newman_normalize),
-            imc = avg_imc/len(ms_girvan_newman_normalize),
-            nmo = avg_nmo/len(ms_girvan_newman_normalize),
-            trm = avg_trm/len(ms_girvan_newman_normalize),
-            mloc = avg_mloc/len(ms_girvan_newman_normalize),
-            mnoc = avg_mnoc/len(ms_girvan_newman_normalize),
-            mcd = mcd,
-            algo = algo,
-            type = type,
-            project_id = project_id
-        )
-        avg_ms.save()
-    else:
-        ms_girvan_newman_normalize = {}
+    #     avg_ms = ScoringAverage(
+    #         cbm = avg_cbm/len(ms_girvan_newman_normalize),
+    #         wcbm = avg_wcbm/len(ms_girvan_newman_normalize),
+    #         acbm = avg_acbm/len(ms_girvan_newman_normalize),
+    #         ncam = avg_ncam/len(ms_girvan_newman_normalize),
+    #         imc = avg_imc/len(ms_girvan_newman_normalize),
+    #         nmo = avg_nmo/len(ms_girvan_newman_normalize),
+    #         trm = avg_trm/len(ms_girvan_newman_normalize),
+    #         mloc = avg_mloc/len(ms_girvan_newman_normalize),
+    #         mnoc = avg_mnoc/len(ms_girvan_newman_normalize),
+    #         mcd = mcd,
+    #         algo = algo,
+    #         type = type,
+    #         project_id = project_id
+    #     )
+    #     avg_ms.save()
+    # else:
+    #     ms_girvan_newman_normalize = {}
 
-    # scoring for metric
+    # get scoring metric
+    ms_kmeans_normalize = calculate_scoring_average(project_id, 'kmeans')
+    ms_mean_shift_normalize = calculate_scoring_average(project_id, 'mean_shift')
+    ms_agglomerative_normalize = calculate_scoring_average(project_id, 'agglomerative')
+    ms_gaussian_normalize = calculate_scoring_average(project_id, 'gaussian')
+
+    # get scoring network
+    ms_fast_greedy_normalize = calculate_scoring_average(project_id, 'fast_greedy')
+    ms_louvain_normalize = calculate_scoring_average(project_id, 'louvain')
+    ms_leiden_normalize = calculate_scoring_average(project_id, 'leiden')
+    ms_girvan_newman_normalize = calculate_scoring_average(project_id, 'gnewman')
+
+    # get scoring combo
+    ms_ga_kmeans_normalize = calculate_scoring_average(project_id, 'ga_kmeans')
 
     if ScoringFinale.objects.filter(project_id=project_id).all().count() > 0:
         ScoringFinale.objects.filter(project_id=project_id).delete()
 
-    df_metric = pd.DataFrame(ScoringAverage.objects.filter(project_id=project_id,type='metric').all().values())
-    df_metric['rank_cbm'] = df_metric['cbm'].rank(ascending=False)
-    df_metric['rank_wcbm'] = df_metric['wcbm'].rank(ascending=False)
-    df_metric['rank_acbm'] = df_metric['acbm'].rank(ascending=False)
-    df_metric['rank_ncam'] = df_metric['ncam'].rank()
-    df_metric['rank_imc'] = df_metric['imc'].rank()
-    df_metric['rank_nmo'] = df_metric['nmo'].rank(ascending=False)
-    df_metric['rank_trm'] = df_metric['trm'].rank(ascending=False)
-    df_metric['rank_mloc'] = df_metric['mloc'].rank(ascending=False)
-    df_metric['rank_mnoc'] = df_metric['mnoc'].rank(ascending=False)
-    df_metric['rank_mcd'] = df_metric['mcd'].rank(ascending=False)
+    type_list = ['metric','network','combo']
+    for tl in type_list:
+        calculate_scoring_type(project_id,tl)
 
-    df_metric_ranked = df_metric[['algo','type','rank_cbm','rank_wcbm','rank_acbm','rank_ncam','rank_imc','rank_nmo','rank_trm','rank_mloc','rank_mnoc','rank_mcd']].copy()
+    # # scoring for metric
 
-    for df_row in df_metric_ranked.index:
-        scoring_finale = ScoringFinale(
-            cbm = df_metric_ranked['rank_cbm'][df_row],
-            wcbm = df_metric_ranked['rank_wcbm'][df_row],
-            acbm = df_metric_ranked['rank_acbm'][df_row],
-            ncam = df_metric_ranked['rank_ncam'][df_row],
-            imc = df_metric_ranked['rank_imc'][df_row],
-            nmo = df_metric_ranked['rank_nmo'][df_row],
-            trm = df_metric_ranked['rank_trm'][df_row],
-            mloc = df_metric_ranked['rank_mloc'][df_row],
-            mnoc = df_metric_ranked['rank_mnoc'][df_row],
-            mcd = df_metric_ranked['rank_mcd'][df_row],
-            algo = df_metric_ranked['algo'][df_row],
-            type = df_metric_ranked['type'][df_row],
-            total = df_metric_ranked['rank_cbm'][df_row] + df_metric_ranked['rank_wcbm'][df_row] + df_metric_ranked['rank_acbm'][df_row] + df_metric_ranked['rank_ncam'][df_row]
-                        + df_metric_ranked['rank_imc'][df_row] + df_metric_ranked['rank_nmo'][df_row] + df_metric_ranked['rank_trm'][df_row] + df_metric_ranked['rank_mloc'][df_row]
-                        + df_metric_ranked['rank_mnoc'][df_row] + df_metric_ranked['rank_mcd'][df_row],
-            project_id = project_id
-        )
-        xtotal = df_metric_ranked['rank_cbm'][df_row] + df_metric_ranked['rank_wcbm'][df_row] + df_metric_ranked['rank_acbm'][df_row] + df_metric_ranked['rank_ncam'][df_row] + df_metric_ranked['rank_imc'][df_row] + df_metric_ranked['rank_nmo'][df_row] + df_metric_ranked['rank_trm'][df_row] + df_metric_ranked['rank_mloc'][df_row] + df_metric_ranked['rank_mnoc'][df_row] + df_metric_ranked['rank_mcd'][df_row]
-        print(str(df_metric_ranked['algo'][df_row]) + ' = ' + str(xtotal))
-        scoring_finale.save()
+    # if ScoringFinale.objects.filter(project_id=project_id).all().count() > 0:
+    #     ScoringFinale.objects.filter(project_id=project_id).delete()
 
-    # scoring network
+    # df_metric = pd.DataFrame(ScoringAverage.objects.filter(project_id=project_id,type='metric').all().values())
+    # df_metric['rank_cbm'] = df_metric['cbm'].rank(ascending=False)
+    # df_metric['rank_wcbm'] = df_metric['wcbm'].rank(ascending=False)
+    # df_metric['rank_acbm'] = df_metric['acbm'].rank(ascending=False)
+    # df_metric['rank_ncam'] = df_metric['ncam'].rank()
+    # df_metric['rank_imc'] = df_metric['imc'].rank()
+    # df_metric['rank_nmo'] = df_metric['nmo'].rank(ascending=False)
+    # df_metric['rank_trm'] = df_metric['trm'].rank(ascending=False)
+    # df_metric['rank_mloc'] = df_metric['mloc'].rank(ascending=False)
+    # df_metric['rank_mnoc'] = df_metric['mnoc'].rank(ascending=False)
+    # df_metric['rank_mcd'] = df_metric['mcd'].rank(ascending=False)
 
-    df_network = pd.DataFrame(ScoringAverage.objects.filter(project_id=project_id,type='network').all().values())
-    df_network['rank_cbm'] = df_network['cbm'].rank(ascending=False)
-    df_network['rank_wcbm'] = df_network['wcbm'].rank(ascending=False)
-    df_network['rank_acbm'] = df_network['acbm'].rank(ascending=False)
-    df_network['rank_ncam'] = df_network['ncam'].rank()
-    df_network['rank_imc'] = df_network['imc'].rank()
-    df_network['rank_nmo'] = df_network['nmo'].rank(ascending=False)
-    df_network['rank_trm'] = df_network['trm'].rank(ascending=False)
-    df_network['rank_mloc'] = df_network['mloc'].rank(ascending=False)
-    df_network['rank_mnoc'] = df_network['mnoc'].rank(ascending=False)
-    df_network['rank_mcd'] = df_network['mcd'].rank(ascending=False)
+    # df_metric_ranked = df_metric[['algo','type','rank_cbm','rank_wcbm','rank_acbm','rank_ncam','rank_imc','rank_nmo','rank_trm','rank_mloc','rank_mnoc','rank_mcd']].copy()
 
-    df_network_ranked = df_network[['algo','type','rank_cbm','rank_wcbm','rank_acbm','rank_ncam','rank_imc','rank_nmo','rank_trm','rank_mloc','rank_mnoc','rank_mcd']].copy()
+    # for df_row in df_metric_ranked.index:
+    #     scoring_finale = ScoringFinale(
+    #         cbm = df_metric_ranked['rank_cbm'][df_row],
+    #         wcbm = df_metric_ranked['rank_wcbm'][df_row],
+    #         acbm = df_metric_ranked['rank_acbm'][df_row],
+    #         ncam = df_metric_ranked['rank_ncam'][df_row],
+    #         imc = df_metric_ranked['rank_imc'][df_row],
+    #         nmo = df_metric_ranked['rank_nmo'][df_row],
+    #         trm = df_metric_ranked['rank_trm'][df_row],
+    #         mloc = df_metric_ranked['rank_mloc'][df_row],
+    #         mnoc = df_metric_ranked['rank_mnoc'][df_row],
+    #         mcd = df_metric_ranked['rank_mcd'][df_row],
+    #         algo = df_metric_ranked['algo'][df_row],
+    #         type = df_metric_ranked['type'][df_row],
+    #         total = df_metric_ranked['rank_cbm'][df_row] + df_metric_ranked['rank_wcbm'][df_row] + df_metric_ranked['rank_acbm'][df_row] + df_metric_ranked['rank_ncam'][df_row]
+    #                     + df_metric_ranked['rank_imc'][df_row] + df_metric_ranked['rank_nmo'][df_row] + df_metric_ranked['rank_trm'][df_row] + df_metric_ranked['rank_mloc'][df_row]
+    #                     + df_metric_ranked['rank_mnoc'][df_row] + df_metric_ranked['rank_mcd'][df_row],
+    #         project_id = project_id
+    #     )
+    #     xtotal = df_metric_ranked['rank_cbm'][df_row] + df_metric_ranked['rank_wcbm'][df_row] + df_metric_ranked['rank_acbm'][df_row] + df_metric_ranked['rank_ncam'][df_row] + df_metric_ranked['rank_imc'][df_row] + df_metric_ranked['rank_nmo'][df_row] + df_metric_ranked['rank_trm'][df_row] + df_metric_ranked['rank_mloc'][df_row] + df_metric_ranked['rank_mnoc'][df_row] + df_metric_ranked['rank_mcd'][df_row]
+    #     print(str(df_metric_ranked['algo'][df_row]) + ' = ' + str(xtotal))
+    #     scoring_finale.save()
 
-    for df_row in df_network_ranked.index:
-        scoring_finale = ScoringFinale(
-            cbm = df_network_ranked['rank_cbm'][df_row],
-            wcbm = df_network_ranked['rank_wcbm'][df_row],
-            acbm = df_network_ranked['rank_acbm'][df_row],
-            ncam = df_network_ranked['rank_ncam'][df_row],
-            imc = df_network_ranked['rank_imc'][df_row],
-            nmo = df_network_ranked['rank_nmo'][df_row],
-            trm = df_network_ranked['rank_trm'][df_row],
-            mloc = df_network_ranked['rank_mloc'][df_row],
-            mnoc = df_network_ranked['rank_mnoc'][df_row],
-            mcd = df_network_ranked['rank_mcd'][df_row],
-            algo = df_network_ranked['algo'][df_row],
-            type = df_network_ranked['type'][df_row],
-            total = df_network_ranked['rank_cbm'][df_row] + df_network_ranked['rank_wcbm'][df_row] + df_network_ranked['rank_acbm'][df_row] + df_network_ranked['rank_ncam'][df_row]
-                        + df_network_ranked['rank_imc'][df_row] + df_network_ranked['rank_nmo'][df_row] + df_network_ranked['rank_trm'][df_row] + df_network_ranked['rank_mloc'][df_row]
-                        + df_network_ranked['rank_mnoc'][df_row] + df_network_ranked['rank_mcd'][df_row],
-            project_id = project_id
-        )
-        scoring_finale.save()
+    # # scoring network
+
+    # df_network = pd.DataFrame(ScoringAverage.objects.filter(project_id=project_id,type='network').all().values())
+    # df_network['rank_cbm'] = df_network['cbm'].rank(ascending=False)
+    # df_network['rank_wcbm'] = df_network['wcbm'].rank(ascending=False)
+    # df_network['rank_acbm'] = df_network['acbm'].rank(ascending=False)
+    # df_network['rank_ncam'] = df_network['ncam'].rank()
+    # df_network['rank_imc'] = df_network['imc'].rank()
+    # df_network['rank_nmo'] = df_network['nmo'].rank(ascending=False)
+    # df_network['rank_trm'] = df_network['trm'].rank(ascending=False)
+    # df_network['rank_mloc'] = df_network['mloc'].rank(ascending=False)
+    # df_network['rank_mnoc'] = df_network['mnoc'].rank(ascending=False)
+    # df_network['rank_mcd'] = df_network['mcd'].rank(ascending=False)
+
+    # df_network_ranked = df_network[['algo','type','rank_cbm','rank_wcbm','rank_acbm','rank_ncam','rank_imc','rank_nmo','rank_trm','rank_mloc','rank_mnoc','rank_mcd']].copy()
+
+    # for df_row in df_network_ranked.index:
+    #     scoring_finale = ScoringFinale(
+    #         cbm = df_network_ranked['rank_cbm'][df_row],
+    #         wcbm = df_network_ranked['rank_wcbm'][df_row],
+    #         acbm = df_network_ranked['rank_acbm'][df_row],
+    #         ncam = df_network_ranked['rank_ncam'][df_row],
+    #         imc = df_network_ranked['rank_imc'][df_row],
+    #         nmo = df_network_ranked['rank_nmo'][df_row],
+    #         trm = df_network_ranked['rank_trm'][df_row],
+    #         mloc = df_network_ranked['rank_mloc'][df_row],
+    #         mnoc = df_network_ranked['rank_mnoc'][df_row],
+    #         mcd = df_network_ranked['rank_mcd'][df_row],
+    #         algo = df_network_ranked['algo'][df_row],
+    #         type = df_network_ranked['type'][df_row],
+    #         total = df_network_ranked['rank_cbm'][df_row] + df_network_ranked['rank_wcbm'][df_row] + df_network_ranked['rank_acbm'][df_row] + df_network_ranked['rank_ncam'][df_row]
+    #                     + df_network_ranked['rank_imc'][df_row] + df_network_ranked['rank_nmo'][df_row] + df_network_ranked['rank_trm'][df_row] + df_network_ranked['rank_mloc'][df_row]
+    #                     + df_network_ranked['rank_mnoc'][df_row] + df_network_ranked['rank_mcd'][df_row],
+    #         project_id = project_id
+    #     )
+    #     scoring_finale.save()
+
+    
 
     # get scoring rank
     scoring_metric = ScoringFinale.objects.filter(project_id=project_id,type='metric').order_by('-total').all()
     scoring_network = ScoringFinale.objects.filter(project_id=project_id,type='network').order_by('-total').all()
+    scoring_combo = ScoringFinale.objects.filter(project_id=project_id,type='combo').order_by('-total').all()
 
     data = {
         'project': project,
         'scoring_metric': scoring_metric,
         'scoring_network': scoring_network,
+        'scoring_combo': scoring_combo,
         'ms_kmeans_normalize': ms_kmeans_normalize,
         'ms_mean_shift_normalize': ms_mean_shift_normalize,
         'ms_agglomerative_normalize': ms_agglomerative_normalize,
@@ -3101,6 +3265,7 @@ def scoring(request, project_id):
         'ms_louvain_normalize': ms_louvain_normalize,
         'ms_leiden_normalize': ms_leiden_normalize,
         'ms_girvan_newman_normalize': ms_girvan_newman_normalize,
+        'ms_ga_kmeans_normalize': ms_ga_kmeans_normalize
         # 'df': df_metric_ranked.to_html()
     }
     return render(request, 'squality/project_scoring.html', data)
@@ -3155,6 +3320,7 @@ def summary(request, project_id):
     # get scoring rank
     scoring_metric = ScoringFinale.objects.filter(project_id=project_id,type='metric').order_by('-total').all()
     scoring_network = ScoringFinale.objects.filter(project_id=project_id,type='network').order_by('-total').all()
+    scoring_combo = ScoringFinale.objects.filter(project_id=project_id,type='combo').order_by('-total').all()
     scoring_overall = ScoringFinale.objects.filter(project_id=project_id,type='overall').order_by('-total').all()
 
     # df_metric = pd.DataFrame(ScoringFinale.objects.filter(project_id=project_id,type='metric').order_by('-total').all().values())
@@ -3197,10 +3363,30 @@ def summary(request, project_id):
         filename = 'radar_' + sn.algo
         fig.write_image("uploads/csv/" + filename + ".png")
 
+    for sc in scoring_combo:
+        df_combo = pd.DataFrame(ScoringFinale.objects.filter(project_id=project_id,type='combo',algo=sc.algo).order_by('-total').all().values())
+        r = [
+            float(df_combo['cbm'].to_string(index=False)),
+            float(df_combo['wcbm'].to_string(index=False)),
+            float(df_combo['acbm'].to_string(index=False)),
+            float(df_combo['ncam'].to_string(index=False)),
+            float(df_combo['imc'].to_string(index=False)),
+            float(df_combo['nmo'].to_string(index=False)),
+            float(df_combo['trm'].to_string(index=False)),
+            float(df_combo['mloc'].to_string(index=False)),
+            float(df_combo['mnoc'].to_string(index=False)),
+            float(df_combo['mcd'].to_string(index=False))]
+        t = ['CBM','WCBM','ACBM','NCAM','IMC','NMO','TRM','MLOC','MNOC','MCD']
+        fig = px.line_polar(df_combo,r=r,theta=t,line_close=True, title=sc.algo)
+        fig.update_traces(fill='toself')
+        filename = 'radar_' + sc.algo
+        fig.write_image("uploads/csv/" + filename + ".png")
+
     data = {
         'project': project,
         'scoring_metric': scoring_metric,
         'scoring_network': scoring_network,
+        'scoring_combo': scoring_combo,
         'scoring_overall': scoring_overall,
         'project_classes': project_classes,
         'project_loc': project_loc,

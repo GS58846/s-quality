@@ -1,0 +1,11 @@
+,class_name,cluster,type,algo,project_id
+1,dto.AddressInfo,0,combo,ga_kmeans,12
+2,dto.BookingInfo,1,combo,ga_kmeans,12
+3,dto.BookingPKInfo,2,combo,ga_kmeans,12
+4,dto.BookingReceiptInfo,3,combo,ga_kmeans,12
+5,dto.CustomerInfo,4,combo,ga_kmeans,12
+6,dto.FlightInfo,5,combo,ga_kmeans,12
+7,dto.FlightPKInfo,6,combo,ga_kmeans,12
+8,dto.FlightSegmentInfo,7,combo,ga_kmeans,12
+9,dto.TripFlightOptions,8,combo,ga_kmeans,12
+10,dto.TripLegInfo,9,combo,ga_kmeans,12
