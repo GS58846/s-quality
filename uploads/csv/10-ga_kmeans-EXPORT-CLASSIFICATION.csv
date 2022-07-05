@@ -1,0 +1,189 @@
+class_name,method_name,cluster
+Cargo,assign To Route,cluster-4
+Cargo,Cargo,cluster-4
+Cargo,Cargo,cluster-4
+Cargo,derive Delivery Progress,cluster-4
+Cargo,equals,cluster-4
+Cargo,get Delivery,cluster-4
+Cargo,get Itinerary,cluster-4
+Cargo,get Origin,cluster-4
+Cargo,get Route Specification,cluster-4
+Cargo,get Tracking Id,cluster-4
+Cargo,hash Code,cluster-4
+Cargo,same Identity As,cluster-4
+Cargo,set Origin,cluster-4
+Cargo,specify New Route,cluster-4
+Cargo,to String,cluster-4
+Delivery,calculate Current Voyage,cluster-1
+Delivery,calculate Eta,cluster-1
+Delivery,calculate Last Known Location,cluster-1
+Delivery,calculate Misdirection Status,cluster-1
+Delivery,calculate Next Expected Activity,cluster-1
+Delivery,calculate Routing Status,cluster-1
+Delivery,calculate Transport Status,cluster-1
+Delivery,calculate Unloaded At Destination,cluster-1
+Delivery,Delivery,cluster-1
+Delivery,Delivery,cluster-1
+Delivery,derived From,cluster-1
+Delivery,equals,cluster-1
+Delivery,get Calculated At,cluster-1
+Delivery,get Current Voyage,cluster-1
+Delivery,get Estimated Time Of Arrival,cluster-1
+Delivery,get Last Known Location,cluster-1
+Delivery,get Next Expected Activity,cluster-1
+Delivery,get Routing Status,cluster-1
+Delivery,get Transport Status,cluster-1
+Delivery,hash Code,cluster-1
+Delivery,is Misdirected,cluster-1
+Delivery,is Unloaded At Destination,cluster-1
+Delivery,on Track,cluster-1
+Delivery,same Value As,cluster-1
+Delivery,set Calculated At,cluster-1
+Delivery,set Last Event,cluster-1
+Delivery,set Last Known Location,cluster-1
+Delivery,set Misdirected,cluster-1
+Delivery,set Routing Status,cluster-1
+Delivery,set Transport Status,cluster-1
+Delivery,set Unloaded At Destination,cluster-1
+Delivery,update On Routing,cluster-1
+HandlingActivity,equals,cluster-0
+HandlingActivity,get Location,cluster-0
+HandlingActivity,get Type,cluster-0
+HandlingActivity,get Voyage,cluster-0
+HandlingActivity,Handling Activity,cluster-0
+HandlingActivity,Handling Activity,cluster-0
+HandlingActivity,Handling Activity,cluster-0
+HandlingActivity,hash Code,cluster-0
+HandlingActivity,is Empty,cluster-0
+HandlingActivity,same Value As,cluster-0
+Itinerary,equals,cluster-4
+Itinerary,get Final Arrival Date,cluster-4
+Itinerary,get Final Arrival Location,cluster-4
+Itinerary,get Initial Departure Location,cluster-4
+Itinerary,get Last Leg,cluster-4
+Itinerary,get Legs,cluster-4
+Itinerary,hash Code,cluster-4
+Itinerary,is Expected,cluster-4
+Itinerary,Itinerary,cluster-4
+Itinerary,Itinerary,cluster-4
+Itinerary,same Value As,cluster-4
+Itinerary,to String,cluster-4
+Leg,equals,cluster-0
+Leg,get Load Location,cluster-0
+Leg,get Load Time,cluster-0
+Leg,get Unload Location,cluster-0
+Leg,get Unload Time,cluster-0
+Leg,get Voyage,cluster-0
+Leg,hash Code,cluster-0
+Leg,Leg,cluster-0
+Leg,Leg,cluster-0
+Leg,same Value As,cluster-0
+Leg,to String,cluster-0
+RouteSpecification,equals,cluster-3
+RouteSpecification,get Arrival Deadline,cluster-3
+RouteSpecification,get Destination,cluster-3
+RouteSpecification,get Origin,cluster-3
+RouteSpecification,hash Code,cluster-3
+RouteSpecification,is Satisfied By,cluster-3
+RouteSpecification,Route Specification,cluster-3
+RouteSpecification,Route Specification,cluster-3
+RouteSpecification,same Value As,cluster-3
+TrackingId,equals,cluster-0
+TrackingId,get Id String,cluster-0
+TrackingId,hash Code,cluster-0
+TrackingId,same Value As,cluster-0
+TrackingId,to String,cluster-0
+TrackingId,Tracking Id,cluster-0
+TrackingId,Tracking Id,cluster-0
+CannotCreateHandlingEventException,Cannot Create Handling Event Exception,cluster-6
+CannotCreateHandlingEventException,Cannot Create Handling Event Exception,cluster-6
+HandlingEvent,equals,cluster-7
+HandlingEvent,get Cargo,cluster-7
+HandlingEvent,get Completion Time,cluster-7
+HandlingEvent,get Location,cluster-7
+HandlingEvent,get Registration Time,cluster-7
+HandlingEvent,get Summary,cluster-7
+HandlingEvent,get Type,cluster-7
+HandlingEvent,get Voyage,cluster-7
+HandlingEvent,Handling Event,cluster-7
+HandlingEvent,Handling Event,cluster-7
+HandlingEvent,Handling Event,cluster-7
+HandlingEvent,hash Code,cluster-7
+HandlingEvent,same Event As,cluster-7
+HandlingEvent,to String,cluster-7
+HandlingEventFactory,create Handling Event,cluster-0
+HandlingEventFactory,find Cargo,cluster-0
+HandlingEventFactory,find Location,cluster-0
+HandlingEventFactory,find Voyage,cluster-0
+HandlingHistory,equals,cluster-0
+HandlingHistory,get All Handling Events,cluster-0
+HandlingHistory,get Distinct Events By Completion Time,cluster-0
+HandlingHistory,get Most Recently Completed Event,cluster-0
+HandlingHistory,Handling History,cluster-0
+HandlingHistory,hash Code,cluster-0
+HandlingHistory,same Value As,cluster-0
+UnknownCargoException,get Message,cluster-6
+UnknownCargoException,Unknown Cargo Exception,cluster-6
+UnknownLocationException,get Message,cluster-6
+UnknownLocationException,Unknown Location Exception,cluster-6
+UnknownVoyageException,get Message,cluster-6
+UnknownVoyageException,Unknown Voyage Exception,cluster-6
+Location,equals,cluster-0
+Location,get Name,cluster-0
+Location,get Un Locode,cluster-0
+Location,hash Code,cluster-0
+Location,Location,cluster-0
+Location,Location,cluster-0
+Location,same Identity As,cluster-0
+Location,to String,cluster-0
+UnLocode,equals,cluster-0
+UnLocode,get Id String,cluster-0
+UnLocode,hash Code,cluster-0
+UnLocode,same Value As,cluster-0
+UnLocode,to String,cluster-0
+UnLocode,Un Locode,cluster-0
+UnLocode,Un Locode,cluster-0
+Builder,add Movement,cluster-0
+Builder,build,cluster-0
+Builder,Builder,cluster-0
+CarrierMovement,Carrier Movement,cluster-0
+CarrierMovement,Carrier Movement,cluster-0
+CarrierMovement,equals,cluster-0
+CarrierMovement,get Arrival Location,cluster-0
+CarrierMovement,get Arrival Time,cluster-0
+CarrierMovement,get Departure Location,cluster-0
+CarrierMovement,get Departure Time,cluster-0
+CarrierMovement,hash Code,cluster-0
+CarrierMovement,same Value As,cluster-0
+SampleVoyages,create Voyage,cluster-2
+SampleVoyages,get All,cluster-2
+SampleVoyages,lookup,cluster-2
+Schedule,equals,cluster-0
+Schedule,get Carrier Movements,cluster-0
+Schedule,hash Code,cluster-0
+Schedule,same Value As,cluster-0
+Schedule,Schedule,cluster-0
+Schedule,Schedule,cluster-0
+Voyage,equals,cluster-7
+Voyage,get Schedule,cluster-7
+Voyage,get Voyage Number,cluster-7
+Voyage,hash Code,cluster-7
+Voyage,same Identity As,cluster-7
+Voyage,to String,cluster-7
+Voyage,Voyage,cluster-7
+Voyage,Voyage,cluster-7
+VoyageNumber,equals,cluster-0
+VoyageNumber,get Id String,cluster-0
+VoyageNumber,hash Code,cluster-0
+VoyageNumber,same Value As,cluster-0
+VoyageNumber,to String,cluster-0
+VoyageNumber,Voyage Number,cluster-0
+VoyageNumber,Voyage Number,cluster-0
+AndSpecification,And Specification,cluster-6
+AndSpecification,is Satisfied By,cluster-6
+DomainObjectUtils,Domain Object Utils,cluster-6
+DomainObjectUtils,null Safe,cluster-6
+NotSpecification,is Satisfied By,cluster-6
+NotSpecification,Not Specification,cluster-6
+OrSpecification,is Satisfied By,cluster-6
+OrSpecification,Or Specification,cluster-6

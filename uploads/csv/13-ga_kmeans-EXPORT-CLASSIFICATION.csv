@@ -1,0 +1,84 @@
+class_name,method_name,cluster
+PetClinicApplication,main,cluster-0
+BaseEntity,get Id,cluster-3
+BaseEntity,is New,cluster-3
+BaseEntity,set Id,cluster-3
+NamedEntity,get Name,cluster-3
+NamedEntity,set Name,cluster-3
+NamedEntity,to String,cluster-3
+Person,get First Name,cluster-3
+Person,get Last Name,cluster-3
+Person,set First Name,cluster-3
+Person,set Last Name,cluster-3
+Owner,add Pet,cluster-4
+Owner,add Visit,cluster-4
+Owner,get Address,cluster-4
+Owner,get City,cluster-4
+Owner,get Pet,cluster-4
+Owner,get Pet,cluster-4
+Owner,get Pet,cluster-4
+Owner,get Pets,cluster-4
+Owner,get Telephone,cluster-4
+Owner,set Address,cluster-4
+Owner,set City,cluster-4
+Owner,set Telephone,cluster-4
+Owner,to String,cluster-4
+OwnerController,add Pagination Model,cluster-7
+OwnerController,find Owner,cluster-7
+OwnerController,find Paginated For Owners Last Name,cluster-7
+OwnerController,init Creation Form,cluster-7
+OwnerController,init Find Form,cluster-7
+OwnerController,init Update Owner Form,cluster-7
+OwnerController,Owner Controller,cluster-7
+OwnerController,process Creation Form,cluster-7
+OwnerController,process Find Form,cluster-7
+OwnerController,process Update Owner Form,cluster-7
+OwnerController,set Allowed Fields,cluster-7
+OwnerController,show Owner,cluster-7
+Pet,add Visit,cluster-2
+Pet,get Birth Date,cluster-2
+Pet,get Type,cluster-2
+Pet,get Visits,cluster-2
+Pet,set Birth Date,cluster-2
+Pet,set Type,cluster-2
+PetController,find Owner,cluster-7
+PetController,find Pet,cluster-7
+PetController,init Creation Form,cluster-7
+PetController,init Owner Binder,cluster-7
+PetController,init Pet Binder,cluster-7
+PetController,init Update Form,cluster-7
+PetController,Pet Controller,cluster-7
+PetController,populate Pet Types,cluster-7
+PetController,process Creation Form,cluster-7
+PetController,process Update Form,cluster-7
+PetTypeFormatter,parse,cluster-8
+PetTypeFormatter,Pet Type Formatter,cluster-8
+PetTypeFormatter,print,cluster-8
+PetValidator,supports,cluster-5
+PetValidator,validate,cluster-5
+Visit,get Date,cluster-3
+Visit,get Description,cluster-3
+Visit,set Date,cluster-3
+Visit,set Description,cluster-3
+Visit,Visit,cluster-3
+VisitController,init New Visit Form,cluster-8
+VisitController,load Pet With Visit,cluster-8
+VisitController,process New Visit Form,cluster-8
+VisitController,set Allowed Fields,cluster-8
+VisitController,Visit Controller,cluster-8
+EntityUtils,get By Id,cluster-0
+CacheConfiguration,cache Configuration,cluster-0
+CacheConfiguration,petclinic Cache Configuration Customizer,cluster-0
+CrashController,trigger Exception,cluster-0
+WelcomeController,welcome,cluster-0
+Vet,add Specialty,cluster-6
+Vet,get Nr Of Specialties,cluster-6
+Vet,get Specialties,cluster-6
+Vet,get Specialties Internal,cluster-6
+Vet,set Specialties Internal,cluster-6
+VetController,add Pagination Model,cluster-8
+VetController,find Paginated,cluster-8
+VetController,show Resources Vet List,cluster-8
+VetController,show Vet List,cluster-8
+VetController,Vet Controller,cluster-8
+Vets,get Vet List,cluster-0

@@ -1,0 +1,118 @@
+class_name,method_name,cluster
+FlightInfo,Flight Info,cluster-0
+FlightInfo,Flight Info,cluster-0
+FlightInfo,get_id,cluster-0
+FlightInfo,get Airplane Type Id,cluster-0
+FlightInfo,get Economy Class Base Cost,cluster-0
+FlightInfo,get First Class Base Cost,cluster-0
+FlightInfo,get Flight Segment,cluster-0
+FlightInfo,get Flight Segment Id,cluster-0
+FlightInfo,get Num Economy Class Seats,cluster-0
+FlightInfo,get Num First Class Seats,cluster-0
+FlightInfo,get Pkey,cluster-0
+FlightInfo,get Scheduled Arrival Time,cluster-0
+FlightInfo,get Scheduled Departure Time,cluster-0
+FlightInfo,set_id,cluster-0
+FlightInfo,set Airplane Type Id,cluster-0
+FlightInfo,set Economy Class Base Cost,cluster-0
+FlightInfo,set First Class Base Cost,cluster-0
+FlightInfo,set Flight Segment,cluster-0
+FlightInfo,set Flight Segment Id,cluster-0
+FlightInfo,set Num Economy Class Seats,cluster-0
+FlightInfo,set Num First Class Seats,cluster-0
+FlightInfo,set Scheduled Arrival Time,cluster-0
+FlightInfo,set Scheduled Departure Time,cluster-0
+FlightPKInfo,Flight PK Info,cluster-1
+FlightPKInfo,Flight PK Info,cluster-1
+FlightPKInfo,get Flight Segment Id,cluster-1
+FlightPKInfo,get Id,cluster-1
+FlightPKInfo,set Flight Segment Id,cluster-1
+FlightPKInfo,set Id,cluster-1
+FlightSegmentInfo,Flight Segment Info,cluster-1
+FlightSegmentInfo,Flight Segment Info,cluster-1
+FlightSegmentInfo,get_id,cluster-1
+FlightSegmentInfo,get Dest Port,cluster-1
+FlightSegmentInfo,get Miles,cluster-1
+FlightSegmentInfo,get Origin Port,cluster-1
+FlightSegmentInfo,set_id,cluster-1
+FlightSegmentInfo,set Dest Port,cluster-1
+FlightSegmentInfo,set Miles,cluster-1
+FlightSegmentInfo,set Origin Port,cluster-1
+TripFlightOptions,get Trip Flights,cluster-1
+TripFlightOptions,get Trip Legs,cluster-1
+TripFlightOptions,set Trip Flights,cluster-1
+TripFlightOptions,set Trip Legs,cluster-1
+TripLegInfo,get Current Page,cluster-2
+TripLegInfo,get Flights Options,cluster-2
+TripLegInfo,get Num Pages,cluster-2
+TripLegInfo,get Page Size,cluster-2
+TripLegInfo,is Has More Options,cluster-2
+TripLegInfo,set Current Page,cluster-2
+TripLegInfo,set Flights Options,cluster-2
+TripLegInfo,set Has More Options,cluster-2
+TripLegInfo,set Num Pages,cluster-2
+TripLegInfo,set Page Size,cluster-2
+AddressInfo,Address Info,cluster-2
+AddressInfo,Address Info,cluster-2
+AddressInfo,Address Info,cluster-2
+AddressInfo,equals,cluster-2
+AddressInfo,get City,cluster-2
+AddressInfo,get Country,cluster-2
+AddressInfo,get Postal Code,cluster-2
+AddressInfo,get State Province,cluster-2
+AddressInfo,get Street Address1,cluster-2
+AddressInfo,get Street Address2,cluster-2
+AddressInfo,set City,cluster-2
+AddressInfo,set Country,cluster-2
+AddressInfo,set Postal Code,cluster-2
+AddressInfo,set State Province,cluster-2
+AddressInfo,set Street Address1,cluster-2
+AddressInfo,set Street Address2,cluster-2
+AddressInfo,to String,cluster-2
+BookingReceiptInfo,Booking Receipt Info,cluster-1
+BookingReceiptInfo,Booking Receipt Info,cluster-1
+BookingReceiptInfo,get Depart Booking Id,cluster-1
+BookingReceiptInfo,get Return Booking Id,cluster-1
+BookingReceiptInfo,is One Way,cluster-1
+BookingReceiptInfo,set Depart Booking Id,cluster-1
+BookingReceiptInfo,set One Way,cluster-1
+BookingReceiptInfo,set Return Booking Id,cluster-1
+BookingReceiptInfo,to String,cluster-1
+BookingInfo,Booking Info,cluster-2
+BookingInfo,Booking Info,cluster-2
+BookingInfo,get Booking Id,cluster-2
+BookingInfo,get Customer Id,cluster-2
+BookingInfo,get Date Of Booking,cluster-2
+BookingInfo,get Flight Id,cluster-2
+BookingInfo,get Pkey,cluster-2
+BookingInfo,set Booking Id,cluster-2
+BookingInfo,set Customer Id,cluster-2
+BookingInfo,set Date Of Booking,cluster-2
+BookingInfo,set Flight Id,cluster-2
+CustomerInfo,Customer Info,cluster-0
+CustomerInfo,Customer Info,cluster-0
+CustomerInfo,Customer Info,cluster-0
+CustomerInfo,equals,cluster-0
+CustomerInfo,get Address,cluster-0
+CustomerInfo,get Miles_ytd,cluster-0
+CustomerInfo,get Password,cluster-0
+CustomerInfo,get Phone Number,cluster-0
+CustomerInfo,get Phone Number Type,cluster-0
+CustomerInfo,get Status,cluster-0
+CustomerInfo,get Total_miles,cluster-0
+CustomerInfo,get Username,cluster-0
+CustomerInfo,set Address,cluster-0
+CustomerInfo,set Miles_ytd,cluster-0
+CustomerInfo,set Password,cluster-0
+CustomerInfo,set Phone Number,cluster-0
+CustomerInfo,set Phone Number Type,cluster-0
+CustomerInfo,set Status,cluster-0
+CustomerInfo,set Total_miles,cluster-0
+CustomerInfo,set Username,cluster-0
+CustomerInfo,to String,cluster-0
+BookingPKInfo,Booking PK Info,cluster-1
+BookingPKInfo,Booking PK Info,cluster-1
+BookingPKInfo,get Customer Id,cluster-1
+BookingPKInfo,get Id,cluster-1
+BookingPKInfo,set Customer Id,cluster-1
+BookingPKInfo,set Id,cluster-1

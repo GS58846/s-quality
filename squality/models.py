@@ -62,6 +62,7 @@ class EaMethod(models.Model):
     class_name = models.TextField()
     method_name = models.TextField()
     project_id = models.IntegerField()
+    xmi_id = models.TextField()
 
 class SdMetricRaw(models.Model):
     class_name = models.TextField()
@@ -90,6 +91,7 @@ class MetricNormalize(models.Model):
     nca = models.DecimalField(max_digits=30, decimal_places=6, default=0, blank=True, null=True)
     normalized = models.IntegerField(default=0)
     project_id = models.IntegerField()
+    xmi_id = models.TextField()
 
 class S101MetricRaw(models.Model):
     class_from = models.TextField(null=True)
@@ -115,6 +117,7 @@ class Clustering(models.Model):
     type = models.TextField()
     algo = models.TextField()
     project_id = models.IntegerField()
+    xmi_id = models.TextField()
 
 class ClusteringMetric(models.Model):
     algo = models.TextField()
