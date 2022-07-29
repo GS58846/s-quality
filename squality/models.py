@@ -230,3 +230,7 @@ class ScoringFinale(models.Model):
     mcd = models.DecimalField(max_digits=9, decimal_places=1, default=0, blank=True, null=True)
     total = models.DecimalField(max_digits=9, decimal_places=1, default=0, blank=True, null=True)
     project_id = models.IntegerField()
+    coupling = models.DecimalField(max_digits=9, decimal_places=1, default=0, blank=True, null=True)
+    cohesion = models.DecimalField(max_digits=9, decimal_places=1, default=0, blank=True, null=True)
+    complexity = models.DecimalField(max_digits=9, decimal_places=1, default=0, blank=True, null=True)
+    size = models.DecimalField(max_digits=9, decimal_places=1, default=0, blank=True, null=True)

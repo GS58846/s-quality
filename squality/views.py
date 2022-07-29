@@ -43,8 +43,13 @@ from squality.models import ClocMetric, ClocMetricRaw, ClusteringNormalize, Clus
 
 def index(request):
     projects = Project.objects.all()
+    metrics = ScoringFinale.objects.filter(type='metric').order_by('algo').all()
+    networks = ScoringFinale.objects.filter(type='network').order_by('algo').all()
+    # combos = ScoringFinale.objects.filter(type='combo').order_by('algo').all()
     data = {
         'projects': projects,
+        'metrics': metrics,
+        'networks': networks
     }
 
     return render(request, 'squality/index.html', data)
@@ -1971,12 +1976,12 @@ def clustering_combo(request, project_id):
     # this file is manually generated using weka
     # TODO: execute weka from command line to automate this step
 
-    # combo_csv = "uploads/weka/jpetstore-combo.csv"
+    combo_csv = "uploads/weka/jpetstore-combo.csv"
     # combo_csv = "uploads/weka/cargotracker-combo.csv"
     # combo_csv = "uploads/weka/daytrader-combo.csv"
     # combo_csv = "uploads/weka/acmeair-combo.csv"
     # combo_csv = "uploads/weka/petclinic-combo.csv"
-    combo_csv = "uploads/weka/plants-combo.csv"
+    # combo_csv = "uploads/weka/plants-combo.csv"
 
     with open(combo_csv, mode='r', encoding="utf-8-sig") as csv_file:
         csv_reader = DictReader(csv_file)
@@ -2264,22 +2269,32 @@ def calculate_scoring_type(project_id, type):
 
     for df_row in df_metric_ranked.index:
         scoring_finale = ScoringFinale(
+            # coupling
             cbm = df_metric_ranked['rank_cbm'][df_row],
             wcbm = df_metric_ranked['rank_wcbm'][df_row],
             acbm = df_metric_ranked['rank_acbm'][df_row],
+            # cohesion
             ncam = df_metric_ranked['rank_ncam'][df_row],
             imc = df_metric_ranked['rank_imc'][df_row],
+            # complexity
             nmo = df_metric_ranked['rank_nmo'][df_row],
             trm = df_metric_ranked['rank_trm'][df_row],
+            # size
             mloc = df_metric_ranked['rank_mloc'][df_row],
             mnoc = df_metric_ranked['rank_mnoc'][df_row],
+            
             mcd = df_metric_ranked['rank_mcd'][df_row],
+
             algo = df_metric_ranked['algo'][df_row],
             type = df_metric_ranked['type'][df_row],
             total = df_metric_ranked['rank_cbm'][df_row] + df_metric_ranked['rank_wcbm'][df_row] + df_metric_ranked['rank_acbm'][df_row] + df_metric_ranked['rank_ncam'][df_row]
                         + df_metric_ranked['rank_imc'][df_row] + df_metric_ranked['rank_nmo'][df_row] + df_metric_ranked['rank_trm'][df_row] + df_metric_ranked['rank_mloc'][df_row]
                         + df_metric_ranked['rank_mnoc'][df_row] + df_metric_ranked['rank_mcd'][df_row],
-            project_id = project_id
+            project_id = project_id,
+            coupling = df_metric_ranked['rank_cbm'][df_row] + df_metric_ranked['rank_wcbm'][df_row] + df_metric_ranked['rank_acbm'][df_row],
+            cohesion = df_metric_ranked['rank_ncam'][df_row] + df_metric_ranked['rank_imc'][df_row],
+            complexity = df_metric_ranked['rank_nmo'][df_row] + df_metric_ranked['rank_trm'][df_row],
+            size = df_metric_ranked['rank_mloc'][df_row] + df_metric_ranked['rank_mnoc'][df_row]
         )
         xtotal = df_metric_ranked['rank_cbm'][df_row] + df_metric_ranked['rank_wcbm'][df_row] + df_metric_ranked['rank_acbm'][df_row] + df_metric_ranked['rank_ncam'][df_row] + df_metric_ranked['rank_imc'][df_row] + df_metric_ranked['rank_nmo'][df_row] + df_metric_ranked['rank_trm'][df_row] + df_metric_ranked['rank_mloc'][df_row] + df_metric_ranked['rank_mnoc'][df_row] + df_metric_ranked['rank_mcd'][df_row]
         print(str(df_metric_ranked['algo'][df_row]) + ' = ' + str(xtotal))

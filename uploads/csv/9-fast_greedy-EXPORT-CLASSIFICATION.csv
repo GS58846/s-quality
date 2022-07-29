@@ -83,15 +83,15 @@ Cart,get Sub Total,cluster-1
 Cart,increment Quantity By Item Id,cluster-1
 Cart,remove Item By Id,cluster-1
 Cart,set Quantity By Item Id,cluster-1
+CartItem,calculate Total,cluster-1
+CartItem,get Item,cluster-1
+CartItem,get Quantity,cluster-1
 CartItem,get Total,cluster-1
 CartItem,increment Quantity,cluster-1
 CartItem,is In Stock,cluster-1
 CartItem,set In Stock,cluster-1
 CartItem,set Item,cluster-1
 CartItem,set Quantity,cluster-1
-CartItem,calculate Total,cluster-1
-CartItem,get Item,cluster-1
-CartItem,get Quantity,cluster-1
 LineItem,calculate Total,cluster-1
 LineItem,get Item,cluster-1
 LineItem,get Item Id,cluster-1

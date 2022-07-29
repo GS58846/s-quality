@@ -45,15 +45,15 @@ Cart,get Sub Total,cluster-0
 Cart,increment Quantity By Item Id,cluster-0
 Cart,remove Item By Id,cluster-0
 Cart,set Quantity By Item Id,cluster-0
+CartItem,calculate Total,cluster-0
+CartItem,get Item,cluster-0
+CartItem,get Quantity,cluster-0
 CartItem,get Total,cluster-0
 CartItem,increment Quantity,cluster-0
 CartItem,is In Stock,cluster-0
 CartItem,set In Stock,cluster-0
 CartItem,set Item,cluster-0
 CartItem,set Quantity,cluster-0
-CartItem,calculate Total,cluster-0
-CartItem,get Item,cluster-0
-CartItem,get Quantity,cluster-0
 Category,get Category Id,cluster-0
 Category,get Description,cluster-0
 Category,get Name,cluster-0
