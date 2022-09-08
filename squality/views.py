@@ -1982,6 +1982,7 @@ def clustering_combo(request, project_id):
     # combo_csv = "uploads/weka/acmeair-combo.csv"
     # combo_csv = "uploads/weka/petclinic-combo.csv"
     # combo_csv = "uploads/weka/plants-combo.csv"
+    # combo_csv = "uploads/weka/ftgo-mono-combo.csv"
 
     with open(combo_csv, mode='r', encoding="utf-8-sig") as csv_file:
         csv_reader = DictReader(csv_file)

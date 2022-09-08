@@ -1,0 +1,155 @@
+language,filename,blank,comment,code,"github.com/AlDanial/cloc v 1.92  T=0.06 s (2567.3 files/s, 80644.5 lines/s)"
+Java,ftgo-monolith/ftgo-end-to-end-tests-common/src/main/java/net/chrisrichardson/ftgo/endtoendtests/common/AbstractEndToEndTests.java,67,0,320
+Java,ftgo-monolith/ftgo-domain/src/main/java/net/chrisrichardson/ftgo/domain/Order.java,46,0,154
+Bourne Again Shell,ftgo-monolith/gradlew,20,21,123
+Java,ftgo-monolith/ftgo-order-service/src/main/java/net/chrisrichardson/ftgo/orderservice/domain/OrderService.java,38,2,100
+Java,ftgo-monolith/ftgo-order-service/src/main/java/net/chrisrichardson/ftgo/orderservice/web/OrderController.java,22,0,100
+SQL,ftgo-monolith/ftgo-flyway/src/main/resources/db/migration/V1__create_ftgo_db.sql,15,0,97
+Java,ftgo-monolith/buildSrc/src/main/groovy/WaitForMySql.java,22,0,71
+Java,ftgo-monolith/ftgo-common/src/test/java/net/chrisrichardson/ftgo/common/MoneySerializationTest.java,22,0,68
+Java,ftgo-monolith/ftgo-domain/src/main/java/net/chrisrichardson/ftgo/domain/OrderLineItem.java,22,0,65
+DOS Batch,ftgo-monolith/gradlew.bat,24,2,64
+Java,ftgo-monolith/ftgo-order-service/src/test/java/net/chrisrichardson/ftgo/orderservice/web/OrderControllerTest.java,14,0,60
+Java,ftgo-monolith/ftgo-common/src/main/java/net/chrisrichardson/ftgo/common/Money.java,21,0,58
+Java,ftgo-monolith/ftgo-order-service-api/src/main/java/net/chrisrichardson/ftgo/orderservice/api/events/OrderDetails.java,22,0,56
+Java,ftgo-monolith/ftgo-domain/src/main/java/net/chrisrichardson/ftgo/domain/Restaurant.java,17,0,55
+Java,ftgo-monolith/ftgo-order-service/src/main/java/net/chrisrichardson/ftgo/orderservice/web/GetOrderResponse.java,16,0,55
+YAML,ftgo-monolith/deployment/kubernetes/stateful-services/ftgo-mysql-deployment.yml,0,0,54
+Java,ftgo-monolith/ftgo-order-service-api/src/main/java/net/chrisrichardson/ftgo/orderservice/api/web/CreateOrderRequest.java,25,0,54
+Java,ftgo-monolith/ftgo-common/src/main/java/net/chrisrichardson/ftgo/common/Address.java,15,0,52
+Java,ftgo-monolith/ftgo-domain/src/main/java/net/chrisrichardson/ftgo/domain/MenuItem.java,17,0,52
+Java,ftgo-monolith/ftgo-restaurant-service-api/src/main/java/net/chrisrichardson/ftgo/restaurantservice/events/MenuItemDTO.java,15,0,52
+Java,ftgo-monolith/ftgo-domain/src/main/java/net/chrisrichardson/ftgo/domain/Courier.java,19,0,51
+Java,ftgo-monolith/ftgo-domain/src/main/java/net/chrisrichardson/ftgo/domain/OrderLineItems.java,14,0,50
+Bourne Shell,ftgo-monolith/build-and-test-all.sh,24,1,47
+Java,ftgo-monolith/ftgo-common/src/main/java/net/chrisrichardson/ftgo/common/MoneyModule.java,11,0,47
+Gradle,ftgo-monolith/ftgo-order-service/build.gradle,16,0,43
+Java,ftgo-monolith/ftgo-domain/src/main/java/net/chrisrichardson/ftgo/domain/RestaurantMenu.java,12,0,37
+Java,ftgo-monolith/common-swagger/src/main/java/net/chrisrichardson/eventstore/examples/customersandorders/commonswagger/CommonSwaggerConfiguration.java,7,0,36
+Java,ftgo-monolith/ftgo-application/src/test/java/net/chrisrichardson/ftgo/FtgoApplicationTest.java,7,0,35
+Java,ftgo-monolith/ftgo-courier-service/src/main/java/net/chrisrichardson/ftgo/courierservice/domain/CourierService.java,11,0,34
+Java,ftgo-monolith/ftgo-domain/src/main/java/net/chrisrichardson/ftgo/domain/Action.java,12,0,33
+XML,ftgo-monolith/ftgo-monolith.java.hsp,0,0,33
+Java,ftgo-monolith/ftgo-restaurant-service-api/src/main/java/net/chrisrichardson/ftgo/restaurantservice/events/CreateRestaurantRequest.java,13,0,32
+Java,ftgo-monolith/ftgo-courier-service/src/main/java/net/chrisrichardson/ftgo/courierservice/web/CourierController.java,8,0,31
+Java,ftgo-monolith/ftgo-order-service-api/src/main/java/net/chrisrichardson/ftgo/orderservice/api/events/OrderLineItemDTO.java,11,0,31
+Java,ftgo-monolith/ftgo-order-service/src/main/java/net/chrisrichardson/ftgo/orderservice/domain/OrderConfiguration.java,4,1,31
+Java,ftgo-monolith/ftgo-restaurant-service-api/src/main/java/net/chrisrichardson/ftgo/restaurantservice/events/RestaurantMenuDTO.java,12,0,31
+YAML,ftgo-monolith/.circleci/config.yml,0,0,30
+Gradle,ftgo-monolith/build.gradle,12,0,30
+Groovy,ftgo-monolith/buildSrc/src/main/groovy/IntegrationTestsPlugin.groovy,5,0,29
+Java,ftgo-monolith/ftgo-domain/src/main/java/net/chrisrichardson/ftgo/domain/Consumer.java,11,1,29
+Java,ftgo-monolith/ftgo-common/src/test/java/net/chrisrichardson/ftgo/common/MoneyTest.java,13,0,28
+Java,ftgo-monolith/ftgo-order-service/src/test/java/net/chrisrichardson/ftgo/orderservice/OrderDetailsMother.java,12,0,28
+Java,ftgo-monolith/ftgo-restaurant-service/src/main/java/net/chrisrichardson/ftgo/restaurantservice/web/RestaurantController.java,8,0,28
+YAML,ftgo-monolith/docker-compose.yml,0,0,27
+XML,ftgo-monolith/ftgo-common-jpa/src/main/resources/META-INF/orm.xml,0,0,27
+Java,ftgo-monolith/ftgo-restaurant-service/src/main/java/net/chrisrichardson/ftgo/restaurantservice/domain/RestaurantService.java,7,0,27
+XML,ftgo-monolith/.classpath,0,0,25
+Java,ftgo-monolith/ftgo-common/src/main/java/net/chrisrichardson/ftgo/common/PersonName.java,8,0,25
+Java,ftgo-monolith/ftgo-courier-service-api/src/main/java/net/chrisrichardson/ftgo/courierservice/api/CreateCourierRequest.java,8,0,25
+Java,ftgo-monolith/ftgo-domain/src/main/java/net/chrisrichardson/ftgo/domain/OrderRevision.java,10,0,25
+Java,ftgo-monolith/ftgo-consumer-service/src/main/java/net/chrisrichardson/ftgo/consumerservice/domain/ConsumerService.java,7,0,24
+Java,ftgo-monolith/ftgo-consumer-service/src/main/java/net/chrisrichardson/ftgo/consumerservice/web/ConsumerController.java,5,0,24
+Java,ftgo-monolith/ftgo-restaurant-service/src/main/java/net/chrisrichardson/ftgo/restaurantservice/web/GetRestaurantResponse.java,8,0,23
+Java,ftgo-monolith/ftgo-domain/src/main/java/net/chrisrichardson/ftgo/domain/LineItemQuantityChange.java,6,0,21
+Java,ftgo-monolith/ftgo-domain/src/main/java/net/chrisrichardson/ftgo/domain/Plan.java,7,0,21
+Bourne Shell,ftgo-monolith/wait-for-services.sh,3,0,21
+Bourne Shell,ftgo-monolith/deployment/kubernetes/scripts/kubernetes-wait-for-ready-pods.sh,3,0,20
+Java,ftgo-monolith/ftgo-application/src/main/java/net/chrisrichardson/ftgo/FtgoApplicationMain.java,3,0,20
+Java,ftgo-monolith/ftgo-common/src/main/java/net/chrisrichardson/ftgo/common/CommonConfiguration.java,4,0,19
+Java,ftgo-monolith/ftgo-order-service/src/test/java/net/chrisrichardson/ftgo/orderservice/RestaurantMother.java,6,0,19
+Java,ftgo-monolith/ftgo-domain/src/main/java/net/chrisrichardson/ftgo/domain/DeliveryInformation.java,8,0,18
+Java,ftgo-monolith/ftgo-order-service/src/main/java/net/chrisrichardson/ftgo/orderservice/web/MenuItemIdAndQuantity.java,8,0,18
+XML,ftgo-monolith/.project,0,0,17
+Java,ftgo-monolith/ftgo-order-service/src/main/java/net/chrisrichardson/ftgo/orderservice/domain/RevisedOrder.java,5,0,17
+Gradle,ftgo-monolith/settings.gradle,13,0,17
+Java,ftgo-monolith/ftgo-common/src/main/java/net/chrisrichardson/ftgo/common/CommonJsonMapperInitializer.java,6,0,16
+Java,ftgo-monolith/ftgo-consumer-service-api/src/main/java/net/chrisrichardson/ftgo/consumerservice/api/web/CreateConsumerRequest.java,9,0,16
+Java,ftgo-monolith/ftgo-domain/src/main/java/net/chrisrichardson/ftgo/domain/DomainConfiguration.java,2,0,16
+Java,ftgo-monolith/ftgo-order-service-api/src/main/java/net/chrisrichardson/ftgo/orderservice/api/web/OrderAcceptance.java,7,0,16
+Java,ftgo-monolith/ftgo-order-service-api/src/main/java/net/chrisrichardson/ftgo/orderservice/api/web/ReviseOrderRequest.java,6,0,16
+Java,ftgo-monolith/ftgo-order-service/src/main/java/net/chrisrichardson/ftgo/orderservice/main/OrderServiceConfiguration.java,2,0,16
+Java,ftgo-monolith/ftgo-consumer-service-api/src/main/java/net/chrisrichardson/ftgo/consumerservice/api/web/CreateConsumerResponse.java,6,0,15
+Java,ftgo-monolith/ftgo-consumer-service/src/main/java/net/chrisrichardson/ftgo/consumerservice/main/ConsumerServiceConfiguration.java,2,0,15
+Java,ftgo-monolith/ftgo-courier-service-api/src/main/java/net/chrisrichardson/ftgo/courierservice/api/CourierAvailability.java,6,0,15
+Java,ftgo-monolith/ftgo-courier-service-api/src/main/java/net/chrisrichardson/ftgo/courierservice/api/CreateCourierResponse.java,5,0,15
+Gradle,ftgo-monolith/ftgo-courier-service/build.gradle,6,0,15
+Java,ftgo-monolith/ftgo-order-service-api/src/main/java/net/chrisrichardson/ftgo/orderservice/api/web/CreateOrderResponse.java,5,0,15
+Java,ftgo-monolith/ftgo-order-service/src/main/java/net/chrisrichardson/ftgo/orderservice/web/GetRestaurantResponse.java,6,0,15
+Java,ftgo-monolith/ftgo-restaurant-service/src/main/java/net/chrisrichardson/ftgo/restaurantservice/web/CreateRestaurantResponse.java,5,0,15
+Java,ftgo-monolith/ftgo-courier-service/src/main/java/net/chrisrichardson/ftgo/courierservice/domain/CourierServiceConfiguration.java,4,0,14
+Java,ftgo-monolith/ftgo-end-to-end-tests/src/test/java/net/chrisrichardson/ftgo/endtoendtests/EndToEndTests.java,5,0,14
+Gradle,ftgo-monolith/ftgo-common/build.gradle,5,2,13
+Java,ftgo-monolith/ftgo-consumer-service/src/main/java/net/chrisrichardson/ftgo/consumerservice/domain/ConsumerConfiguration.java,3,0,13
+Java,ftgo-monolith/ftgo-order-service/src/main/java/net/chrisrichardson/ftgo/orderservice/web/TicketController.java,6,0,13
+Java,ftgo-monolith/ftgo-restaurant-service/src/main/java/net/chrisrichardson/ftgo/restaurantservice/domain/RestaurantServiceDomainConfiguration.java,3,0,13
+Bourne Shell,ftgo-monolith/deployment/kubernetes/scripts/port-forwards.sh,9,1,12
+Gradle,ftgo-monolith/ftgo-consumer-service/build.gradle,3,0,12
+Java,ftgo-monolith/ftgo-consumer-service/src/main/java/net/chrisrichardson/ftgo/consumerservice/web/GetConsumerResponse.java,5,0,12
+Gradle,ftgo-monolith/ftgo-restaurant-service/build.gradle,3,0,12
+Java,ftgo-monolith/ftgo-restaurant-service/src/main/java/net/chrisrichardson/ftgo/restaurantservice/RestaurantServiceConfiguration.java,2,0,12
+Java,ftgo-monolith/ftgo-order-service/src/main/java/net/chrisrichardson/ftgo/orderservice/domain/OrderServiceWithRepositoriesConfiguration.java,4,0,11
+Bourne Shell,ftgo-monolith/set-env.sh,1,0,11
+Markdown,ftgo-monolith/LICENSE.md,3,0,10
+Bourne Shell,ftgo-monolith/build-and-run.sh,8,0,10
+YAML,ftgo-monolith/deployment/kubernetes/stateful-services/ftgo-db-secret.yml,0,0,10
+Gradle,ftgo-monolith/ftgo-application/build.gradle,3,0,10
+Java,ftgo-monolith/ftgo-consumer-service/src/main/java/net/chrisrichardson/ftgo/consumerservice/web/ConsumerWebConfiguration.java,2,0,10
+Java,ftgo-monolith/ftgo-courier-service/src/main/java/net/chrisrichardson/ftgo/courierservice/web/CourierWebConfiguration.java,2,0,10
+Gradle,ftgo-monolith/ftgo-end-to-end-tests-common/build.gradle,2,0,10
+Java,ftgo-monolith/ftgo-order-service/src/main/java/net/chrisrichardson/ftgo/orderservice/web/OrderWebConfiguration.java,2,0,10
+Groovy,ftgo-monolith/buildSrc/src/main/groovy/FtgoServicePlugin.groovy,3,0,9
+Gradle,ftgo-monolith/common-swagger/build.gradle,1,0,9
+Gradle,ftgo-monolith/ftgo-flyway/build.gradle,1,0,9
+Properties,ftgo-monolith/ftgo-order-service/src/test/resources/application.properties,1,0,9
+Gradle,ftgo-monolith/buildSrc/build.gradle,2,0,8
+Java,ftgo-monolith/buildSrc/src/main/groovy/WaitForMySqlPlugin.java,1,0,8
+Properties,ftgo-monolith/ftgo-application/src/main/resources/application.properties,1,0,8
+Java,ftgo-monolith/ftgo-domain/src/main/java/net/chrisrichardson/ftgo/domain/CourierRepository.java,5,0,8
+Java,ftgo-monolith/ftgo-test-util/src/main/java/net/chrisrichardson/ftgo/testutil/FtgoTestUtil.java,4,0,8
+Properties,ftgo-monolith/gradle.properties,4,0,8
+Bourne Shell,ftgo-monolith/build-and-restart-application.sh,3,0,7
+Java,ftgo-monolith/ftgo-domain/src/main/java/net/chrisrichardson/ftgo/domain/PaymentInformation.java,3,0,7
+Bourne Shell,ftgo-monolith/.circleci/upgrade-docker-compose.sh,1,0,6
+AsciiDoc,ftgo-monolith/README.adoc,4,0,6
+Java,ftgo-monolith/ftgo-common/src/main/java/net/chrisrichardson/ftgo/common/UnsupportedStateTransitionException.java,1,0,6
+Java,ftgo-monolith/ftgo-domain/src/main/java/net/chrisrichardson/ftgo/domain/OrderRepository.java,3,0,6
+Java,ftgo-monolith/ftgo-domain/src/main/java/net/chrisrichardson/ftgo/domain/OrderState.java,1,0,6
+Java,ftgo-monolith/ftgo-order-service/src/main/java/net/chrisrichardson/ftgo/orderservice/domain/InvalidMenuItemIdException.java,1,0,6
+Java,ftgo-monolith/ftgo-order-service/src/main/java/net/chrisrichardson/ftgo/orderservice/domain/OrderNotFoundException.java,1,0,6
+Java,ftgo-monolith/ftgo-order-service/src/main/java/net/chrisrichardson/ftgo/orderservice/domain/RestaurantNotFoundException.java,1,0,6
+Bourne Shell,ftgo-monolith/mysql-cli.sh,1,0,6
+Bourne Shell,ftgo-monolith/start-services.sh,5,0,6
+Bourne Shell,ftgo-monolith/wait-for-mysql.sh,1,0,6
+Bourne Shell,ftgo-monolith/deployment/kubernetes/scripts/kubernetes-run-end-to-end-tests.sh,4,0,5
+Dockerfile,ftgo-monolith/ftgo-application/Dockerfile,0,0,5
+Properties,ftgo-monolith/gradle/wrapper/gradle-wrapper.properties,0,1,5
+Bourne Shell,ftgo-monolith/deployment/kubernetes/scripts/kubernetes-deploy-all.sh,3,0,4
+Bourne Shell,ftgo-monolith/deployment/kubernetes/scripts/kubernetes-deploy-and-test.sh,5,0,4
+Bourne Shell,ftgo-monolith/deployment/kubernetes/scripts/kubernetes-kill-port-forwarding.sh,3,0,4
+Gradle,ftgo-monolith/ftgo-common-jpa/build.gradle,1,0,4
+Gradle,ftgo-monolith/ftgo-domain/build.gradle,0,0,4
+Java,ftgo-monolith/ftgo-domain/src/main/java/net/chrisrichardson/ftgo/domain/ConsumerRepository.java,2,0,4
+Java,ftgo-monolith/ftgo-domain/src/main/java/net/chrisrichardson/ftgo/domain/RestaurantRepository.java,2,0,4
+Bourne Shell,ftgo-monolith/open-swagger-uis.sh,2,0,4
+Bourne Shell,ftgo-monolith/deployment/kubernetes/misc/create-db-secret.sh,0,0,3
+Java,ftgo-monolith/ftgo-common/src/main/java/net/chrisrichardson/ftgo/common/NotYetImplementedException.java,1,0,3
+Java,ftgo-monolith/ftgo-consumer-service/src/main/java/net/chrisrichardson/ftgo/consumerservice/domain/ConsumerNotFoundException.java,1,0,3
+Java,ftgo-monolith/ftgo-consumer-service/src/main/java/net/chrisrichardson/ftgo/consumerservice/domain/ConsumerVerificationFailedException.java,1,0,3
+Java,ftgo-monolith/ftgo-domain/src/main/java/net/chrisrichardson/ftgo/domain/ActionType.java,1,0,3
+Java,ftgo-monolith/ftgo-domain/src/main/java/net/chrisrichardson/ftgo/domain/OrderMinimumNotMetException.java,1,0,3
+Gradle,ftgo-monolith/ftgo-end-to-end-tests/build.gradle,1,0,3
+Gradle,ftgo-monolith/ftgo-order-service-api/build.gradle,0,0,3
+Java,ftgo-monolith/ftgo-order-service/src/main/java/net/chrisrichardson/ftgo/orderservice/domain/OptimisticOfflineLockException.java,2,0,3
+Gradle,ftgo-monolith/ftgo-restaurant-service-api/build.gradle,0,0,3
+Gradle,ftgo-monolith/ftgo-test-util/build.gradle,0,0,3
+Bourne Shell,ftgo-monolith/show-swagger-ui-urls.sh,2,0,3
+Bourne Shell,ftgo-monolith/deployment/kubernetes/scripts/kubernetes-delete-all.sh,1,0,2
+Bourne Shell,ftgo-monolith/deployment/kubernetes/scripts/kubernetes-delete-volumes.sh,1,0,2
+Dockerfile,ftgo-monolith/mysql/Dockerfile,0,0,2
+SQL,ftgo-monolith/mysql/schema.sql,0,0,2
+Bourne Shell,ftgo-monolith/run-end-to-end-tests.sh,1,0,2
+Bourne Shell,ftgo-monolith/setenv-circle-ci.sh,4,1,2
+Bourne Shell,ftgo-monolith/start-infrastructure-services.sh,3,0,2
+SUM,,1060,33,3713
