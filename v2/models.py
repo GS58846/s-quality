@@ -24,7 +24,7 @@ class CorpusFile(models.Model):
     filename = models.TextField(unique=True)
     fileurl = models.TextField()
     created_at = models.DateTimeField(auto_now=True)
-
+    processing_time = models.DecimalField(max_digits=12, decimal_places=4, default=0, blank=True, null=True)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
 
     def __str__(self):
@@ -34,7 +34,7 @@ class S101File(models.Model):
     filename = models.TextField(unique=True)
     fileurl = models.TextField()
     created_at = models.DateTimeField(auto_now=True)
-
+    processing_time = models.DecimalField(max_digits=12, decimal_places=4, default=0, blank=True, null=True)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
 
     def __str__(self):
@@ -62,6 +62,12 @@ class MetricNormalize(models.Model):
     nca = models.DecimalField(max_digits=30, decimal_places=6, default=0, blank=True, null=True)
     normalized = models.IntegerField(default=0)
     project_id = models.IntegerField()
+
+class ClusteringTime(models.Model):
+    project_id = models.IntegerField()
+    algo = models.TextField()
+    processing_time = models.DecimalField(max_digits=12, decimal_places=4, default=0, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now=True)
 
 class Clustering(models.Model):
     class_name = models.TextField()

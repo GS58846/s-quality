@@ -22,6 +22,7 @@
               <h5 class="card-title">Uploaded file</h5>
               <p class="card-text">Filename: <a href="{{ corpus_metric_file.fileurl }}" download>{{ corpus_metric_file.filename }}</a></p>
               <p class="card-text">Uploaded: {{ corpus_metric_file.created_at }}</p>
+              <p class="card-text">Processing time: {{ corpus_metric_file.processing_time }} seconds</p>
               {% endif %}
             <form class="row g-3" action="{% url 'v2_corpus_upload' project.id %}" enctype="multipart/form-data" method="post">
                 {% csrf_token %}
@@ -43,6 +44,7 @@
                 <h5 class="card-title">Uploaded file</h5>
                 <p class="card-text">Filename: <a href="{{ s101_metric_file.fileurl }}" download>{{ s101_metric_file.filename }}</a></p>
                 <p class="card-text">Uploaded: {{ s101_metric_file.created_at }}</p>
+                <p class="card-text">Processing time: {{ s101_metric_file.processing_time }} seconds</p>
                 {% endif %}
               <form class="row g-3" action="{% url 'v2_s101_upload' project.id %}" enctype="multipart/form-data" method="post">
                   {% csrf_token %}

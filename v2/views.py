@@ -1,5 +1,6 @@
 import math
 import random
+import time
 import string
 from os import rename
 import os
@@ -20,7 +21,7 @@ from django.shortcuts import render
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 from bs4 import BeautifulSoup
-from v2.models import ClassMetricRaw, Clustering, ClusteringMetric, CorpusFile, MetricNormalize, Project, S101File, S101MetricRaw
+from v2.models import ClassMetricRaw, Clustering, ClusteringMetric, ClusteringTime, CorpusFile, MetricNormalize, Project, S101File, S101MetricRaw
 
 def index(request):
     projects = Project.objects.all()
@@ -100,6 +101,9 @@ def corpus_upload(request, id):
                 project = Project.objects.get(id=id)
             )
             corpus_metric.save()
+
+        # start timer
+        st = time.time()
         
         # read saved xml file
         csv_folder = os.path.join(settings.BASE_DIR, 'uploads/csv/' + new_name)
@@ -226,6 +230,13 @@ def corpus_upload(request, id):
             cls.project_id = id
             cls.save()
 
+        et = time.time()
+
+        if CorpusFile.objects.filter(project=project).count() > 0:
+            p = CorpusFile.objects.filter(project=project).get()
+            p.processing_time = et - st
+            p.save()
+
         return redirect('v2_project_import', id=id)
     return redirect('/v2')
 
@@ -262,6 +273,8 @@ def s101_upload(request, id):
         csv_folder = os.path.join(settings.BASE_DIR, 'uploads/csv/' + new_name)
         local_csv = csv_folder
 
+        st = time.time()
+
         with open(local_csv, mode='r', encoding="utf-8-sig") as csv_file:
             csv_reader = reader(csv_file)
             for row in csv_reader:
@@ -274,6 +287,13 @@ def s101_upload(request, id):
 
                 s101_raw.project_id = id
                 s101_raw.save()
+
+        et = time.time()
+
+        if S101File.objects.filter(project=project).count() > 0:
+            p = S101File.objects.filter(project=project).get()
+            p.processing_time = et - st
+            p.save()
 
         return redirect('v2_project_import', id=id)
     return redirect('/v2')
@@ -431,11 +451,17 @@ def view_cluster_metric(request, project_id):
     class_data = MetricNormalize.objects.order_by('class_name').all().filter(project_id=project_id)
 
     ms_kmeans = ClusteringMetric.objects.filter(project_id=project_id, algo='kmeans').order_by('microservice').all()
+    if ClusteringTime.objects.filter(project_id=project_id, algo='kmeans').count() > 0:
+        time_kmeans = ClusteringTime.objects.get(project_id=project_id, algo='kmeans')
+    else:
+        time_kmeans = 0
+
 
     data = {
         'project': project,
         'class_metric': class_data,
         'ms_kmeans': ms_kmeans,
+        'time_kmeans': time_kmeans,
         'k': len(ms_kmeans)
     }
     
@@ -446,6 +472,8 @@ def clustering_kmeans(request, project_id):
     ######################
     # k-mean
     ######################
+
+    st = time.time()
 
     raw_data = MetricNormalize.objects.filter(project_id=project_id).all().values()
     df = pd.DataFrame(raw_data)
@@ -624,6 +652,14 @@ def clustering_kmeans(request, project_id):
         ms_x.cbm = ms_cbm
         ms_x.acbm = ms_acbm
         ms_x.save()
+
+    et = time.time()
+
+    if ClusteringTime.objects.filter(project=project_id).count() > 0:
+        p = ClusteringTime.objects.filter(project=project_id).get()
+        p.algo = 'kmeans'
+        p.processing_time = et - st
+        p.save()
 
     return redirect('v2_cluster_metric', project_id=project_id)
 
