@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-^rux*yvk5)$#4=x1c#+9=nf%cx5&#54g56519o93h$#+e#%zc)
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['34.125.58.188']
 
 
 # Application definition
@@ -88,7 +88,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': 'squalitydb',
         'USER': 'mhafizhasan',
-        'PASSWORD': '',
+        'PASSWORD': 'xs2db',
         'HOST': 'localhost',
         'PORT': '5432'
     }
