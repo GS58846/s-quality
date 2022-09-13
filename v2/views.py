@@ -512,7 +512,7 @@ def clustering_kmeans(request, project_id):
     kmeans_clusters = kmeans_minmax.fit_predict(df_metric)
 
     # df_kmeans = df.iloc[:,1:2].copy()
-    df_kmeans = df[['class_name','xmi_id']]
+    df_kmeans = df[['class_name']]
     df_kmeans['kmeans'] = kmeans_clusters
 
     # save into db
@@ -526,7 +526,7 @@ def clustering_kmeans(request, project_id):
             type = 'metric',
             algo = 'kmeans',
             project_id = project_id,
-            xmi_id = df_kmeans['xmi_id'][k]
+            # xmi_id = df_kmeans['xmi_id'][k]
         )
         c.save()
     
