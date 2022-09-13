@@ -655,8 +655,8 @@ def clustering_kmeans(request, project_id):
 
     et = time.time()
 
-    if ClusteringTime.objects.filter(project=project_id).count() > 0:
-        p = ClusteringTime.objects.filter(project=project_id).get()
+    if ClusteringTime.objects.filter(project_id=project_id).count() > 0:
+        p = ClusteringTime.objects.filter(project_id=project_id).get()
         p.algo = 'kmeans'
         p.processing_time = et - st
         p.save()
