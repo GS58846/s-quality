@@ -22,4 +22,5 @@ urlpatterns = [
     path('v2/project/cluster/<int:project_id>/metric', views.view_cluster_metric, name='v2_cluster_metric'),
     path('v2/project/cluster/<int:project_id>/normalize', views.clustering_normalize, name='v2_clustering_normalize'),
     path('v2/project/cluster/<int:project_id>/kmeans', views.clustering_kmeans, name='v2_clustering_kmeans'),
+    path('v2/project/cluster/<int:project_id>/kmeans', views.clustering_mean_shift, name='v2_clustering_mean_shift'),
 ]
