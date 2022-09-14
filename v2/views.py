@@ -703,7 +703,7 @@ def clustering_mean_shift(request, project_id):
     mshift = MeanShift()
     mshift_cluster = mshift.fit_predict(df_metric)
     df_mshift = df[['class_name']]
-    df_mshift['mean_shift'] = mshift_cluster
+    df_mshift['mean_shift'] = mshift_cluster.copy()
     
     # save into db
     if Clustering.objects.filter(project_id=project_id,algo='mean_shift').count() > 0:
