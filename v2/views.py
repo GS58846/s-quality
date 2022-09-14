@@ -458,9 +458,21 @@ def view_cluster_metric(request, project_id):
 
     ms_mean_shift = ClusteringMetric.objects.filter(project_id=project_id, algo='mean_shift').order_by('microservice').all()
     if ClusteringTime.objects.filter(project_id=project_id, algo='mean_shift').count() > 0:
-        time_mean_shift = ClusteringTime.objects.get(project_id=project_id, algo='kmeans')
+        time_mean_shift = ClusteringTime.objects.get(project_id=project_id, algo='mean_shift')
     else:
         time_mean_shift = 0
+
+    ms_agglomerative = ClusteringMetric.objects.filter(project_id=project_id, algo='agglomerative').order_by('microservice').all()
+    if ClusteringTime.objects.filter(project_id=project_id, algo='agglomerative').count() > 0:
+        time_agglomerative = ClusteringTime.objects.get(project_id=project_id, algo='agglomerative')
+    else:
+        time_agglomerative = 0
+
+    ms_gaussian = ClusteringMetric.objects.filter(project_id=project_id, algo='gaussian').order_by('microservice').all()
+    if ClusteringTime.objects.filter(project_id=project_id, algo='gaussian').count() > 0:
+        time_gaussian = ClusteringTime.objects.get(project_id=project_id, algo='gaussian')
+    else:
+        time_gaussian = 0
 
 
     data = {
@@ -470,6 +482,10 @@ def view_cluster_metric(request, project_id):
         'time_kmeans': time_kmeans,
         'ms_mean_shift': ms_mean_shift,
         'time_mean_shift': time_mean_shift,
+        'ms_agglomerative': ms_agglomerative,
+        'time_agglomerative': time_agglomerative,
+        'ms_gaussian': ms_gaussian,
+        'time_gaussian': time_gaussian,
         'k': len(ms_kmeans)
     }
     
@@ -486,7 +502,7 @@ def clustering_kmeans(request, project_id):
     raw_data = MetricNormalize.objects.filter(project_id=project_id).all().values()
     df = pd.DataFrame(raw_data)
     df_metric = df.iloc[:,2:-2]
-    # df_metric = df[['cbo','ic','oc','cam','nco','dit','rfc','loc','nca','xmi_id']]
+    # df_metric = df[['cbo','ic','oc','cam','nco','dit','rfc','loc','nca']]
 
     class_count = MetricNormalize.objects.order_by('class_name').filter(project_id=project_id).count()
 
@@ -533,8 +549,7 @@ def clustering_kmeans(request, project_id):
             cluster = df_kmeans['kmeans'][k],
             type = 'metric',
             algo = 'kmeans',
-            project_id = project_id,
-            # xmi_id = df_kmeans['xmi_id'][k]
+            project_id = project_id
         )
         c.save()
     
@@ -673,7 +688,6 @@ def clustering_kmeans(request, project_id):
 
 def clustering_mean_shift(request, project_id):
 
-
     ######################
     # mean-shift
     ######################
@@ -688,8 +702,7 @@ def clustering_mean_shift(request, project_id):
 
     mshift = MeanShift()
     mshift_cluster = mshift.fit_predict(df_metric)
-    # df_mshift = df.iloc[:,1:2].copy()
-    df_mshift = df[['class_name','xmi_id']]
+    df_mshift = df[['class_name']]
     df_mshift['mean_shift'] = mshift_cluster
     
     # save into db
@@ -702,8 +715,7 @@ def clustering_mean_shift(request, project_id):
             cluster = df_mshift['mean_shift'][k],
             type = 'metric',
             algo = 'mean_shift',
-            project_id = project_id,
-            xmi_id = df_mshift['xmi_id'][k]
+            project_id = project_id
         )
         c.save()
     
@@ -836,76 +848,19 @@ def clustering_mean_shift(request, project_id):
 
     return redirect('v2_cluster_metric', project_id=project_id)
 
-def clustering_normalize(request, project_id):
-    raw_data = MetricNormalize.objects.filter(project_id=project_id).all().values()
-    df = pd.DataFrame(raw_data)
-    df_metric = df.iloc[:,2:-2]
-    # normalize
-    scaler = MinMaxScaler() 
-    scaler_feature = scaler.fit_transform(df_metric)
-    df_normalize_id = df.iloc[:,0:1].copy()
-    df_normalize_metric = pd.DataFrame(scaler_feature)
-    df_normalize = pd.concat([df_normalize_id, df_normalize_metric], axis=1)
-    df_normalize.columns = ['id','cbo','ic','oc','cam','nco','dit','rfc','loc','nca']
-    
-    # mydict = {
-    #     'df': df.to_html(),
-    #     'df_metric': df_metric.to_html(),
-    #     'df_normalize': df_normalize.to_html()
-    # }
+def clustering_agglomerative(request, project_id):
 
-    # update db
-    for df_row in df_normalize.index:
-        normalize = MetricNormalize.objects.filter(project_id=project_id, id=df_normalize['id'][df_row]).get()
-        normalize.cbo = df_normalize['cbo'][df_row]
-        normalize.ic = df_normalize['ic'][df_row]
-        normalize.oc = df_normalize['oc'][df_row]
-        normalize.cam = df_normalize['cam'][df_row]
-        normalize.nco = df_normalize['nco'][df_row]
-        normalize.dit = df_normalize['dit'][df_row]
-        normalize.rfc = df_normalize['rfc'][df_row]
-        normalize.loc = df_normalize['loc'][df_row]
-        normalize.nca = df_normalize['nca'][df_row]
-        normalize.normalized = 1
-        normalize.save()
+    ###################
+    # agglomerative
+    ###################
 
-    return redirect('v2_cluster_metric', project_id=project_id)
-
-def clustering_metric(request, project_id):
-    project = Project.objects.get(id=project_id)
-    sdmetric_data = MetricNormalize.objects.order_by('class_name').all().filter(project_id=project_id)
-
-    # save for export data
-    export_metric = 'V2-EXPORT-METRIC.csv'
-    csv_folder = os.path.join(settings.BASE_DIR, 'uploads/csv/')
-    local_csv = csv_folder
-    with open(local_csv+export_metric, 'w', newline='') as f_handle:
-        writer = csv.writer(f_handle)
-        # Add the header/column names
-        header = ['classname','CBO','IC','OC','CAM','NCO','DIT','RFC','LOC','NCA']
-        writer.writerow(header)
-        # Iterate over `data`  and  write to the csv file
-        for sd in sdmetric_data:
-            row = [sd.class_name,sd.cbo,sd.ic,sd.oc,sd.cam,sd.nco,sd.dit,sd.rfc,sd.loc,sd.nca]
-            writer.writerow(row)
-
-    if MetricNormalize.objects.order_by('class_name').filter(project_id=project_id, normalized=1).count() > 0:
-        state = 'disabled'
-    else:
-        state = ''
-
-    ######################
-    # k-mean
-    ######################
+    st = time.time()
 
     raw_data = MetricNormalize.objects.filter(project_id=project_id).all().values()
     df = pd.DataFrame(raw_data)
     df_metric = df.iloc[:,2:-2]
-    # df_metric = df[['cbo','ic','oc','cam','nco','dit','rfc','loc','nca','xmi_id']]
 
     class_count = MetricNormalize.objects.order_by('class_name').filter(project_id=project_id).count()
-
-    # print('class count = ' + str(class_count))
 
     # the elbow method
     kmeans_args = {
@@ -925,323 +880,12 @@ def clustering_metric(request, project_id):
         sse_list.append(kmeans.inertia_)
 
     k_value = KneeLocator(range(1,class_count), sse_list, curve="convex", direction="decreasing")
-    k_value.elbow  
-
-    # sample mean / average
-    sample_mean = class_count / k_value.elbow
-    # print('sample mean = ' + str(sample_mean))
-    
-    kmeans_minmax = KMeans(k_value.elbow).fit(df_metric)
-    kmeans_clusters = kmeans_minmax.fit_predict(df_metric)
-
-    # df_kmeans = df.iloc[:,1:2].copy()
-    df_kmeans = df[['class_name','xmi_id']]
-    df_kmeans['kmeans'] = kmeans_clusters
-
-    # save into db
-    if Clustering.objects.filter(project_id=project_id,algo='kmeans').count() > 0:
-        Clustering.objects.filter(project_id=project_id,algo='kmeans').delete()
-
-    for k in df_kmeans.index:
-        c = Clustering(
-            class_name = df_kmeans['class_name'][k],
-            cluster = df_kmeans['kmeans'][k],
-            type = 'metric',
-            algo = 'kmeans',
-            project_id = project_id,
-        )
-        c.save()
-    
-    kmeans_group = Clustering.objects.filter(project_id=project_id,algo='kmeans').order_by('cluster').all()
-
-    # kmeans summary
-    # TODO: separate as re-usable function? start ---------------------------------------------
-
-    if ClusteringMetric.objects.filter(project_id=project_id,algo='kmeans').count() > 0:
-        ClusteringMetric.objects.filter(project_id=project_id,algo='kmeans').delete()
-
-    sample_sum = 0
-
-    ms_grp = defaultdict(list)
-    ms_len = Clustering.objects.filter(project_id=project_id,algo='kmeans').distinct('cluster').count()
-    for i in range(ms_len):
-        mloc = 0
-        mnoc = 0
-        ncam = 0
-        imc = 0
-        nmo = 0
-        cluster_grp = []
-        cls = Clustering.objects.filter(project_id=project_id,algo='kmeans',cluster=i).all()
-        for c in cls:
-            cm = ClassMetricRaw.objects.filter(project_id=project_id,class_name=c.class_name).get()
-            mloc += cm.loc
-            mnoc += 1 
-            nmo += cm.nco
-            ncam += cm.cam
-            cluster_grp.append(c.class_name)
-            ms_grp[i].append(c.class_name)
-        # imc
-        for cl in cluster_grp:
-            imc_list = S101MetricRaw.objects.filter(project_id=project_id,class_from=cl).all()
-            for il in imc_list:
-                # if il.class_to != cl:
-                if ((il.class_to in cluster_grp) and (il.class_to != cl)):
-                    imc += il.weight
-
-
-        ncam = ncam / mnoc
-        imc = imc 
-        
-        fms = ClusteringMetric(
-            algo = 'kmeans',
-            type = 'metric',
-            microservice = i,
-            mloc = mloc,
-            mnoc = mnoc,
-            ncam = ncam,
-            imc = imc,
-            nmo = nmo,
-            project_id = project_id
-        )
-        fms.save()
-
-        # mcd
-        sample_sum += (mnoc - sample_mean)**2
-        # print(str(i) + ' sample sum ' + str((mnoc - sample_mean)**2))
-
-    # print('sample sum ' + str(sample_sum))
-    sample_variance = sample_sum / (class_count - 1)
-    # print('sample_variance ' + str(sample_variance))
-    sample_std_deviation = math.sqrt(sample_variance)
-    # print('sample std deviation ' + str(sample_std_deviation))
-    lower_bound = sample_mean - sample_std_deviation 
-    higher_bound = sample_mean + sample_std_deviation
-    # print('ned bound ' + str(lower_bound) + ',' + str(higher_bound))
-    # print('-------------------------------------')
-
-    # assigning is_ned based on calculated std_deviation
-    ms_ned = ClusteringMetric.objects.filter(algo='kmeans', project_id=project_id).all()
-    for mn in ms_ned:
-        if mn.mnoc <= higher_bound and mn.mnoc >= lower_bound:
-            # print('ms ' + str(mn.microservice) + ' is ned')
-            mn.is_ned = 1
-            mn.save()
-
-    # wcbm
-
-    for key, val in ms_grp.items():
-        ms_wcbm = 0
-        ms_trm = 0
-        if S101MetricRaw.objects.filter(class_from__in=val, project_id=project_id).count() > 0:
-            cf = S101MetricRaw.objects.filter(class_from__in=val, project_id=project_id).all()
-            for cc in cf:
-                if cc.class_to not in val:
-                    ms_wcbm += cc.weight
-                    if cc.usage == 'returns':
-                        ms_trm += cc.weight
-        ms_x = ClusteringMetric.objects.filter(project_id=project_id, microservice=key, algo='kmeans').get()
-        ms_x.wcbm = ms_wcbm
-        ms_x.trm = ms_trm
-        ms_x.save()
-
-    # cbm
-    
-    for key, val in ms_grp.items():
-        ms_cbm = 0
-        ms_acbm = 0
-        # print('MS'+str(key)+' ===========================================')
-        # print(val)
-        for i in range(ms_len):
-            if key != i:
-                if S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_grp[i], project_id=project_id):
-                    ms_cbm += 1
-                   
-                    if S101MetricRaw.objects.filter(class_from__in=ms_grp[i], class_to__in=val, project_id=project_id):
-                        # print('     MS'+str(i)) 
-                        # print(ms_grp[i])
-                        # print('---------------')
-                        ms_from = S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_grp[i], project_id=project_id).all()
-                        for mf in ms_from:
-                            ms_acbm += mf.weight
-                            # print(mf.class_from + '-' + str(mf.weight))
-                        # print('...............')
-                        ms_to = S101MetricRaw.objects.filter(class_from__in=ms_grp[i], class_to__in=val, project_id=project_id).all()
-                        for mt in ms_to:
-                            ms_acbm += mt.weight
-                            # print(mt.class_from + '-' + str(mt.weight))
-                # if (S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_grp[i]) and S101MetricRaw.objects.filter(class_from__in=ms_grp[i], class_to__in=val)):
-                #     # ms_acbm += 1
-                #     acbm_from_list = S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_grp[i]).all()
-                #     for afl in acbm_from_list:
-                #         ms_acbm += afl.weight
-                #     acbm_to_list = S101MetricRaw.objects.filter(class_to__in=val, class_from__in=ms_grp[i]).all()
-                #     for atl in acbm_to_list:
-                #         ms_acbm += atl.weight
-
-
-        ms_x = ClusteringMetric.objects.filter(project_id=project_id, microservice=key, algo='kmeans').get()
-        ms_x.cbm = ms_cbm
-        ms_x.acbm = ms_acbm
-        ms_x.save()
-
-    # TODO: separate as re-usable function? end ---------------------------------------------
- 
-    # print(ms_grp[0])
-
-    ######################
-    # mean-shift
-    ######################
-
-    mshift = MeanShift()
-    mshift_cluster = mshift.fit_predict(df_metric)
-    # df_mshift = df.iloc[:,1:2].copy()
-    df_mshift = df[['class_name','xmi_id']]
-    df_mshift['mean_shift'] = mshift_cluster
-    
-    # save into db
-    if Clustering.objects.filter(project_id=project_id,algo='mean_shift').count() > 0:
-        Clustering.objects.filter(project_id=project_id,algo='mean_shift').delete()
-
-    for k in df_mshift.index:
-        c = Clustering(
-            class_name = df_mshift['class_name'][k],
-            cluster = df_mshift['mean_shift'][k],
-            type = 'metric',
-            algo = 'mean_shift',
-            project_id = project_id,
-            xmi_id = df_mshift['xmi_id'][k]
-        )
-        c.save()
-    
-    mshift_group = Clustering.objects.filter(project_id=project_id,algo='mean_shift').order_by('cluster').all()
-
-    # mean-shift summary
-    # TODO: separate as re-usable function? start ---------------------------------------------
-
-    if ClusteringMetric.objects.filter(project_id=project_id,algo='mean_shift').count() > 0:
-        ClusteringMetric.objects.filter(project_id=project_id,algo='mean_shift').delete()
-
-    ms_ms_grp = defaultdict(list)
-    ms_ms_len = Clustering.objects.filter(project_id=project_id,algo='mean_shift').distinct('cluster').count()
-
-    sample_nxsum = 0
-    sample_mean_nx = class_count / ms_ms_len
-
-    for i in range(ms_ms_len):
-        mloc = 0
-        mnoc = 0
-        ncam = 0
-        imc = 0
-        nmo = 0
-        cluster_grp = []
-        cls = Clustering.objects.filter(project_id=project_id,algo='mean_shift',cluster=i).all()
-        for c in cls:
-            cm = ClassMetricRaw.objects.filter(project_id=project_id,class_name=c.class_name).get()
-            mloc += cm.loc
-            mnoc += 1 
-            nmo += cm.nco
-            ncam += cm.cam
-            cluster_grp.append(c.class_name)
-            ms_ms_grp[i].append(c.class_name)
-        # imc
-        for cl in cluster_grp:
-            imc_list = S101MetricRaw.objects.filter(project_id=project_id,class_from=cl).all()
-            for il in imc_list:
-                # if il.class_to != cl:
-                if ((il.class_to in cluster_grp) and (il.class_to != cl)):
-                    imc += il.weight
-
-
-        ncam = ncam / mnoc
-        imc = imc       
-        
-        fms = ClusteringMetric(
-            algo = 'mean_shift',
-            type = 'metric',
-            microservice = i,
-            mloc = mloc,
-            mnoc = mnoc,
-            ncam = ncam,
-            imc = imc,
-            nmo = nmo,
-            project_id = project_id
-        )
-        fms.save()
-
-        # mcd
-        sample_nxsum += (mnoc - sample_mean_nx)**2
-
-    # print('cluster no ' + str(ms_ms_len))
-    # print('sample mean nx ' + str(sample_mean_nx))    
-    # print('sample sum nx ' + str(sample_nxsum))
-    samplenx_variance = sample_nxsum / (class_count - 1)
-    # print('sample_variance nx ' + str(samplenx_variance))
-    samplenx_std_deviation = math.sqrt(samplenx_variance)
-    # print('sample std deviation nx ' + str(samplenx_std_deviation))
-    lower_bound_nx = sample_mean_nx - samplenx_std_deviation 
-    higher_bound_nx = sample_mean_nx + samplenx_std_deviation
-    # print('ned bound nx ' + str(lower_bound_nx) + ',' + str(higher_bound_nx))
-    # print('-------------------------------------')
-
-    # assigning is_ned based on calculated std_deviation
-    msnx_ned = ClusteringMetric.objects.filter(algo='mean_shift', project_id=project_id).all()
-    for mn in msnx_ned:
-        if mn.mnoc <= higher_bound_nx and mn.mnoc >= lower_bound_nx:
-            # print('ms ' + str(mn.microservice) + ' is ned')
-            mn.is_ned = 1
-            mn.save()
-
-    # wcbm
-
-    for key, val in ms_ms_grp.items():
-        ms_wcbm = 0
-        ms_trm = 0
-        if S101MetricRaw.objects.filter(class_from__in=val, project_id=project_id).count() > 0:
-            cf = S101MetricRaw.objects.filter(class_from__in=val, project_id=project_id).all()
-            for cc in cf:
-                if cc.class_to not in val:
-                    ms_wcbm += cc.weight
-                    if cc.usage == 'returns':
-                        ms_trm += cc.weight
-        ms_x = ClusteringMetric.objects.filter(project_id=project_id, microservice=key, algo='mean_shift').get()
-        ms_x.wcbm = ms_wcbm
-        ms_x.trm = ms_trm
-        ms_x.save()
-
-    # cbm
-    
-    for key, val in ms_ms_grp.items():
-        ms_cbm = 0
-        ms_acbm = 0
- 
-        for i in range(ms_ms_len):
-            if key != i:
-                if S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_ms_grp[i], project_id=project_id):
-                    ms_cbm += 1
-                   
-                    if S101MetricRaw.objects.filter(class_from__in=ms_ms_grp[i], class_to__in=val, project_id=project_id):
-                        ms_from = S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_ms_grp[i], project_id=project_id).all()
-                        for mf in ms_from:
-                            ms_acbm += mf.weight
-                        ms_to = S101MetricRaw.objects.filter(class_from__in=ms_ms_grp[i], class_to__in=val, project_id=project_id).all()
-                        for mt in ms_to:
-                            ms_acbm += mt.weight
-
-        ms_x = ClusteringMetric.objects.filter(project_id=project_id, microservice=key, algo='mean_shift').get()
-        ms_x.cbm = ms_cbm
-        ms_x.acbm = ms_acbm
-        ms_x.save()
-
-    # TODO: separate as re-usable function? end ---------------------------------------------
-
-    ###################
-    # agglomerative
-    ###################
+    # k_value.elbow  
 
     agglomerative = AgglomerativeClustering(k_value.elbow)
     agglomerative_cluster = agglomerative.fit_predict(df_metric)
     # df_agglomerative = df.iloc[:,1:2].copy()
-    df_agglomerative = df[['class_name','xmi_id']]
+    df_agglomerative = df[['class_name']]
     df_agglomerative['agglomerative'] = agglomerative_cluster
     
     # save into db
@@ -1254,12 +898,11 @@ def clustering_metric(request, project_id):
             cluster = df_agglomerative['agglomerative'][k],
             type = 'metric',
             algo = 'agglomerative',
-            project_id = project_id,
-            xmi_id = df_agglomerative['xmi_id'][k]
+            project_id = project_id
         )
         c.save()
     
-    agglomerative_group = Clustering.objects.filter(project_id=project_id,algo='agglomerative').order_by('cluster').all()
+    # agglomerative_group = Clustering.objects.filter(project_id=project_id,algo='agglomerative').order_by('cluster').all()
 
     # agglomerative summary
     # TODO: separate as re-usable function? start ---------------------------------------------
@@ -1271,6 +914,9 @@ def clustering_metric(request, project_id):
 
     ms_ms_grp = defaultdict(list)
     ms_ms_len = Clustering.objects.filter(project_id=project_id,algo='agglomerative').distinct('cluster').count()
+
+    sample_mean = class_count / ms_ms_len
+
     for i in range(ms_ms_len):
         mloc = 0
         mnoc = 0
@@ -1375,16 +1021,53 @@ def clustering_metric(request, project_id):
         ms_x.acbm = ms_acbm
         ms_x.save()
 
-    # TODO: separate as re-usable function? end ---------------------------------------------
+    et = time.time()
+
+    if ClusteringTime.objects.filter(project_id=project_id).count() > 0:
+        p = ClusteringTime.objects.filter(project_id=project_id).get()
+        p.algo = 'agglomerative'
+        p.processing_time = et - st
+        p.save()
+
+    return redirect('v2_cluster_metric', project_id=project_id)
+
+def clustering_gaussian(request, project_id):
 
     #######################
     # gaussian mixture
     #######################
 
+    st = time.time()
+
+    raw_data = MetricNormalize.objects.filter(project_id=project_id).all().values()
+    df = pd.DataFrame(raw_data)
+    df_metric = df.iloc[:,2:-2]
+
+    class_count = MetricNormalize.objects.order_by('class_name').filter(project_id=project_id).count()
+
+    # the elbow method
+    kmeans_args = {
+        "init": "random",
+        "n_init": 10,
+        "max_iter": 300,
+        "random_state": 42
+    }
+
+    sse = []
+    sse_list = []
+
+    for k in range(1,class_count): #rows
+        kmeans = KMeans(n_clusters=k, **kmeans_args)
+        kmeans.fit(df_metric)
+        sse.append([k, kmeans.inertia_])
+        sse_list.append(kmeans.inertia_)
+
+    k_value = KneeLocator(range(1,class_count), sse_list, curve="convex", direction="decreasing")
+
     gaussian = GaussianMixture(k_value.elbow)
     gaussian_cluster = gaussian.fit_predict(df_metric)
     # df_gaussian = df.iloc[:,1:2].copy()
-    df_gaussian = df[['class_name','xmi_id']]
+    df_gaussian = df[['class_name']]
     df_gaussian['gaussian'] = gaussian_cluster
     
     # save into db
@@ -1397,12 +1080,11 @@ def clustering_metric(request, project_id):
             cluster = df_gaussian['gaussian'][k],
             type = 'metric',
             algo = 'gaussian',
-            project_id = project_id,
-            xmi_id = df_gaussian['xmi_id'][k]
+            project_id = project_id
         )
         c.save()
     
-    gaussian_group = Clustering.objects.filter(project_id=project_id,algo='gaussian').order_by('cluster').all()
+    # gaussian_group = Clustering.objects.filter(project_id=project_id,algo='gaussian').order_by('cluster').all()
 
     # gaussian summary
     # TODO: separate as re-usable function? start ---------------------------------------------
@@ -1414,6 +1096,9 @@ def clustering_metric(request, project_id):
 
     ms_ms_grp = defaultdict(list)
     ms_ms_len = Clustering.objects.filter(project_id=project_id,algo='gaussian').distinct('cluster').count()
+
+    sample_mean = class_count / ms_ms_len
+
     for i in range(ms_ms_len):
         mloc = 0
         mnoc = 0
@@ -1518,31 +1203,48 @@ def clustering_metric(request, project_id):
         ms_x.acbm = ms_acbm
         ms_x.save()
 
-    # TODO: separate as re-usable function? end ---------------------------------------------
+    et = time.time()
 
-    # ---------------
+    if ClusteringTime.objects.filter(project_id=project_id).count() > 0:
+        p = ClusteringTime.objects.filter(project_id=project_id).get()
+        p.algo = 'agglomerative'
+        p.processing_time = et - st
+        p.save()
 
-    ms_kmeans = ClusteringMetric.objects.filter(project_id=project_id, algo='kmeans').order_by('microservice').all()
-    ms_mean_shift = ClusteringMetric.objects.filter(project_id=project_id, algo='mean_shift').order_by('microservice').all()
-    ms_agglomerative = ClusteringMetric.objects.filter(project_id=project_id, algo='agglomerative').order_by('microservice').all()
-    ms_gaussian = ClusteringMetric.objects.filter(project_id=project_id, algo='gaussian').order_by('microservice').all()
+    return redirect('v2_cluster_metric', project_id=project_id)
 
-    # display page
 
-    data = {
-        'project': project,
-        'sdmetrics': sdmetric_data,
-        'state': state,
-        'k': k_value.elbow,
-        'kmeans_group': kmeans_group,
-        'mshift_group': mshift_group,
-        'ms_kmeans': ms_kmeans,
-        'ms_mean_shift': ms_mean_shift,
-        'ms_agglomerative': ms_agglomerative,
-        'agglomerative_group': agglomerative_group,
-        'gaussian_group': gaussian_group,
-        'ms_gaussian': ms_gaussian,
-        'export_metric': export_metric
-    }
+def clustering_normalize(request, project_id):
+    raw_data = MetricNormalize.objects.filter(project_id=project_id).all().values()
+    df = pd.DataFrame(raw_data)
+    df_metric = df.iloc[:,2:-2]
+    # normalize
+    scaler = MinMaxScaler() 
+    scaler_feature = scaler.fit_transform(df_metric)
+    df_normalize_id = df.iloc[:,0:1].copy()
+    df_normalize_metric = pd.DataFrame(scaler_feature)
+    df_normalize = pd.concat([df_normalize_id, df_normalize_metric], axis=1)
+    df_normalize.columns = ['id','cbo','ic','oc','cam','nco','dit','rfc','loc','nca']
+    
+    # mydict = {
+    #     'df': df.to_html(),
+    #     'df_metric': df_metric.to_html(),
+    #     'df_normalize': df_normalize.to_html()
+    # }
 
-    return render(request, 'v2/project_cluster_metric.html', data)
+    # update db
+    for df_row in df_normalize.index:
+        normalize = MetricNormalize.objects.filter(project_id=project_id, id=df_normalize['id'][df_row]).get()
+        normalize.cbo = df_normalize['cbo'][df_row]
+        normalize.ic = df_normalize['ic'][df_row]
+        normalize.oc = df_normalize['oc'][df_row]
+        normalize.cam = df_normalize['cam'][df_row]
+        normalize.nco = df_normalize['nco'][df_row]
+        normalize.dit = df_normalize['dit'][df_row]
+        normalize.rfc = df_normalize['rfc'][df_row]
+        normalize.loc = df_normalize['loc'][df_row]
+        normalize.nca = df_normalize['nca'][df_row]
+        normalize.normalized = 1
+        normalize.save()
+
+    return redirect('v2_cluster_metric', project_id=project_id)

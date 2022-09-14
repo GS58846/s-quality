@@ -157,6 +157,96 @@
     </div>
   </div>
 
+  <hr>
+
+  <div class="row">
+    <div class="col">
+      <form action="{% url 'v2_clustering_agglomerative' project.id %}" method="post">
+        {% csrf_token %}
+        <button class="btn btn-danger btn-sm" type="submit">Run</button>
+      </form>
+      <h4>Agglomerative</h4>      
+      <p>The Elbow Method <strong>(K = {{k}})</strong></p>
+      <p>Processing Time: <strong>{{ time_agglomerative }} seconds</strong></p>
+      <table class="table table-dark table-striped table-hover table-sm table-responsive">
+        <thead>
+          <tr>
+            <!-- <th scope="col">#</th> -->
+            <th scope="col">Microservice</th>
+            <th scope="col">CBM</th>
+            <th scope="col">WCBM</th>
+            <th scope="col">ACBM</th>
+            <th scope="col">NCAM</th>
+            <th scope="col">IMC</th>
+            <th scope="col">NMO</th>
+            <th scope="col">TRM</th>
+            <th scope="col">MLOC</th>
+            <th scope="col">MNOC</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ms in ms_agglomerative %}
+          <tr>
+            <!-- <td>{{ forloop.counter }}.</td> -->
+            <td>MS-{{ ms.microservice }}</td>
+            <td>{{ ms.cbm }}</td>
+            <td>{{ ms.wcbm }}</td>
+            <td>{{ ms.acbm }}</td>
+            <td>{{ ms.ncam }}</td>
+            <td>{{ ms.imc }}</td>
+            <td>{{ ms.nmo }}</td>
+            <td>{{ ms.trm }}</td>
+            <td>{{ ms.mloc }}</td>
+            <td>{{ ms.mnoc }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="col">
+      <form action="{% url 'v2_clustering_gaussian' project.id %}" method="post">
+        {% csrf_token %}
+        <button class="btn btn-danger btn-sm" type="submit">Run</button>
+      </form>
+      <h4>Gaussian Mixture</h4>      
+      <p>The Elbow Method <strong>(K = {{k}})</strong></p>
+      <p>Processing Time: <strong>{{ time_gaussian }} seconds</strong></p>
+      <table class="table table-dark table-striped table-hover table-sm table-responsive">
+        <thead>
+          <tr>
+            <!-- <th scope="col">#</th> -->
+            <th scope="col">Microservice</th>
+            <th scope="col">CBM</th>
+            <th scope="col">WCBM</th>
+            <th scope="col">ACBM</th>
+            <th scope="col">NCAM</th>
+            <th scope="col">IMC</th>
+            <th scope="col">NMO</th>
+            <th scope="col">TRM</th>
+            <th scope="col">MLOC</th>
+            <th scope="col">MNOC</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ms in ms_gaussian %}
+          <tr>
+            <!-- <td>{{ forloop.counter }}.</td> -->
+            <td>MS-{{ ms.microservice }}</td>
+            <td>{{ ms.cbm }}</td>
+            <td>{{ ms.wcbm }}</td>
+            <td>{{ ms.acbm }}</td>
+            <td>{{ ms.ncam }}</td>
+            <td>{{ ms.imc }}</td>
+            <td>{{ ms.nmo }}</td>
+            <td>{{ ms.trm }}</td>
+            <td>{{ ms.mloc }}</td>
+            <td>{{ ms.mnoc }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
   
   <div class="row pt-2 pb-5">
     <a href="{% url 'clustering_network' project.id %}" class="btn btn-secondary">Next: Network Clustering</a>
