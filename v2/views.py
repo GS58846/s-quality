@@ -452,25 +452,25 @@ def view_cluster_metric(request, project_id):
 
     ms_kmeans = ClusteringMetric.objects.filter(project_id=project_id, algo='kmeans').order_by('microservice').all()
     if ClusteringTime.objects.filter(project_id=project_id, algo='kmeans').count() > 0:
-        time_kmeans = ClusteringTime.objects.get(project_id=project_id, algo='kmeans')
+        time_kmeans = ClusteringTime.objects.get(project_id=project_id, algo='kmeans').processing_time
     else:
         time_kmeans = 0
 
     ms_mean_shift = ClusteringMetric.objects.filter(project_id=project_id, algo='mean_shift').order_by('microservice').all()
     if ClusteringTime.objects.filter(project_id=project_id, algo='mean_shift').count() > 0:
-        time_mean_shift = ClusteringTime.objects.get(project_id=project_id, algo='mean_shift')
+        time_mean_shift = ClusteringTime.objects.get(project_id=project_id, algo='mean_shift').processing_time
     else:
         time_mean_shift = 0
 
     ms_agglomerative = ClusteringMetric.objects.filter(project_id=project_id, algo='agglomerative').order_by('microservice').all()
     if ClusteringTime.objects.filter(project_id=project_id, algo='agglomerative').count() > 0:
-        time_agglomerative = ClusteringTime.objects.get(project_id=project_id, algo='agglomerative')
+        time_agglomerative = ClusteringTime.objects.get(project_id=project_id, algo='agglomerative').processing_time
     else:
         time_agglomerative = 0
 
     ms_gaussian = ClusteringMetric.objects.filter(project_id=project_id, algo='gaussian').order_by('microservice').all()
     if ClusteringTime.objects.filter(project_id=project_id, algo='gaussian').count() > 0:
-        time_gaussian = ClusteringTime.objects.get(project_id=project_id, algo='gaussian')
+        time_gaussian = ClusteringTime.objects.get(project_id=project_id, algo='gaussian').processing_time
     else:
         time_gaussian = 0
 
@@ -678,10 +678,17 @@ def clustering_kmeans(request, project_id):
 
     et = time.time()
 
-    if ClusteringTime.objects.filter(project_id=project_id).count() > 0:
-        p = ClusteringTime.objects.filter(project_id=project_id).get()
+    if ClusteringTime.objects.filter(project_id=project_id, algo="kmeans").count() > 0:
+        p = ClusteringTime.objects.filter(project_id=project_id, algo="kmeans").get()
         p.algo = 'kmeans'
         p.processing_time = et - st
+        p.save()
+    else:
+        p = ClusteringTime(
+            project_id = project_id,
+            algo = 'kmeans',
+            processing_time = et - st,
+        )
         p.save()
 
     return redirect('v2_cluster_metric', project_id=project_id)
@@ -840,10 +847,17 @@ def clustering_mean_shift(request, project_id):
 
     et = time.time()
 
-    if ClusteringTime.objects.filter(project_id=project_id).count() > 0:
-        p = ClusteringTime.objects.filter(project_id=project_id).get()
+    if ClusteringTime.objects.filter(project_id=project_id, algo="mean_shift").count() > 0:
+        p = ClusteringTime.objects.filter(project_id=project_id, algo="mean_shift").get()
         p.algo = 'mean_shift'
         p.processing_time = et - st
+        p.save()
+    else:
+        p = ClusteringTime(
+            project_id = project_id,
+            algo = 'mean_shift',
+            processing_time = et - st,
+        )
         p.save()
 
     return redirect('v2_cluster_metric', project_id=project_id)
@@ -1023,10 +1037,17 @@ def clustering_agglomerative(request, project_id):
 
     et = time.time()
 
-    if ClusteringTime.objects.filter(project_id=project_id).count() > 0:
-        p = ClusteringTime.objects.filter(project_id=project_id).get()
+    if ClusteringTime.objects.filter(project_id=project_id, algo="agglomerative").count() > 0:
+        p = ClusteringTime.objects.filter(project_id=project_id, algo="agglomerative").get()
         p.algo = 'agglomerative'
         p.processing_time = et - st
+        p.save()
+    else:
+        p = ClusteringTime(
+            project_id = project_id,
+            algo = 'agglomerative',
+            processing_time = et - st,
+        )
         p.save()
 
     return redirect('v2_cluster_metric', project_id=project_id)
@@ -1205,10 +1226,17 @@ def clustering_gaussian(request, project_id):
 
     et = time.time()
 
-    if ClusteringTime.objects.filter(project_id=project_id).count() > 0:
-        p = ClusteringTime.objects.filter(project_id=project_id).get()
-        p.algo = 'agglomerative'
+    if ClusteringTime.objects.filter(project_id=project_id, algo="gaussian").count() > 0:
+        p = ClusteringTime.objects.filter(project_id=project_id, algo="gaussian").get()
+        p.algo = 'gaussian'
         p.processing_time = et - st
+        p.save()
+    else:
+        p = ClusteringTime(
+            project_id = project_id,
+            algo = 'gaussian',
+            processing_time = et - st,
+        )
         p.save()
 
     return redirect('v2_cluster_metric', project_id=project_id)
