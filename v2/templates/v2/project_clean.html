@@ -92,13 +92,6 @@
           <button class="btn btn-outline-secondary" type="submit">Truncate</button>
       </div>
     </form>
-    <form action="{% url 'v2_clean_remove_pkg' project.id 's101' %}" method="post" autocomplete="off">
-      {% csrf_token %}
-      <div class="input-group mb-3">
-          <input type="text" class="form-control" placeholder="Package or Class to remove" name="str_s101_metric" required>
-          <button class="btn btn-outline-secondary" type="submit">Remove</button>
-      </div>
-    </form>
 
     <div class="row">
       <div class="col-4">
