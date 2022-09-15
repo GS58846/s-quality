@@ -1,32 +1,32 @@
 class_name,method_name,cluster
-Sequence,get Name,cluster-0
-Sequence,get Next Id,cluster-0
-Sequence,Sequence,cluster-0
-Sequence,Sequence,cluster-0
-Sequence,set Name,cluster-0
-Sequence,set Next Id,cluster-0
-AccountService,Account Service,cluster-0
-AccountService,get Account,cluster-0
-AccountService,get Account,cluster-0
-AccountService,insert Account,cluster-0
-AccountService,update Account,cluster-0
-CatalogService,Catalog Service,cluster-4
-CatalogService,get Category,cluster-4
-CatalogService,get Category List,cluster-4
-CatalogService,get Item,cluster-4
-CatalogService,get Item List By Product,cluster-4
-CatalogService,get Product,cluster-4
-CatalogService,get Product List By Category,cluster-4
-CatalogService,is Item In Stock,cluster-4
-CatalogService,search Product List,cluster-4
-OrderService,get Next Id,cluster-4
-OrderService,get Order,cluster-4
-OrderService,get Orders By Username,cluster-4
-OrderService,insert Order,cluster-4
-OrderService,Order Service,cluster-4
-AbstractActionBean,get Context,cluster-0
-AbstractActionBean,set Context,cluster-0
-AbstractActionBean,set Message,cluster-0
+Sequence,get Name,cluster-3
+Sequence,get Next Id,cluster-3
+Sequence,Sequence,cluster-3
+Sequence,Sequence,cluster-3
+Sequence,set Name,cluster-3
+Sequence,set Next Id,cluster-3
+AccountService,Account Service,cluster-3
+AccountService,get Account,cluster-3
+AccountService,get Account,cluster-3
+AccountService,insert Account,cluster-3
+AccountService,update Account,cluster-3
+CatalogService,Catalog Service,cluster-0
+CatalogService,get Category,cluster-0
+CatalogService,get Category List,cluster-0
+CatalogService,get Item,cluster-0
+CatalogService,get Item List By Product,cluster-0
+CatalogService,get Product,cluster-0
+CatalogService,get Product List By Category,cluster-0
+CatalogService,is Item In Stock,cluster-0
+CatalogService,search Product List,cluster-0
+OrderService,get Next Id,cluster-0
+OrderService,get Order,cluster-0
+OrderService,get Orders By Username,cluster-0
+OrderService,insert Order,cluster-0
+OrderService,Order Service,cluster-0
+AbstractActionBean,get Context,cluster-3
+AbstractActionBean,set Context,cluster-3
+AbstractActionBean,set Message,cluster-3
 AccountActionBean,clear,cluster-1
 AccountActionBean,edit Account,cluster-1
 AccountActionBean,edit Account Form,cluster-1
@@ -95,172 +95,172 @@ OrderActionBean,set Order,cluster-1
 OrderActionBean,set Order Id,cluster-1
 OrderActionBean,set Shipping Address Required,cluster-1
 OrderActionBean,view Order,cluster-1
-Account,get Address1,cluster-3
-Account,get Address2,cluster-3
-Account,get Banner Name,cluster-3
-Account,get City,cluster-3
-Account,get Country,cluster-3
-Account,get Email,cluster-3
-Account,get Favourite Category Id,cluster-3
-Account,get First Name,cluster-3
-Account,get Language Preference,cluster-3
-Account,get Last Name,cluster-3
-Account,get Password,cluster-3
-Account,get Phone,cluster-3
-Account,get State,cluster-3
-Account,get Status,cluster-3
-Account,get Username,cluster-3
-Account,get Zip,cluster-3
-Account,is Banner Option,cluster-3
-Account,is List Option,cluster-3
-Account,set Address1,cluster-3
-Account,set Address2,cluster-3
-Account,set Banner Name,cluster-3
-Account,set Banner Option,cluster-3
-Account,set City,cluster-3
-Account,set Country,cluster-3
-Account,set Email,cluster-3
-Account,set Favourite Category Id,cluster-3
-Account,set First Name,cluster-3
-Account,set Language Preference,cluster-3
-Account,set Last Name,cluster-3
-Account,set List Option,cluster-3
-Account,set Password,cluster-3
-Account,set Phone,cluster-3
-Account,set State,cluster-3
-Account,set Status,cluster-3
-Account,set Username,cluster-3
-Account,set Zip,cluster-3
-Cart,add Item,cluster-4
-Cart,contains Item Id,cluster-4
-Cart,get All Cart Items,cluster-4
-Cart,get Cart Item List,cluster-4
-Cart,get Cart Items,cluster-4
-Cart,get Number Of Items,cluster-4
-Cart,get Sub Total,cluster-4
-Cart,increment Quantity By Item Id,cluster-4
-Cart,remove Item By Id,cluster-4
-Cart,set Quantity By Item Id,cluster-4
-CartItem,calculate Total,cluster-3
-CartItem,get Item,cluster-3
-CartItem,get Quantity,cluster-3
-CartItem,get Total,cluster-3
-CartItem,increment Quantity,cluster-3
-CartItem,is In Stock,cluster-3
-CartItem,set In Stock,cluster-3
-CartItem,set Item,cluster-3
-CartItem,set Quantity,cluster-3
-Category,get Category Id,cluster-0
-Category,get Description,cluster-0
-Category,get Name,cluster-0
-Category,set Category Id,cluster-0
-Category,set Description,cluster-0
-Category,set Name,cluster-0
-Category,to String,cluster-0
-Item,get Attribute1,cluster-3
-Item,get Attribute2,cluster-3
-Item,get Attribute3,cluster-3
-Item,get Attribute4,cluster-3
-Item,get Attribute5,cluster-3
-Item,get Item Id,cluster-3
-Item,get List Price,cluster-3
-Item,get Product,cluster-3
-Item,get Quantity,cluster-3
-Item,get Status,cluster-3
-Item,get Supplier Id,cluster-3
-Item,get Unit Cost,cluster-3
-Item,set Attribute1,cluster-3
-Item,set Attribute2,cluster-3
-Item,set Attribute3,cluster-3
-Item,set Attribute4,cluster-3
-Item,set Attribute5,cluster-3
-Item,set Item Id,cluster-3
-Item,set List Price,cluster-3
-Item,set Product,cluster-3
-Item,set Quantity,cluster-3
-Item,set Status,cluster-3
-Item,set Supplier Id,cluster-3
-Item,set Unit Cost,cluster-3
-Item,to String,cluster-3
-LineItem,calculate Total,cluster-4
-LineItem,get Item,cluster-4
-LineItem,get Item Id,cluster-4
-LineItem,get Line Number,cluster-4
-LineItem,get Order Id,cluster-4
-LineItem,get Quantity,cluster-4
-LineItem,get Total,cluster-4
-LineItem,get Unit Price,cluster-4
-LineItem,Line Item,cluster-4
-LineItem,Line Item,cluster-4
-LineItem,set Item,cluster-4
-LineItem,set Item Id,cluster-4
-LineItem,set Line Number,cluster-4
-LineItem,set Order Id,cluster-4
-LineItem,set Quantity,cluster-4
-LineItem,set Unit Price,cluster-4
-Order,add Line Item,cluster-2
-Order,add Line Item,cluster-2
-Order,get Bill Address1,cluster-2
-Order,get Bill Address2,cluster-2
-Order,get Bill City,cluster-2
-Order,get Bill Country,cluster-2
-Order,get Bill State,cluster-2
-Order,get Bill To First Name,cluster-2
-Order,get Bill To Last Name,cluster-2
-Order,get Bill Zip,cluster-2
-Order,get Card Type,cluster-2
-Order,get Courier,cluster-2
-Order,get Credit Card,cluster-2
-Order,get Expiry Date,cluster-2
-Order,get Line Items,cluster-2
-Order,get Locale,cluster-2
-Order,get Order Date,cluster-2
-Order,get Order Id,cluster-2
-Order,get Ship Address1,cluster-2
-Order,get Ship Address2,cluster-2
-Order,get Ship City,cluster-2
-Order,get Ship Country,cluster-2
-Order,get Ship State,cluster-2
-Order,get Ship To First Name,cluster-2
-Order,get Ship To Last Name,cluster-2
-Order,get Ship Zip,cluster-2
-Order,get Status,cluster-2
-Order,get Total Price,cluster-2
-Order,get Username,cluster-2
-Order,init Order,cluster-2
-Order,set Bill Address1,cluster-2
-Order,set Bill Address2,cluster-2
-Order,set Bill City,cluster-2
-Order,set Bill Country,cluster-2
-Order,set Bill State,cluster-2
-Order,set Bill To First Name,cluster-2
-Order,set Bill To Last Name,cluster-2
-Order,set Bill Zip,cluster-2
-Order,set Card Type,cluster-2
-Order,set Courier,cluster-2
-Order,set Credit Card,cluster-2
-Order,set Expiry Date,cluster-2
-Order,set Line Items,cluster-2
-Order,set Locale,cluster-2
-Order,set Order Date,cluster-2
-Order,set Order Id,cluster-2
-Order,set Ship Address1,cluster-2
-Order,set Ship Address2,cluster-2
-Order,set Ship City,cluster-2
-Order,set Ship Country,cluster-2
-Order,set Ship State,cluster-2
-Order,set Ship To First Name,cluster-2
-Order,set Ship To Last Name,cluster-2
-Order,set Ship Zip,cluster-2
-Order,set Status,cluster-2
-Order,set Total Price,cluster-2
-Order,set Username,cluster-2
-Product,get Category Id,cluster-0
-Product,get Description,cluster-0
-Product,get Name,cluster-0
-Product,get Product Id,cluster-0
-Product,set Category Id,cluster-0
-Product,set Description,cluster-0
-Product,set Name,cluster-0
-Product,set Product Id,cluster-0
-Product,to String,cluster-0
+Account,get Address1,cluster-2
+Account,get Address2,cluster-2
+Account,get Banner Name,cluster-2
+Account,get City,cluster-2
+Account,get Country,cluster-2
+Account,get Email,cluster-2
+Account,get Favourite Category Id,cluster-2
+Account,get First Name,cluster-2
+Account,get Language Preference,cluster-2
+Account,get Last Name,cluster-2
+Account,get Password,cluster-2
+Account,get Phone,cluster-2
+Account,get State,cluster-2
+Account,get Status,cluster-2
+Account,get Username,cluster-2
+Account,get Zip,cluster-2
+Account,is Banner Option,cluster-2
+Account,is List Option,cluster-2
+Account,set Address1,cluster-2
+Account,set Address2,cluster-2
+Account,set Banner Name,cluster-2
+Account,set Banner Option,cluster-2
+Account,set City,cluster-2
+Account,set Country,cluster-2
+Account,set Email,cluster-2
+Account,set Favourite Category Id,cluster-2
+Account,set First Name,cluster-2
+Account,set Language Preference,cluster-2
+Account,set Last Name,cluster-2
+Account,set List Option,cluster-2
+Account,set Password,cluster-2
+Account,set Phone,cluster-2
+Account,set State,cluster-2
+Account,set Status,cluster-2
+Account,set Username,cluster-2
+Account,set Zip,cluster-2
+Cart,add Item,cluster-0
+Cart,contains Item Id,cluster-0
+Cart,get All Cart Items,cluster-0
+Cart,get Cart Item List,cluster-0
+Cart,get Cart Items,cluster-0
+Cart,get Number Of Items,cluster-0
+Cart,get Sub Total,cluster-0
+Cart,increment Quantity By Item Id,cluster-0
+Cart,remove Item By Id,cluster-0
+Cart,set Quantity By Item Id,cluster-0
+CartItem,calculate Total,cluster-0
+CartItem,get Item,cluster-0
+CartItem,get Quantity,cluster-0
+CartItem,get Total,cluster-0
+CartItem,increment Quantity,cluster-0
+CartItem,is In Stock,cluster-0
+CartItem,set In Stock,cluster-0
+CartItem,set Item,cluster-0
+CartItem,set Quantity,cluster-0
+Category,get Category Id,cluster-3
+Category,get Description,cluster-3
+Category,get Name,cluster-3
+Category,set Category Id,cluster-3
+Category,set Description,cluster-3
+Category,set Name,cluster-3
+Category,to String,cluster-3
+Item,get Attribute1,cluster-2
+Item,get Attribute2,cluster-2
+Item,get Attribute3,cluster-2
+Item,get Attribute4,cluster-2
+Item,get Attribute5,cluster-2
+Item,get Item Id,cluster-2
+Item,get List Price,cluster-2
+Item,get Product,cluster-2
+Item,get Quantity,cluster-2
+Item,get Status,cluster-2
+Item,get Supplier Id,cluster-2
+Item,get Unit Cost,cluster-2
+Item,set Attribute1,cluster-2
+Item,set Attribute2,cluster-2
+Item,set Attribute3,cluster-2
+Item,set Attribute4,cluster-2
+Item,set Attribute5,cluster-2
+Item,set Item Id,cluster-2
+Item,set List Price,cluster-2
+Item,set Product,cluster-2
+Item,set Quantity,cluster-2
+Item,set Status,cluster-2
+Item,set Supplier Id,cluster-2
+Item,set Unit Cost,cluster-2
+Item,to String,cluster-2
+LineItem,calculate Total,cluster-0
+LineItem,get Item,cluster-0
+LineItem,get Item Id,cluster-0
+LineItem,get Line Number,cluster-0
+LineItem,get Order Id,cluster-0
+LineItem,get Quantity,cluster-0
+LineItem,get Total,cluster-0
+LineItem,get Unit Price,cluster-0
+LineItem,Line Item,cluster-0
+LineItem,Line Item,cluster-0
+LineItem,set Item,cluster-0
+LineItem,set Item Id,cluster-0
+LineItem,set Line Number,cluster-0
+LineItem,set Order Id,cluster-0
+LineItem,set Quantity,cluster-0
+LineItem,set Unit Price,cluster-0
+Order,add Line Item,cluster-4
+Order,add Line Item,cluster-4
+Order,get Bill Address1,cluster-4
+Order,get Bill Address2,cluster-4
+Order,get Bill City,cluster-4
+Order,get Bill Country,cluster-4
+Order,get Bill State,cluster-4
+Order,get Bill To First Name,cluster-4
+Order,get Bill To Last Name,cluster-4
+Order,get Bill Zip,cluster-4
+Order,get Card Type,cluster-4
+Order,get Courier,cluster-4
+Order,get Credit Card,cluster-4
+Order,get Expiry Date,cluster-4
+Order,get Line Items,cluster-4
+Order,get Locale,cluster-4
+Order,get Order Date,cluster-4
+Order,get Order Id,cluster-4
+Order,get Ship Address1,cluster-4
+Order,get Ship Address2,cluster-4
+Order,get Ship City,cluster-4
+Order,get Ship Country,cluster-4
+Order,get Ship State,cluster-4
+Order,get Ship To First Name,cluster-4
+Order,get Ship To Last Name,cluster-4
+Order,get Ship Zip,cluster-4
+Order,get Status,cluster-4
+Order,get Total Price,cluster-4
+Order,get Username,cluster-4
+Order,init Order,cluster-4
+Order,set Bill Address1,cluster-4
+Order,set Bill Address2,cluster-4
+Order,set Bill City,cluster-4
+Order,set Bill Country,cluster-4
+Order,set Bill State,cluster-4
+Order,set Bill To First Name,cluster-4
+Order,set Bill To Last Name,cluster-4
+Order,set Bill Zip,cluster-4
+Order,set Card Type,cluster-4
+Order,set Courier,cluster-4
+Order,set Credit Card,cluster-4
+Order,set Expiry Date,cluster-4
+Order,set Line Items,cluster-4
+Order,set Locale,cluster-4
+Order,set Order Date,cluster-4
+Order,set Order Id,cluster-4
+Order,set Ship Address1,cluster-4
+Order,set Ship Address2,cluster-4
+Order,set Ship City,cluster-4
+Order,set Ship Country,cluster-4
+Order,set Ship State,cluster-4
+Order,set Ship To First Name,cluster-4
+Order,set Ship To Last Name,cluster-4
+Order,set Ship Zip,cluster-4
+Order,set Status,cluster-4
+Order,set Total Price,cluster-4
+Order,set Username,cluster-4
+Product,get Category Id,cluster-3
+Product,get Description,cluster-3
+Product,get Name,cluster-3
+Product,get Product Id,cluster-3
+Product,set Category Id,cluster-3
+Product,set Description,cluster-3
+Product,set Name,cluster-3
+Product,set Product Id,cluster-3
+Product,to String,cluster-3

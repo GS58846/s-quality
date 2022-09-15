@@ -25,4 +25,12 @@ urlpatterns = [
     path('v2/project/cluster/<int:project_id>/mean_shift', views.clustering_mean_shift, name='v2_clustering_mean_shift'),
     path('v2/project/cluster/<int:project_id>/agglomerative', views.clustering_agglomerative, name='v2_clustering_agglomerative'),
     path('v2/project/cluster/<int:project_id>/gaussian', views.clustering_gaussian, name='v2_clustering_gaussian'),
+
+    path('v2/project/cluster/<int:project_id>/network', views.clustering_network, name='v2_clustering_network'),
+    path('v2/project/cluster/<int:project_id>/network_run', views.clustering_network_run, name='v2_clustering_network_run'),
+
+    path('v2/project/scoring/<int:project_id>/initialize', views.scoring_initialize, name='v2_scoring_initialize'),
+    path('v2/project/scoring/<int:project_id>', views.scoring, name='v2_scoring'),
+
+    path('v2/project/summary/<int:project_id>', views.summary, name='v2_summary'),
 ]
