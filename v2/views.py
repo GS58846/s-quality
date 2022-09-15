@@ -341,7 +341,7 @@ def clean_rename(request, project_id, type):
             sd.save()
 
     elif type=='s101':
-        remove_string = request.POST['str_s101']
+        remove_string = request.POST['str_s101_metric']
         s101 = S101MetricRaw.objects.filter(project_id=project_id).all()
 
         for s in s101:
@@ -349,6 +349,16 @@ def clean_rename(request, project_id, type):
             s.class_to = s.class_to.replace(remove_string,'')
             s.save()
 
+    return redirect('v2_project_clean', id=project_id)
+
+def clean_remove_pkg(request, project_id, type):
+    if type == 'class_metric':
+        remove_class = request.POST['str_class_metric']
+        ClassMetricRaw.objects.filter(class_name__contains=remove_class).delete()
+    elif type == 's101':
+        remove_class = request.POST['str_s101_metric']
+        ClassMetricRaw.objects.filter(class_name__contains=remove_class).delete()
+    
     return redirect('v2_project_clean', id=project_id)
 
 def clean_remove_usage(request, project_id, type):

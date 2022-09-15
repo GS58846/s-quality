@@ -18,10 +18,16 @@
   <form action="{% url 'v2_clean_rename' project.id 'class_metric' %}" method="post" autocomplete="off">
     {% csrf_token %}
     <div class="input-group mb-3">
-      
-        <input type="text" class="form-control" placeholder="Part's of class name to remove" name="str_class_metric" required>
-        <button class="btn btn-outline-secondary" type="submit">Remove String</button>
-      
+        <input type="text" class="form-control" placeholder="String to remove" name="str_class_metric" required>
+        <button class="btn btn-outline-secondary" type="submit">Truncate</button>
+    </div>
+  </form>
+
+  <form action="{% url 'v2_clean_remove_pkg' project.id 'class_metric' %}" method="post" autocomplete="off">
+    {% csrf_token %}
+    <div class="input-group mb-3">
+        <input type="text" class="form-control" placeholder="Package or Class to remove" name="str_class_metric" required>
+        <button class="btn btn-outline-secondary" type="submit">Remove</button>
     </div>
   </form>
     
@@ -81,11 +87,16 @@
 
     <form action="{% url 'v2_clean_rename' project.id 's101' %}" method="post" autocomplete="off">
       {% csrf_token %}
+      <div class="input-group mt-3 mb-3">
+          <input type="text" class="form-control" placeholder="Part's of class name to remove" name="str_s101_metric" required>
+          <button class="btn btn-outline-secondary" type="submit">Truncate</button>
+      </div>
+    </form>
+    <form action="{% url 'v2_clean_remove_pkg' project.id 's101' %}" method="post" autocomplete="off">
+      {% csrf_token %}
       <div class="input-group mb-3">
-        
-          <input type="text" class="form-control" placeholder="Part's of class name to remove" name="str_s101" required>
-          <button class="btn btn-outline-secondary" type="submit">Remove String</button>
-        
+          <input type="text" class="form-control" placeholder="Package or Class to remove" name="str_s101_metric" required>
+          <button class="btn btn-outline-secondary" type="submit">Remove</button>
       </div>
     </form>
 

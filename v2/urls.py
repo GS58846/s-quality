@@ -15,6 +15,7 @@ urlpatterns = [
     path('v2/project/cleaning/<int:id>', views.project_clean, name='v2_project_clean'),
     path('v2/project/cleaning/delete/<int:class_id>', views.clean_delete, name='v2_clean_delete'),
     path('v2/project/cleaning/rename/<int:project_id>/<str:type>', views.clean_rename, name='v2_clean_rename'),
+    path('v2/project/cleaning/remove/pkg`/<int:project_id>/<str:type>', views.clean_remove_pkg, name='v2_clean_remove_pkg'),
     path('v2/project/cleaning/remove/usage/<int:project_id>/<str:type>', views.clean_remove_usage, name='v2_clean_remove_usage'),
     path('v2/project/cleaning/sync/s101/<int:project_id>', views.clean_syn_s101, name='v2_clean_syn_s101'),
 
