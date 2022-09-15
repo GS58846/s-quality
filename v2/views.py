@@ -1302,7 +1302,10 @@ def clustering_network(request, project_id):
             'gnewman': gnewman
         }
     else:
-        data = {}
+        project = Project.objects.get(id=project_id)
+        data = {
+            'project': project
+        }
 
     return render(request, 'v2/project_cluster_network.html', data)
 
