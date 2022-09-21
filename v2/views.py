@@ -26,12 +26,17 @@ from django.shortcuts import render
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 from bs4 import BeautifulSoup
-from v2.models import ClassMetricRaw, Clustering, ClusteringMetric, ClusteringNormalize, ClusteringTime, CorpusFile, GraphImages, MetricNormalize, Project, S101File, S101MetricRaw, ScoringAverage, ScoringFinale
+from v2.models import ClassMetricRaw, Clustering, ClusteringMetric, ClusteringNormalize, ClusteringTime, CompleteFile, CorpusFile, GraphImages, MetricNormalize, Project, S101File, S101MetricRaw, ScoringAverage, ScoringFinale
 
 def index(request):
     projects = Project.objects.all()
+    metrics = ScoringFinale.objects.filter(type='metric').order_by('algo').all()
+    networks = ScoringFinale.objects.filter(type='network').order_by('algo').all()
+
     data = {
         'projects': projects,
+        'metrics': metrics,
+        'networks': networks
     }
     return render(request, 'v2/index.html', data)
 
@@ -45,6 +50,7 @@ def project_import(request, id):
         project = Project.objects.get(id=id)
         corpus = CorpusFile.objects.filter(project=project)
         s101 = S101File.objects.filter(project=project)
+        complete = CompleteFile.objects.filter(project=project)
 
         completed_file = 0
 
@@ -60,6 +66,11 @@ def project_import(request, id):
         else:
             s101_metric_file = False
 
+        if complete.count() > 0:
+            complete_metric_file = complete.get()
+            completed_file += 1
+        else:
+            complete_metric_file = False
 
         if completed_file != 2:
             btn_state = 'disabled'
@@ -71,6 +82,7 @@ def project_import(request, id):
             'project': project,
             'corpus_metric_file': corpus_metric_file,
             's101_metric_file': s101_metric_file,
+            'complete_metric_file': complete_metric_file,
             'btn_state': btn_state
         }
 
@@ -297,6 +309,69 @@ def s101_upload(request, id):
 
         if S101File.objects.filter(project=project).count() > 0:
             p = S101File.objects.filter(project=project).get()
+            p.processing_time = et - st
+            p.save()
+
+        return redirect('v2_project_import', id=id)
+    return redirect('/v2')
+
+def complete_upload(request, id):
+    if request.method == 'POST' and request.FILES['comupload']:
+        
+        # upload xml file
+        upload = request.FILES['comupload']
+        fss = FileSystemStorage()
+        new_name = 'V2-COMPLETE-'+''.join(random.choices(string.ascii_uppercase + string.digits, k = 10)) + '.csv'
+        file = fss.save(new_name, upload)
+        file_url = fss.url(file)
+
+        project = Project.objects.get(id=id)
+
+        if CompleteFile.objects.filter(project=project).count() > 0:
+            p = CompleteFile.objects.filter(project=project).get()
+            p.filename = new_name
+            p.fileurl = file_url
+            p.save()
+
+            if ClassMetricRaw.objects.filter(project_id=id).count() > 0:
+                ClassMetricRaw.objects.filter(project_id=id).delete()
+
+        else:
+            corpus_metric = CompleteFile(
+                filename = new_name,
+                fileurl = file_url,
+                project = Project.objects.get(id=id)
+            )
+            corpus_metric.save()
+        
+        # read saved csv file
+        # base_dir = settings.BASE_DIR
+        csv_folder = os.path.join(settings.BASE_DIR, 'uploads/csv/' + new_name)
+        local_csv = csv_folder
+
+        st = time.time()
+
+        with open(local_csv, mode='r', encoding="utf-8-sig") as csv_file:
+            csv_reader = DictReader(csv_file)
+            for row in csv_reader:
+                sdmetric_raw = ClassMetricRaw()
+                sdmetric_raw.class_name = row['classname']
+                sdmetric_raw.cbo = int(float(row['CBO']))
+                sdmetric_raw.ic = int(float(row['IC']))
+                sdmetric_raw.oc = int(float(row['OC']))
+                sdmetric_raw.cam = row['CAM']
+                sdmetric_raw.nco = int(float(row['NCO']))
+                sdmetric_raw.dit = int(float(row['DIT']))
+                sdmetric_raw.rfc = int(float(row['RFC']))
+                sdmetric_raw.loc = int(float(row['LOC']))
+                sdmetric_raw.nca = int(float(row['NCA']))
+                sdmetric_raw.project_id = id
+                sdmetric_raw.save()
+
+        et = time.time()
+
+        if CompleteFile.objects.filter(project=project).count() > 0:
+            p = CompleteFile.objects.filter(project=project).get()
             p.processing_time = et - st
             p.save()
 
