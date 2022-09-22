@@ -11,6 +11,7 @@ urlpatterns = [
     path('v2/project/import/<int:id>', views.project_import, name='v2_project_import'),
     path('v2/project/import/<int:id>/cupload', views.corpus_upload, name='v2_corpus_upload'),
     path('v2/project/import/<int:id>/s101upload', views.s101_upload, name='v2_s101_upload'),
+    path('v2/project/import/<int:id>/comupload', views.complete_upload, name='v2_complete_upload'),
 
     path('v2/project/cleaning/<int:id>', views.project_clean, name='v2_project_clean'),
     path('v2/project/cleaning/delete/<int:class_id>', views.clean_delete, name='v2_clean_delete'),

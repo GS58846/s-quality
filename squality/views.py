@@ -647,6 +647,7 @@ def clustering_metric(request, project_id):
         cluster_grp = []
         cls = Clustering.objects.filter(project_id=project_id,algo='kmeans',cluster=i).all()
         for c in cls:
+            # print(c.class_name)
             cm = SdMetricRaw.objects.filter(project_id=project_id,class_name=c.class_name).get()
             mloc += cm.loc
             mnoc += 1 

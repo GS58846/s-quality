@@ -40,6 +40,16 @@ class S101File(models.Model):
     def __str__(self):
         return f'{self.filename}'
 
+class CompleteFile(models.Model):
+    filename = models.TextField(unique=True)
+    fileurl = models.TextField()
+    created_at = models.DateTimeField(auto_now=True)
+    processing_time = models.DecimalField(max_digits=12, decimal_places=4, default=0, blank=True, null=True)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f'{self.filename}'
+
 class S101MetricRaw(models.Model):
     class_from = models.TextField(null=True)
     usage = models.TextField(null=True)
