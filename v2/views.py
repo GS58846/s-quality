@@ -254,6 +254,10 @@ def corpus_upload(request, id):
             p.processing_time = et - st
             p.save()
 
+        # reset normalize metric if new file uploaded
+        if MetricNormalize.objects.filter(project_id=id).count() > 0:
+            MetricNormalize.objects.filter(project_id=id).delete()
+
         return redirect('v2_project_import', id=id)
     return redirect('/v2')
 
@@ -311,6 +315,10 @@ def s101_upload(request, id):
             p = S101File.objects.filter(project=project).get()
             p.processing_time = et - st
             p.save()
+
+        # reset normalize metric if new file uploaded
+        if MetricNormalize.objects.filter(project_id=id).count() > 0:
+            MetricNormalize.objects.filter(project_id=id).delete()
 
         return redirect('v2_project_import', id=id)
     return redirect('/v2')
@@ -374,6 +382,10 @@ def complete_upload(request, id):
             p = CompleteFile.objects.filter(project=project).get()
             p.processing_time = et - st
             p.save()
+
+        # reset normalize metric if new file uploaded
+        if MetricNormalize.objects.filter(project_id=id).count() > 0:
+            MetricNormalize.objects.filter(project_id=id).delete()
 
         return redirect('v2_project_import', id=id)
     return redirect('/v2')
@@ -512,7 +524,7 @@ def clean_syn_s101(request, project_id):
 def migrate_raw_normalize(request, project_id):
     if MetricNormalize.objects.filter(project_id=project_id).count() > 0:
         MetricNormalize.objects.filter(project_id=project_id).delete()
-
+    
     raw_data = ClassMetricRaw.objects.filter(project_id=project_id).all()
     for row in raw_data:
         normalize_data = MetricNormalize(
