@@ -540,6 +540,27 @@ def view_cluster_metric(request, project_id):
     project = Project.objects.get(id=project_id)
     class_data = MetricNormalize.objects.order_by('class_name').all().filter(project_id=project_id)
 
+    # save for export data
+    export_metric = 'V2-EXPORT-METRIC.csv'
+    csv_folder = os.path.join(settings.BASE_DIR, 'uploads/csv/')
+    local_csv = csv_folder
+    with open(local_csv+export_metric, 'w', newline='') as f_handle:
+        writer = csv.writer(f_handle)
+        # Add the header/column names
+        header = ['classname','CBO','IC','OC','CAM','NCO','DIT','RFC','LOC','NCA']
+        writer.writerow(header)
+        # Iterate over `data`  and  write to the csv file
+        for sd in class_data:
+            row = [sd.class_name,sd.cbo,sd.ic,sd.oc,sd.cam,sd.nco,sd.dit,sd.rfc,sd.loc,sd.nca]
+            writer.writerow(row)
+
+    ########################
+
+    if MetricNormalize.objects.order_by('class_name').filter(project_id=project_id, normalized=1).count() > 0:
+        state = 'disabled'
+    else:
+        state = ''
+
     ms_kmeans = ClusteringMetric.objects.filter(project_id=project_id, algo='kmeans').order_by('microservice').all()
     if ClusteringTime.objects.filter(project_id=project_id, algo='kmeans').count() > 0:
         time_kmeans = ClusteringTime.objects.get(project_id=project_id, algo='kmeans').processing_time
@@ -567,6 +588,7 @@ def view_cluster_metric(request, project_id):
 
     data = {
         'project': project,
+        'state': state,
         'class_metric': class_data,
         'ms_kmeans': ms_kmeans,
         'time_kmeans': time_kmeans,
