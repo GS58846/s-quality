@@ -45,6 +45,21 @@ def project_create(request: HttpRequest):
     project.save()
     return redirect('/v2')
 
+def project_delete(request, id):
+    Project.objects.filter(id=id).delete()
+    ClassMetricRaw.objects.filter(project_id=id).delete()
+    S101MetricRaw.objects.filter(project_id=id).delete()
+    MetricNormalize.objects.filter(project_id=id).delete()
+    ClusteringTime.objects.filter(project_id=id).delete()
+    Clustering.objects.filter(project_id=id).delete()
+    ClusteringMetric.objects.filter(project_id=id).delete()
+    GraphImages.objects.filter(project_id=id).delete()
+    ScoringAverage.objects.filter(project_id=id).delete()
+    ScoringFinale.objects.filter(project_id=id).delete()
+    ClusteringNormalize.objects.filter(project_id=id).delete()
+
+    return redirect('/v2')
+
 def project_import(request, id):
     try:
         project = Project.objects.get(id=id)
