@@ -29,7 +29,7 @@ from bs4 import BeautifulSoup
 from v2.models import ClassMetricRaw, Clustering, ClusteringMetric, ClusteringNormalize, ClusteringTime, CompleteFile, CorpusFile, GraphImages, MetricNormalize, Project, S101File, S101MetricRaw, ScoringAverage, ScoringFinale
 
 def index(request):
-    projects = Project.objects.all()
+    projects = Project.objects.order_by('name').all()
     metrics = ScoringFinale.objects.filter(type='metric').order_by('algo').all()
     networks = ScoringFinale.objects.filter(type='network').order_by('algo').all()
 
