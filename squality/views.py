@@ -219,7 +219,9 @@ def sdmetrics_upload(request, id):
                 sdmetric_raw.nca = row['NumAttr']
                 sdmetric_raw.project_id = id
                 sdmetric_raw.xmi_id = row['xmi_id']
-                sdmetric_raw.save()
+
+                if SdMetricRaw.objects.filter(project_id=id, class_name=sdmetric_raw.class_name).count() < 1:
+                    sdmetric_raw.save()
 
         return redirect('project_details', id=id)
     return redirect('/squality')
@@ -647,7 +649,7 @@ def clustering_metric(request, project_id):
         cluster_grp = []
         cls = Clustering.objects.filter(project_id=project_id,algo='kmeans',cluster=i).all()
         for c in cls:
-            # print(c.class_name)
+            print(c.class_name)
             cm = SdMetricRaw.objects.filter(project_id=project_id,class_name=c.class_name).get()
             mloc += cm.loc
             mnoc += 1 
