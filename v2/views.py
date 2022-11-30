@@ -591,8 +591,10 @@ def view_cluster_metric(request, project_id):
     ms_kmeans = ClusteringMetric.objects.filter(project_id=project_id, algo='kmeans').order_by('microservice').all()
     if ClusteringTime.objects.filter(project_id=project_id, algo='kmeans').count() > 0:
         time_kmeans = ClusteringTime.objects.get(project_id=project_id, algo='kmeans').processing_time
+        time_kmeans_algo = ClusteringTime.objects.get(project_id=project_id, algo='kmeans').clustering_time
     else:
         time_kmeans = 0
+        time_kmeans_algo = 0
 
     ms_mean_shift = ClusteringMetric.objects.filter(project_id=project_id, algo='mean_shift').order_by('microservice').all()
     if ClusteringTime.objects.filter(project_id=project_id, algo='mean_shift').count() > 0:
@@ -619,6 +621,7 @@ def view_cluster_metric(request, project_id):
         'class_metric': class_data,
         'ms_kmeans': ms_kmeans,
         'time_kmeans': time_kmeans,
+        'time_kmeans_algo': time_kmeans_algo,
         'ms_mean_shift': ms_mean_shift,
         'time_mean_shift': time_mean_shift,
         'ms_agglomerative': ms_agglomerative,
@@ -629,6 +632,54 @@ def view_cluster_metric(request, project_id):
     }
     
     return render(request, 'v2/project_cluster_metric.html', data)
+
+def clustering_kmeans_timer(request, project_id):
+    st = time.time()
+
+    raw_data = MetricNormalize.objects.filter(project_id=project_id).all().values()
+    df = pd.DataFrame(raw_data)
+    df_metric = df.iloc[:,2:-2]
+    # df_metric = df[['cbo','ic','oc','cam','nco','dit','rfc','loc','nca']]
+
+    class_count = MetricNormalize.objects.order_by('class_name').filter(project_id=project_id).count()
+
+    print('class count = ' + str(class_count))
+
+    # the elbow method
+    kmeans_args = {
+        "init": "random",
+        "n_init": 10,
+        "max_iter": 300,
+        "random_state": 42
+    }
+
+    sse = []
+    sse_list = []
+
+    for k in range(1,class_count): #rows
+        kmeans = KMeans(n_clusters=k, **kmeans_args)
+        kmeans.fit(df_metric)
+        sse.append([k, kmeans.inertia_])
+        sse_list.append(kmeans.inertia_)
+
+    k_value = KneeLocator(range(1,class_count), sse_list, curve="convex", direction="decreasing")
+    k_value.elbow  
+
+    # sample mean / average
+    sample_mean = class_count / k_value.elbow
+    print('sample mean = ' + str(sample_mean))
+    
+    kmeans_minmax = KMeans(k_value.elbow).fit(df_metric)
+    kmeans_clusters = kmeans_minmax.fit_predict(df_metric)
+
+    et = time.time()
+
+    if ClusteringTime.objects.filter(project_id=project_id, algo="kmeans").count() > 0:
+        p = ClusteringTime.objects.filter(project_id=project_id, algo="kmeans").get()
+        p.clustering_time = et - st
+        p.save()
+
+    return redirect('v2_cluster_metric', project_id=project_id)
 
 def clustering_kmeans(request, project_id):
 

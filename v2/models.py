@@ -77,6 +77,7 @@ class ClusteringTime(models.Model):
     project_id = models.IntegerField()
     algo = models.TextField()
     processing_time = models.DecimalField(max_digits=12, decimal_places=4, default=0, blank=True, null=True)
+    clustering_time = models.DecimalField(max_digits=12, decimal_places=4, default=0, blank=True, null=True)
     created_at = models.DateTimeField(auto_now=True)
 
 class Clustering(models.Model):
