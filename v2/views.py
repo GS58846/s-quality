@@ -633,53 +633,53 @@ def view_cluster_metric(request, project_id):
     
     return render(request, 'v2/project_cluster_metric.html', data)
 
-def clustering_kmeans_timer(request, project_id):
-    st = time.time()
+# def clustering_kmeans_timer(request, project_id):
+#     st = time.time()
 
-    raw_data = MetricNormalize.objects.filter(project_id=project_id).all().values()
-    df = pd.DataFrame(raw_data)
-    df_metric = df.iloc[:,2:-2]
-    # df_metric = df[['cbo','ic','oc','cam','nco','dit','rfc','loc','nca']]
+#     raw_data = MetricNormalize.objects.filter(project_id=project_id).all().values()
+#     df = pd.DataFrame(raw_data)
+#     df_metric = df.iloc[:,2:-2]
+#     # df_metric = df[['cbo','ic','oc','cam','nco','dit','rfc','loc','nca']]
 
-    class_count = MetricNormalize.objects.order_by('class_name').filter(project_id=project_id).count()
+#     class_count = MetricNormalize.objects.order_by('class_name').filter(project_id=project_id).count()
 
-    print('class count = ' + str(class_count))
+#     print('class count = ' + str(class_count))
 
-    # the elbow method
-    kmeans_args = {
-        "init": "random",
-        "n_init": 10,
-        "max_iter": 300,
-        "random_state": 42
-    }
+#     # the elbow method
+#     kmeans_args = {
+#         "init": "random",
+#         "n_init": 10,
+#         "max_iter": 300,
+#         "random_state": 42
+#     }
 
-    sse = []
-    sse_list = []
+#     sse = []
+#     sse_list = []
 
-    for k in range(1,class_count): #rows
-        kmeans = KMeans(n_clusters=k, **kmeans_args)
-        kmeans.fit(df_metric)
-        sse.append([k, kmeans.inertia_])
-        sse_list.append(kmeans.inertia_)
+#     for k in range(1,class_count): #rows
+#         kmeans = KMeans(n_clusters=k, **kmeans_args)
+#         kmeans.fit(df_metric)
+#         sse.append([k, kmeans.inertia_])
+#         sse_list.append(kmeans.inertia_)
 
-    k_value = KneeLocator(range(1,class_count), sse_list, curve="convex", direction="decreasing")
-    k_value.elbow  
+#     k_value = KneeLocator(range(1,class_count), sse_list, curve="convex", direction="decreasing")
+#     k_value.elbow  
 
-    # sample mean / average
-    sample_mean = class_count / k_value.elbow
-    print('sample mean = ' + str(sample_mean))
+#     # sample mean / average
+#     sample_mean = class_count / k_value.elbow
+#     print('sample mean = ' + str(sample_mean))
     
-    kmeans_minmax = KMeans(k_value.elbow).fit(df_metric)
-    kmeans_clusters = kmeans_minmax.fit_predict(df_metric)
+#     kmeans_minmax = KMeans(k_value.elbow).fit(df_metric)
+#     kmeans_clusters = kmeans_minmax.fit_predict(df_metric)
 
-    et = time.time()
+#     et = time.time()
 
-    if ClusteringTime.objects.filter(project_id=project_id, algo="kmeans").count() > 0:
-        p = ClusteringTime.objects.filter(project_id=project_id, algo="kmeans").get()
-        p.clustering_time = et - st
-        p.save()
+#     if ClusteringTime.objects.filter(project_id=project_id, algo="kmeans").count() > 0:
+#         p = ClusteringTime.objects.filter(project_id=project_id, algo="kmeans").get()
+#         p.clustering_time = et - st
+#         p.save()
 
-    return redirect('v2_cluster_metric', project_id=project_id)
+#     return redirect('v2_cluster_metric', project_id=project_id)
 
 def clustering_kmeans(request, project_id):
 
@@ -724,6 +724,8 @@ def clustering_kmeans(request, project_id):
     
     kmeans_minmax = KMeans(k_value.elbow).fit(df_metric)
     kmeans_clusters = kmeans_minmax.fit_predict(df_metric)
+
+    cet = time.time()
 
     # df_kmeans = df.iloc[:,1:2].copy()
     df_kmeans = df[['class_name']]
@@ -872,12 +874,14 @@ def clustering_kmeans(request, project_id):
         p = ClusteringTime.objects.filter(project_id=project_id, algo="kmeans").get()
         p.algo = 'kmeans'
         p.processing_time = et - st
+        p.clustering_time = cet - st
         p.save()
     else:
         p = ClusteringTime(
             project_id = project_id,
             algo = 'kmeans',
             processing_time = et - st,
+            clustering_time = cet - st
         )
         p.save()
 
@@ -901,6 +905,8 @@ def clustering_mean_shift(request, project_id):
     mshift_cluster = mshift.fit_predict(df_metric)
     df_mshift = df[['class_name']]
     df_mshift['mean_shift'] = mshift_cluster.copy()
+
+    cet = time.time()
     
     # save into db
     if Clustering.objects.filter(project_id=project_id,algo='mean_shift').count() > 0:
@@ -1041,12 +1047,14 @@ def clustering_mean_shift(request, project_id):
         p = ClusteringTime.objects.filter(project_id=project_id, algo="mean_shift").get()
         p.algo = 'mean_shift'
         p.processing_time = et - st
+        p.clustering_time = cet - st
         p.save()
     else:
         p = ClusteringTime(
             project_id = project_id,
             algo = 'mean_shift',
             processing_time = et - st,
+            clustering_time = cet - st
         )
         p.save()
 
@@ -1088,6 +1096,9 @@ def clustering_agglomerative(request, project_id):
 
     agglomerative = AgglomerativeClustering(k_value.elbow)
     agglomerative_cluster = agglomerative.fit_predict(df_metric)
+
+    cet = time.time()
+
     # df_agglomerative = df.iloc[:,1:2].copy()
     df_agglomerative = df[['class_name']]
     df_agglomerative['agglomerative'] = agglomerative_cluster
@@ -1231,12 +1242,14 @@ def clustering_agglomerative(request, project_id):
         p = ClusteringTime.objects.filter(project_id=project_id, algo="agglomerative").get()
         p.algo = 'agglomerative'
         p.processing_time = et - st
+        p.clustering_time = cet - st
         p.save()
     else:
         p = ClusteringTime(
             project_id = project_id,
             algo = 'agglomerative',
             processing_time = et - st,
+            clustering_time = cet - st
         )
         p.save()
 
@@ -1277,6 +1290,9 @@ def clustering_gaussian(request, project_id):
 
     gaussian = GaussianMixture(k_value.elbow)
     gaussian_cluster = gaussian.fit_predict(df_metric)
+
+    cet = time.time()
+
     # df_gaussian = df.iloc[:,1:2].copy()
     df_gaussian = df[['class_name']]
     df_gaussian['gaussian'] = gaussian_cluster
@@ -1420,12 +1436,14 @@ def clustering_gaussian(request, project_id):
         p = ClusteringTime.objects.filter(project_id=project_id, algo="gaussian").get()
         p.algo = 'gaussian'
         p.processing_time = et - st
+        p.clustering_time = cet - st
         p.save()
     else:
         p = ClusteringTime(
             project_id = project_id,
             algo = 'gaussian',
             processing_time = et - st,
+            clustering_time = cet - st
         )
         p.save()
 
