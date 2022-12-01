@@ -26,17 +26,19 @@ from django.shortcuts import render
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 from bs4 import BeautifulSoup
-from v2.models import ClassMetricRaw, Clustering, ClusteringMetric, ClusteringNormalize, ClusteringTime, CompleteFile, CorpusFile, GraphImages, MetricNormalize, Project, S101File, S101MetricRaw, ScoringAverage, ScoringFinale
+from v2.models import ClassMetricRaw, Clustering, ClusteringMetric, ClusteringNormalize, ClusteringTime, CompleteFile, CorpusFile, GraphImages, MetricNormalize, Project, S101File, S101MetricRaw, ScoringAverage, ScoringFinale, ScoringFinaleAll
 
 def index(request):
     projects = Project.objects.order_by('name').all()
-    metrics = ScoringFinale.objects.filter(type='metric').order_by('algo').all()
-    networks = ScoringFinale.objects.filter(type='network').order_by('algo').all()
+    metrics = ScoringFinale.objects.filter(type='metric').order_by('-total').all()
+    networks = ScoringFinale.objects.filter(type='network').order_by('-total').all()
+    overall = ScoringFinaleAll.objects.order_by('-total').all()
 
     data = {
         'projects': projects,
         'metrics': metrics,
-        'networks': networks
+        'networks': networks,
+        'overall': overall
     }
     return render(request, 'v2/index.html', data)
 
@@ -641,54 +643,6 @@ def view_cluster_metric(request, project_id):
     }
     
     return render(request, 'v2/project_cluster_metric.html', data)
-
-# def clustering_kmeans_timer(request, project_id):
-#     st = time.time()
-
-#     raw_data = MetricNormalize.objects.filter(project_id=project_id).all().values()
-#     df = pd.DataFrame(raw_data)
-#     df_metric = df.iloc[:,2:-2]
-#     # df_metric = df[['cbo','ic','oc','cam','nco','dit','rfc','loc','nca']]
-
-#     class_count = MetricNormalize.objects.order_by('class_name').filter(project_id=project_id).count()
-
-#     print('class count = ' + str(class_count))
-
-#     # the elbow method
-#     kmeans_args = {
-#         "init": "random",
-#         "n_init": 10,
-#         "max_iter": 300,
-#         "random_state": 42
-#     }
-
-#     sse = []
-#     sse_list = []
-
-#     for k in range(1,class_count): #rows
-#         kmeans = KMeans(n_clusters=k, **kmeans_args)
-#         kmeans.fit(df_metric)
-#         sse.append([k, kmeans.inertia_])
-#         sse_list.append(kmeans.inertia_)
-
-#     k_value = KneeLocator(range(1,class_count), sse_list, curve="convex", direction="decreasing")
-#     k_value.elbow  
-
-#     # sample mean / average
-#     sample_mean = class_count / k_value.elbow
-#     print('sample mean = ' + str(sample_mean))
-    
-#     kmeans_minmax = KMeans(k_value.elbow).fit(df_metric)
-#     kmeans_clusters = kmeans_minmax.fit_predict(df_metric)
-
-#     et = time.time()
-
-#     if ClusteringTime.objects.filter(project_id=project_id, algo="kmeans").count() > 0:
-#         p = ClusteringTime.objects.filter(project_id=project_id, algo="kmeans").get()
-#         p.clustering_time = et - st
-#         p.save()
-
-#     return redirect('v2_cluster_metric', project_id=project_id)
 
 def clustering_kmeans(request, project_id):
 
@@ -2264,6 +2218,8 @@ def scoring(request, project_id):
     for tl in type_list:
         calculate_scoring_type(project_id,tl)
 
+    # overall scoring consist of metric and network
+    calculate_scoring_all(project_id);
 
     # get scoring rank
     scoring_metric = ScoringFinale.objects.filter(project_id=project_id,type='metric').order_by('-total').all()
@@ -2670,6 +2626,58 @@ def calculate_scoring_type(project_id, type):
             cohesion = df_metric_ranked['rank_ncam'][df_row] + df_metric_ranked['rank_imc'][df_row],
             complexity = df_metric_ranked['rank_nmo'][df_row] + df_metric_ranked['rank_trm'][df_row],
             size = df_metric_ranked['rank_mloc'][df_row] + df_metric_ranked['rank_mnoc'][df_row]
+        )
+        xtotal = df_metric_ranked['rank_cbm'][df_row] + df_metric_ranked['rank_wcbm'][df_row] + df_metric_ranked['rank_acbm'][df_row] + df_metric_ranked['rank_ncam'][df_row] + df_metric_ranked['rank_imc'][df_row] + df_metric_ranked['rank_nmo'][df_row] + df_metric_ranked['rank_trm'][df_row] + df_metric_ranked['rank_mloc'][df_row] + df_metric_ranked['rank_mnoc'][df_row] + df_metric_ranked['rank_mcd'][df_row]
+        print(str(df_metric_ranked['algo'][df_row]) + ' = ' + str(xtotal))
+        scoring_finale.save()
+
+def calculate_scoring_all(project_id):
+
+    if ScoringFinaleAll.objects.filter(project_id=project_id).all().count() > 0:
+        ScoringFinaleAll.objects.filter(project_id=project_id).delete()
+
+    df_metric = pd.DataFrame(ScoringAverage.objects.filter(project_id=project_id).all().values())
+    df_metric['rank_cbm'] = df_metric['cbm'].rank(ascending=False)
+    df_metric['rank_wcbm'] = df_metric['wcbm'].rank(ascending=False)
+    df_metric['rank_acbm'] = df_metric['acbm'].rank(ascending=False)
+    df_metric['rank_ncam'] = df_metric['ncam'].rank()
+    df_metric['rank_imc'] = df_metric['imc'].rank()
+    df_metric['rank_nmo'] = df_metric['nmo'].rank(ascending=False)
+    df_metric['rank_trm'] = df_metric['trm'].rank(ascending=False)
+    df_metric['rank_mloc'] = df_metric['mloc'].rank(ascending=False)
+    df_metric['rank_mnoc'] = df_metric['mnoc'].rank(ascending=False)
+    df_metric['rank_mcd'] = df_metric['mcd'].rank(ascending=False)
+
+    df_metric_ranked = df_metric[['algo','type','rank_cbm','rank_wcbm','rank_acbm','rank_ncam','rank_imc','rank_nmo','rank_trm','rank_mloc','rank_mnoc','rank_mcd']].copy()
+
+    for df_row in df_metric_ranked.index:
+        scoring_finale = ScoringFinaleAll(
+            # coupling
+            cbm = df_metric_ranked['rank_cbm'][df_row],
+            wcbm = df_metric_ranked['rank_wcbm'][df_row],
+            acbm = df_metric_ranked['rank_acbm'][df_row],
+            # cohesion
+            ncam = df_metric_ranked['rank_ncam'][df_row],
+            imc = df_metric_ranked['rank_imc'][df_row],
+            # complexity
+            nmo = df_metric_ranked['rank_nmo'][df_row],
+            trm = df_metric_ranked['rank_trm'][df_row],
+            # size
+            mloc = df_metric_ranked['rank_mloc'][df_row],
+            mnoc = df_metric_ranked['rank_mnoc'][df_row],
+            
+            mcd = df_metric_ranked['rank_mcd'][df_row],
+
+            algo = df_metric_ranked['algo'][df_row],
+            type = df_metric_ranked['type'][df_row],
+            total = df_metric_ranked['rank_cbm'][df_row] + df_metric_ranked['rank_wcbm'][df_row] + df_metric_ranked['rank_acbm'][df_row] + df_metric_ranked['rank_ncam'][df_row]
+                        + df_metric_ranked['rank_imc'][df_row] + df_metric_ranked['rank_nmo'][df_row] + df_metric_ranked['rank_trm'][df_row] + df_metric_ranked['rank_mloc'][df_row]
+                        + df_metric_ranked['rank_mnoc'][df_row] + df_metric_ranked['rank_mcd'][df_row],
+            project_id = project_id,
+            coupling = df_metric_ranked['rank_cbm'][df_row] + df_metric_ranked['rank_wcbm'][df_row] + df_metric_ranked['rank_acbm'][df_row],
+            cohesion = df_metric_ranked['rank_ncam'][df_row] + df_metric_ranked['rank_imc'][df_row],
+            complexity = df_metric_ranked['rank_nmo'][df_row] + df_metric_ranked['rank_trm'][df_row],
+            size = df_metric_ranked['rank_mloc'][df_row] + df_metric_ranked['rank_mnoc'][df_row] + df_metric_ranked['rank_mcd'][df_row]
         )
         xtotal = df_metric_ranked['rank_cbm'][df_row] + df_metric_ranked['rank_wcbm'][df_row] + df_metric_ranked['rank_acbm'][df_row] + df_metric_ranked['rank_ncam'][df_row] + df_metric_ranked['rank_imc'][df_row] + df_metric_ranked['rank_nmo'][df_row] + df_metric_ranked['rank_trm'][df_row] + df_metric_ranked['rank_mloc'][df_row] + df_metric_ranked['rank_mnoc'][df_row] + df_metric_ranked['rank_mcd'][df_row]
         print(str(df_metric_ranked['algo'][df_row]) + ' = ' + str(xtotal))
