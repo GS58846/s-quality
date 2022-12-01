@@ -599,20 +599,26 @@ def view_cluster_metric(request, project_id):
     ms_mean_shift = ClusteringMetric.objects.filter(project_id=project_id, algo='mean_shift').order_by('microservice').all()
     if ClusteringTime.objects.filter(project_id=project_id, algo='mean_shift').count() > 0:
         time_mean_shift = ClusteringTime.objects.get(project_id=project_id, algo='mean_shift').processing_time
+        time_mean_shift_algo = ClusteringTime.objects.get(project_id=project_id, algo='mean_shift').clustering_time
     else:
         time_mean_shift = 0
+        time_mean_shift_algo = 0
 
     ms_agglomerative = ClusteringMetric.objects.filter(project_id=project_id, algo='agglomerative').order_by('microservice').all()
     if ClusteringTime.objects.filter(project_id=project_id, algo='agglomerative').count() > 0:
         time_agglomerative = ClusteringTime.objects.get(project_id=project_id, algo='agglomerative').processing_time
+        time_agglomerative_algo = ClusteringTime.objects.get(project_id=project_id, algo='agglomerative').clustering_time
     else:
         time_agglomerative = 0
+        time_agglomerative_algo = 0
 
     ms_gaussian = ClusteringMetric.objects.filter(project_id=project_id, algo='gaussian').order_by('microservice').all()
     if ClusteringTime.objects.filter(project_id=project_id, algo='gaussian').count() > 0:
         time_gaussian = ClusteringTime.objects.get(project_id=project_id, algo='gaussian').processing_time
+        time_gaussian_algo = ClusteringTime.objects.get(project_id=project_id, algo='gaussian').clustering_time
     else:
         time_gaussian = 0
+        time_gaussian_algo = 0
 
 
     data = {
@@ -624,10 +630,13 @@ def view_cluster_metric(request, project_id):
         'time_kmeans_algo': time_kmeans_algo,
         'ms_mean_shift': ms_mean_shift,
         'time_mean_shift': time_mean_shift,
+        'time_mean_shift_algo': time_mean_shift_algo,
         'ms_agglomerative': ms_agglomerative,
         'time_agglomerative': time_agglomerative,
+        'time_agglomerative_algo': time_agglomerative_algo,
         'ms_gaussian': ms_gaussian,
         'time_gaussian': time_gaussian,
+        'time_gaussian_algo': time_gaussian_algo,
         'k': len(ms_kmeans)
     }
     
