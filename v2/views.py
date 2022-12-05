@@ -20,6 +20,7 @@ from sklearn.preprocessing import MinMaxScaler
 from kneed import KneeLocator
 from csv import DictReader, reader, writer
 from django.http import HttpRequest
+from django.http import HttpResponse
 from django.db.models import Q, Sum
 from django.shortcuts import redirect, render
 from django.shortcuts import render
@@ -2682,6 +2683,102 @@ def calculate_scoring_all(project_id):
         xtotal = df_metric_ranked['rank_cbm'][df_row] + df_metric_ranked['rank_wcbm'][df_row] + df_metric_ranked['rank_acbm'][df_row] + df_metric_ranked['rank_ncam'][df_row] + df_metric_ranked['rank_imc'][df_row] + df_metric_ranked['rank_nmo'][df_row] + df_metric_ranked['rank_trm'][df_row] + df_metric_ranked['rank_mloc'][df_row] + df_metric_ranked['rank_mnoc'][df_row] + df_metric_ranked['rank_mcd'][df_row]
         print(str(df_metric_ranked['algo'][df_row]) + ' = ' + str(xtotal))
         scoring_finale.save()
+
+def export_overall_scoring(request):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename=EXPORT_OVERALL_SCORING.csv'
+
+    writer = csv.writer(response)
+
+    sfa = ScoringFinaleAll.objects.all()
+
+    writer.writerow(['PROJECT','ALGO','CBM','WCBM','ACBM','NCAM','IMC','NMO','TRM','MLOC','MNOC','MCD','TOTAL SCORE','COUPLING','COHESION','COMPLEXITY','SIZE'])
+
+    for s in sfa:
+        project = Project.objects.filter(id=s.project_id).get()
+        writer.writerow([project.name,s.algo,s.cbm,s.wcbm,s.acbm,s.ncam,s.imc,s.nmo,s.trm,s.mloc,s.mnoc,s.mcd,s.total,s.coupling,s.cohesion,s.complexity,s.size])
+
+    return response
+
+def export_overall_normalize(request):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename=EXPORT_OVERALL_NORMALIZE.csv'
+
+    writer = csv.writer(response)
+
+    sfa = ScoringAverage.objects.all()
+
+    writer.writerow(['PROJECT','ALGO','CBM','WCBM','ACBM','NCAM','IMC','NMO','TRM','MLOC','MNOC','MCD'])
+
+    for s in sfa:
+        project = Project.objects.filter(id=s.project_id).get()
+        writer.writerow([project.name,s.algo,s.cbm,s.wcbm,s.acbm,s.ncam,s.imc,s.nmo,s.trm,s.mloc,s.mnoc,s.mcd])
+
+    return response
+
+def export_metric_scoring(request):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename=EXPORT_METRIC_SCORING.csv'
+
+    writer = csv.writer(response)
+
+    sfa = ScoringFinale.objects.filter(type="metric").all()
+
+    writer.writerow(['PROJECT','ALGO','CBM','WCBM','ACBM','NCAM','IMC','NMO','TRM','MLOC','MNOC','MCD','TOTAL SCORE','COUPLING','COHESION','COMPLEXITY','SIZE'])
+
+    for s in sfa:
+        project = Project.objects.filter(id=s.project_id).get()
+        writer.writerow([project.name,s.algo,s.cbm,s.wcbm,s.acbm,s.ncam,s.imc,s.nmo,s.trm,s.mloc,s.mnoc,s.mcd,s.total,s.coupling,s.cohesion,s.complexity,s.size])
+
+    return response
+
+def export_metric_normalize(request):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename=EXPORT_METRIC_NORMALIZE.csv'
+
+    writer = csv.writer(response)
+
+    sfa = ScoringAverage.objects.filter(type="metric").all()
+
+    writer.writerow(['PROJECT','ALGO','CBM','WCBM','ACBM','NCAM','IMC','NMO','TRM','MLOC','MNOC','MCD'])
+
+    for s in sfa:
+        project = Project.objects.filter(id=s.project_id).get()
+        writer.writerow([project.name,s.algo,s.cbm,s.wcbm,s.acbm,s.ncam,s.imc,s.nmo,s.trm,s.mloc,s.mnoc,s.mcd])
+
+    return response
+
+def export_network_scoring(request):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename=EXPORT_NETWORK_SCORING.csv'
+
+    writer = csv.writer(response)
+
+    sfa = ScoringFinale.objects.filter(type="network").all()
+
+    writer.writerow(['PROJECT','ALGO','CBM','WCBM','ACBM','NCAM','IMC','NMO','TRM','MLOC','MNOC','MCD','TOTAL SCORE','COUPLING','COHESION','COMPLEXITY','SIZE'])
+
+    for s in sfa:
+        project = Project.objects.filter(id=s.project_id).get()
+        writer.writerow([project.name,s.algo,s.cbm,s.wcbm,s.acbm,s.ncam,s.imc,s.nmo,s.trm,s.mloc,s.mnoc,s.mcd,s.total,s.coupling,s.cohesion,s.complexity,s.size])
+
+    return response
+
+def export_network_normalize(request):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename=EXPORT_NETWORK_NORMALIZE.csv'
+
+    writer = csv.writer(response)
+
+    sfa = ScoringAverage.objects.filter(type="network").all()
+
+    writer.writerow(['PROJECT','ALGO','CBM','WCBM','ACBM','NCAM','IMC','NMO','TRM','MLOC','MNOC','MCD'])
+
+    for s in sfa:
+        project = Project.objects.filter(id=s.project_id).get()
+        writer.writerow([project.name,s.algo,s.cbm,s.wcbm,s.acbm,s.ncam,s.imc,s.nmo,s.trm,s.mloc,s.mnoc,s.mcd])
+
+    return response
 
 # def generate_classification_file(project_id, type, algo):
 #     if EaMethod.objects.filter(project_id=project_id).all().count() > 0:

@@ -53,6 +53,8 @@
 </div>
 
 <h5>Overall</h5>
+<a href="{% url 'v2_export_overall_scoring' %}" class="btn btn-danger btn-sm">Export Scoring Data</a>
+<a href="{% url 'v2_export_overall_normalize' %}" class="btn btn-danger btn-sm">Export Normalize Data</a>
 <div class="table-responsive">
   <table class="table table-striped table-hover table-sm">
     <thead>
@@ -87,6 +89,8 @@
 </div>
 
 <h5>Metric-Based</h5>
+<a href="{% url 'v2_export_metric_scoring' %}" class="btn btn-danger btn-sm">Export Scoring Data</a>
+<a href="{% url 'v2_export_metric_normalize' %}" class="btn btn-danger btn-sm">Export Normalize Data</a>
 <div class="table-responsive">
   <table class="table table-striped table-hover table-sm">
     <thead>
@@ -121,6 +125,8 @@
 </div>
 
 <h5>Network-Based</h5>
+<a href="{% url 'v2_export_network_scoring' %}" class="btn btn-danger btn-sm">Export Scoring Data</a>
+<a href="{% url 'v2_export_network_normalize' %}" class="btn btn-danger btn-sm">Export Normalize Data</a>
 <div class="table-responsive">
   <table class="table table-striped table-hover table-sm">
     <thead>

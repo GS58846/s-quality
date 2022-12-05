@@ -25,7 +25,6 @@ urlpatterns = [
     path('v2/project/cluster/<int:project_id>/metric', views.view_cluster_metric, name='v2_cluster_metric'),
     path('v2/project/cluster/<int:project_id>/normalize', views.clustering_normalize, name='v2_clustering_normalize'),
     path('v2/project/cluster/<int:project_id>/kmeans', views.clustering_kmeans, name='v2_clustering_kmeans'),
-    # path('v2/project/cluster/<int:project_id>/kmeans_timer', views.clustering_kmeans_timer, name='v2_clustering_kmeans_timer'),
     path('v2/project/cluster/<int:project_id>/mean_shift', views.clustering_mean_shift, name='v2_clustering_mean_shift'),
     path('v2/project/cluster/<int:project_id>/agglomerative', views.clustering_agglomerative, name='v2_clustering_agglomerative'),
     path('v2/project/cluster/<int:project_id>/gaussian', views.clustering_gaussian, name='v2_clustering_gaussian'),
@@ -37,4 +36,13 @@ urlpatterns = [
     path('v2/project/scoring/<int:project_id>', views.scoring, name='v2_scoring'),
 
     path('v2/project/summary/<int:project_id>', views.summary, name='v2_summary'),
+
+    path('v2/export/overall', views.export_overall_scoring, name='v2_export_overall_scoring'),
+    path('v2/export/overall_normalize', views.export_overall_normalize, name='v2_export_overall_normalize'),
+
+    path('v2/export/metric', views.export_metric_scoring, name='v2_export_metric_scoring'),
+    path('v2/export/metric_normalize', views.export_metric_normalize, name='v2_export_metric_normalize'),
+
+    path('v2/export/network', views.export_network_scoring, name='v2_export_network_scoring'),
+    path('v2/export/network_normalize', views.export_network_normalize, name='v2_export_network_normalize'),
 ]
