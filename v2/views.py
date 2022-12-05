@@ -2692,11 +2692,19 @@ def export_overall_scoring(request):
 
     sfa = ScoringFinaleAll.objects.all()
 
-    writer.writerow(['PROJECT','ALGO','CBM','WCBM','ACBM','NCAM','IMC','NMO','TRM','MLOC','MNOC','MCD','TOTAL SCORE','COUPLING','COHESION','COMPLEXITY','SIZE'])
+    writer.writerow(['PROJECT','ALGO','CBM','WCBM','ACBM','NCAM','IMC','NMO','TRM','MLOC','MNOC','MCD','TOTAL SCORE','COUPLING','COHESION','COMPLEXITY','SIZE','CLUSTERING TIME','PROCESSING TIME'])
 
     for s in sfa:
         project = Project.objects.filter(id=s.project_id).get()
-        writer.writerow([project.name,s.algo,s.cbm,s.wcbm,s.acbm,s.ncam,s.imc,s.nmo,s.trm,s.mloc,s.mnoc,s.mcd,s.total,s.coupling,s.cohesion,s.complexity,s.size])
+        if ClusteringTime.objects.filter(project_id=s.project_id, algo=s.algo).count() > 0:
+            ct = ClusteringTime.objects.filter(project_id=s.project_id, algo=s.algo).get()
+            ctime = ct.clustering_time
+            ptime = ct.processing_time
+        else:
+            ctime = 0.0
+            ptime = 0.0
+
+        writer.writerow([project.name,s.algo,s.cbm,s.wcbm,s.acbm,s.ncam,s.imc,s.nmo,s.trm,s.mloc,s.mnoc,s.mcd,s.total,s.coupling,s.cohesion,s.complexity,s.size,ctime,ptime])
 
     return response
 
@@ -2708,11 +2716,21 @@ def export_overall_normalize(request):
 
     sfa = ScoringAverage.objects.all()
 
-    writer.writerow(['PROJECT','ALGO','CBM','WCBM','ACBM','NCAM','IMC','NMO','TRM','MLOC','MNOC','MCD'])
+    writer.writerow(['PROJECT','ALGO','CBM','WCBM','ACBM','NCAM','IMC','NMO','TRM','MLOC','MNOC','MCD','CLUSTERING TIME','PROCESSING TIME'])
 
     for s in sfa:
         project = Project.objects.filter(id=s.project_id).get()
-        writer.writerow([project.name,s.algo,s.cbm,s.wcbm,s.acbm,s.ncam,s.imc,s.nmo,s.trm,s.mloc,s.mnoc,s.mcd])
+        # ct = ClusteringTime.objects.filter(project_id=s.project_id, algo=s.algo).get()
+        # writer.writerow([project.name,s.algo,s.cbm,s.wcbm,s.acbm,s.ncam,s.imc,s.nmo,s.trm,s.mloc,s.mnoc,s.mcd,ct.clustering_time,ct.processing_time])
+        if ClusteringTime.objects.filter(project_id=s.project_id, algo=s.algo).count() > 0:
+            ct = ClusteringTime.objects.filter(project_id=s.project_id, algo=s.algo).get()
+            ctime = ct.clustering_time
+            ptime = ct.processing_time
+        else:
+            ctime = 0.0
+            ptime = 0.0
+
+        writer.writerow([project.name,s.algo,s.cbm,s.wcbm,s.acbm,s.ncam,s.imc,s.nmo,s.trm,s.mloc,s.mnoc,s.mcd,ctime,ptime])
 
     return response
 
@@ -2724,11 +2742,21 @@ def export_metric_scoring(request):
 
     sfa = ScoringFinale.objects.filter(type="metric").all()
 
-    writer.writerow(['PROJECT','ALGO','CBM','WCBM','ACBM','NCAM','IMC','NMO','TRM','MLOC','MNOC','MCD','TOTAL SCORE','COUPLING','COHESION','COMPLEXITY','SIZE'])
+    writer.writerow(['PROJECT','ALGO','CBM','WCBM','ACBM','NCAM','IMC','NMO','TRM','MLOC','MNOC','MCD','TOTAL SCORE','COUPLING','COHESION','COMPLEXITY','SIZE','CLUSTERING TIME','PROCESSING TIME'])
 
     for s in sfa:
         project = Project.objects.filter(id=s.project_id).get()
-        writer.writerow([project.name,s.algo,s.cbm,s.wcbm,s.acbm,s.ncam,s.imc,s.nmo,s.trm,s.mloc,s.mnoc,s.mcd,s.total,s.coupling,s.cohesion,s.complexity,s.size])
+        # ct = ClusteringTime.objects.filter(project_id=s.project_id, algo=s.algo).get()
+        # writer.writerow([project.name,s.algo,s.cbm,s.wcbm,s.acbm,s.ncam,s.imc,s.nmo,s.trm,s.mloc,s.mnoc,s.mcd,s.total,s.coupling,s.cohesion,s.complexity,s.size,ct.clustering_time,ct.processing_time])
+        if ClusteringTime.objects.filter(project_id=s.project_id, algo=s.algo).count() > 0:
+            ct = ClusteringTime.objects.filter(project_id=s.project_id, algo=s.algo).get()
+            ctime = ct.clustering_time
+            ptime = ct.processing_time
+        else:
+            ctime = 0.0
+            ptime = 0.0
+
+        writer.writerow([project.name,s.algo,s.cbm,s.wcbm,s.acbm,s.ncam,s.imc,s.nmo,s.trm,s.mloc,s.mnoc,s.mcd,s.total,s.coupling,s.cohesion,s.complexity,s.size,ctime,ptime])
 
     return response
 
@@ -2740,11 +2768,21 @@ def export_metric_normalize(request):
 
     sfa = ScoringAverage.objects.filter(type="metric").all()
 
-    writer.writerow(['PROJECT','ALGO','CBM','WCBM','ACBM','NCAM','IMC','NMO','TRM','MLOC','MNOC','MCD'])
+    writer.writerow(['PROJECT','ALGO','CBM','WCBM','ACBM','NCAM','IMC','NMO','TRM','MLOC','MNOC','MCD','CLUSTERING TIME','PROCESSING TIME'])
 
     for s in sfa:
         project = Project.objects.filter(id=s.project_id).get()
-        writer.writerow([project.name,s.algo,s.cbm,s.wcbm,s.acbm,s.ncam,s.imc,s.nmo,s.trm,s.mloc,s.mnoc,s.mcd])
+        # ct = ClusteringTime.objects.filter(project_id=s.project_id, algo=s.algo).get()
+        # writer.writerow([project.name,s.algo,s.cbm,s.wcbm,s.acbm,s.ncam,s.imc,s.nmo,s.trm,s.mloc,s.mnoc,s.mcd,ct.clustering_time,ct.processing_time])
+        if ClusteringTime.objects.filter(project_id=s.project_id, algo=s.algo).count() > 0:
+            ct = ClusteringTime.objects.filter(project_id=s.project_id, algo=s.algo).get()
+            ctime = ct.clustering_time
+            ptime = ct.processing_time
+        else:
+            ctime = 0.0
+            ptime = 0.0
+
+        writer.writerow([project.name,s.algo,s.cbm,s.wcbm,s.acbm,s.ncam,s.imc,s.nmo,s.trm,s.mloc,s.mnoc,s.mcd,ctime,ptime])
 
     return response
 
@@ -2756,11 +2794,21 @@ def export_network_scoring(request):
 
     sfa = ScoringFinale.objects.filter(type="network").all()
 
-    writer.writerow(['PROJECT','ALGO','CBM','WCBM','ACBM','NCAM','IMC','NMO','TRM','MLOC','MNOC','MCD','TOTAL SCORE','COUPLING','COHESION','COMPLEXITY','SIZE'])
+    writer.writerow(['PROJECT','ALGO','CBM','WCBM','ACBM','NCAM','IMC','NMO','TRM','MLOC','MNOC','MCD','TOTAL SCORE','COUPLING','COHESION','COMPLEXITY','SIZE','CLUSTERING TIME','PROCESSING TIME'])
 
     for s in sfa:
         project = Project.objects.filter(id=s.project_id).get()
-        writer.writerow([project.name,s.algo,s.cbm,s.wcbm,s.acbm,s.ncam,s.imc,s.nmo,s.trm,s.mloc,s.mnoc,s.mcd,s.total,s.coupling,s.cohesion,s.complexity,s.size])
+        # ct = ClusteringTime.objects.filter(project_id=s.project_id, algo=s.algo).get()
+        # writer.writerow([project.name,s.algo,s.cbm,s.wcbm,s.acbm,s.ncam,s.imc,s.nmo,s.trm,s.mloc,s.mnoc,s.mcd,s.total,s.coupling,s.cohesion,s.complexity,s.size,ct.clustering_time,ct.processing_time])
+        if ClusteringTime.objects.filter(project_id=s.project_id, algo=s.algo).count() > 0:
+            ct = ClusteringTime.objects.filter(project_id=s.project_id, algo=s.algo).get()
+            ctime = ct.clustering_time
+            ptime = ct.processing_time
+        else:
+            ctime = 0.0
+            ptime = 0.0
+
+        writer.writerow([project.name,s.algo,s.cbm,s.wcbm,s.acbm,s.ncam,s.imc,s.nmo,s.trm,s.mloc,s.mnoc,s.mcd,s.total,s.coupling,s.cohesion,s.complexity,s.size,ctime,ptime])
 
     return response
 
@@ -2772,11 +2820,21 @@ def export_network_normalize(request):
 
     sfa = ScoringAverage.objects.filter(type="network").all()
 
-    writer.writerow(['PROJECT','ALGO','CBM','WCBM','ACBM','NCAM','IMC','NMO','TRM','MLOC','MNOC','MCD'])
+    writer.writerow(['PROJECT','ALGO','CBM','WCBM','ACBM','NCAM','IMC','NMO','TRM','MLOC','MNOC','MCD','CLUSTERING TIME','PROCESSING TIME'])
 
     for s in sfa:
         project = Project.objects.filter(id=s.project_id).get()
-        writer.writerow([project.name,s.algo,s.cbm,s.wcbm,s.acbm,s.ncam,s.imc,s.nmo,s.trm,s.mloc,s.mnoc,s.mcd])
+        # ct = ClusteringTime.objects.filter(project_id=s.project_id, algo=s.algo).get()
+        # writer.writerow([project.name,s.algo,s.cbm,s.wcbm,s.acbm,s.ncam,s.imc,s.nmo,s.trm,s.mloc,s.mnoc,s.mcd,ct.clustering_time,ct.processing_time])
+        if ClusteringTime.objects.filter(project_id=s.project_id, algo=s.algo).count() > 0:
+            ct = ClusteringTime.objects.filter(project_id=s.project_id, algo=s.algo).get()
+            ctime = ct.clustering_time
+            ptime = ct.processing_time
+        else:
+            ctime = 0.0
+            ptime = 0.0
+
+        writer.writerow([project.name,s.algo,s.cbm,s.wcbm,s.acbm,s.ncam,s.imc,s.nmo,s.trm,s.mloc,s.mnoc,s.mcd,ctime,ptime])
 
     return response
 
