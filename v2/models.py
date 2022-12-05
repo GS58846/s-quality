@@ -161,5 +161,22 @@ class ClusteringNormalize(models.Model):
     mnoc = models.DecimalField(max_digits=30, decimal_places=6, default=0, blank=True, null=True)
     project_id = models.IntegerField()
 
-
-    
+class ScoringFinaleAll(models.Model):
+    algo = models.TextField()
+    type = models.TextField(null=True)
+    cbm = models.DecimalField(max_digits=9, decimal_places=1, default=0, blank=True, null=True)
+    wcbm = models.DecimalField(max_digits=9, decimal_places=1, default=0, blank=True, null=True)
+    acbm = models.DecimalField(max_digits=9, decimal_places=1, default=0, blank=True, null=True)
+    ncam = models.DecimalField(max_digits=9, decimal_places=1, default=0, blank=True, null=True)
+    imc = models.DecimalField(max_digits=9, decimal_places=1, default=0, blank=True, null=True)
+    nmo = models.DecimalField(max_digits=9, decimal_places=1, default=0, blank=True, null=True)
+    trm = models.DecimalField(max_digits=9, decimal_places=1, default=0, blank=True, null=True)
+    mloc = models.DecimalField(max_digits=9, decimal_places=1, default=0, blank=True, null=True)
+    mnoc = models.DecimalField(max_digits=9, decimal_places=1, default=0, blank=True, null=True)
+    mcd = models.DecimalField(max_digits=9, decimal_places=1, default=0, blank=True, null=True)
+    total = models.DecimalField(max_digits=9, decimal_places=1, default=0, blank=True, null=True)
+    project_id = models.IntegerField()
+    coupling = models.DecimalField(max_digits=9, decimal_places=1, default=0, blank=True, null=True)
+    cohesion = models.DecimalField(max_digits=9, decimal_places=1, default=0, blank=True, null=True)
+    complexity = models.DecimalField(max_digits=9, decimal_places=1, default=0, blank=True, null=True)
+    size = models.DecimalField(max_digits=9, decimal_places=1, default=0, blank=True, null=True)
