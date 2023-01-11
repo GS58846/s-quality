@@ -36,6 +36,7 @@ urlpatterns = [
     path('v2/project/scoring/<int:project_id>', views.scoring, name='v2_scoring'),
 
     path('v2/project/summary/<int:project_id>', views.summary, name='v2_summary'),
+    path('v2/project/export_project_summary', views.export_project_summary, name='v2_export_project_summary'),
 
     path('v2/export/overall', views.export_overall_scoring, name='v2_export_overall_scoring'),
     path('v2/export/overall_normalize', views.export_overall_normalize, name='v2_export_overall_normalize'),

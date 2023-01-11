@@ -2253,16 +2253,16 @@ def summary(request, project_id):
         ScoringFinale.objects.filter(project_id=project_id, type='overall').delete()
 
     df_overall = pd.DataFrame(ScoringAverage.objects.filter(project_id=project_id).all().values())
-    df_overall['rank_cbm'] = df_overall['cbm'].rank(ascending=False)
-    df_overall['rank_wcbm'] = df_overall['wcbm'].rank(ascending=False)
-    df_overall['rank_acbm'] = df_overall['acbm'].rank(ascending=False)
-    df_overall['rank_ncam'] = df_overall['ncam'].rank()
-    df_overall['rank_imc'] = df_overall['imc'].rank()
-    df_overall['rank_nmo'] = df_overall['nmo'].rank(ascending=False)
-    df_overall['rank_trm'] = df_overall['trm'].rank(ascending=False)
-    df_overall['rank_mloc'] = df_overall['mloc'].rank(ascending=False)
-    df_overall['rank_mnoc'] = df_overall['mnoc'].rank(ascending=False)
-    df_overall['rank_mcd'] = df_overall['mcd'].rank(ascending=False)
+    df_overall['rank_cbm'] = df_overall['cbm'].rank(ascending=False, pct=True)
+    df_overall['rank_wcbm'] = df_overall['wcbm'].rank(ascending=False, pct=True)
+    df_overall['rank_acbm'] = df_overall['acbm'].rank(ascending=False, pct=True)
+    df_overall['rank_ncam'] = df_overall['ncam'].rank(pct=True)
+    df_overall['rank_imc'] = df_overall['imc'].rank(pct=True)
+    df_overall['rank_nmo'] = df_overall['nmo'].rank(ascending=False, pct=True)
+    df_overall['rank_trm'] = df_overall['trm'].rank(ascending=False, pct=True)
+    df_overall['rank_mloc'] = df_overall['mloc'].rank(ascending=False, pct=True)
+    df_overall['rank_mnoc'] = df_overall['mnoc'].rank(ascending=False, pct=True)
+    df_overall['rank_mcd'] = df_overall['mcd'].rank(ascending=False, pct=True)
 
     df_overall_ranked = df_overall[['algo','type','rank_cbm','rank_wcbm','rank_acbm','rank_ncam','rank_imc','rank_nmo','rank_trm','rank_mloc','rank_mnoc','rank_mcd']].copy()
 
@@ -2343,6 +2343,25 @@ def summary(request, project_id):
         'project_methods': project_methods,
     }
     return render(request, 'v2/project_summary.html', data)
+
+def export_project_summary(request):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename=EXPORT_PROJECT_SUMMARY.csv'
+
+    writer = csv.writer(response)
+
+    projects = Project.objects.order_by('name').all()
+
+    writer.writerow(['PROJECT','CLASSES','METHODS','LOC'])
+
+    for p in projects: 
+        project_classes = ClassMetricRaw.objects.filter(project_id=p.id).all().count()
+        project_methods = ClassMetricRaw.objects.filter(project_id=p.id).aggregate(nco=Sum('nco'))['nco']
+        project_loc = ClassMetricRaw.objects.filter(project_id=p.id).aggregate(loc=Sum('loc'))['loc']
+
+        writer.writerow([p.name,project_classes,project_methods, project_loc])
+
+    return response
 
 ###################
 # START: reusable #
@@ -2586,20 +2605,25 @@ def calculate_scoring_average(project_id, algo):
 def calculate_scoring_type(project_id, type):
 
     df_metric = pd.DataFrame(ScoringAverage.objects.filter(project_id=project_id,type=type).all().values())
-    df_metric['rank_cbm'] = df_metric['cbm'].rank(ascending=False)
-    df_metric['rank_wcbm'] = df_metric['wcbm'].rank(ascending=False)
-    df_metric['rank_acbm'] = df_metric['acbm'].rank(ascending=False)
-    df_metric['rank_ncam'] = df_metric['ncam'].rank()
-    df_metric['rank_imc'] = df_metric['imc'].rank()
-    df_metric['rank_nmo'] = df_metric['nmo'].rank(ascending=False)
-    df_metric['rank_trm'] = df_metric['trm'].rank(ascending=False)
-    df_metric['rank_mloc'] = df_metric['mloc'].rank(ascending=False)
-    df_metric['rank_mnoc'] = df_metric['mnoc'].rank(ascending=False)
-    df_metric['rank_mcd'] = df_metric['mcd'].rank(ascending=False)
+
+    df_metric['rank_cbm'] = df_metric['cbm'].rank(ascending=False, pct=True)
+    df_metric['rank_wcbm'] = df_metric['wcbm'].rank(ascending=False, pct=True)
+    df_metric['rank_acbm'] = df_metric['acbm'].rank(ascending=False, pct=True)
+
+    df_metric['rank_ncam'] = df_metric['ncam'].rank(pct=True)
+    df_metric['rank_imc'] = df_metric['imc'].rank(pct=True)
+
+    df_metric['rank_nmo'] = df_metric['nmo'].rank(ascending=False, pct=True)
+    df_metric['rank_trm'] = df_metric['trm'].rank(ascending=False, pct=True)
+
+    df_metric['rank_mloc'] = df_metric['mloc'].rank(ascending=False, pct=True)
+    df_metric['rank_mnoc'] = df_metric['mnoc'].rank(ascending=False, pct=True)
+    df_metric['rank_mcd'] = df_metric['mcd'].rank(ascending=False, pct=True)
 
     df_metric_ranked = df_metric[['algo','type','rank_cbm','rank_wcbm','rank_acbm','rank_ncam','rank_imc','rank_nmo','rank_trm','rank_mloc','rank_mnoc','rank_mcd']].copy()
 
     for df_row in df_metric_ranked.index:
+
         scoring_finale = ScoringFinale(
             # coupling
             cbm = df_metric_ranked['rank_cbm'][df_row],
@@ -2623,10 +2647,13 @@ def calculate_scoring_type(project_id, type):
                         + df_metric_ranked['rank_imc'][df_row] + df_metric_ranked['rank_nmo'][df_row] + df_metric_ranked['rank_trm'][df_row] + df_metric_ranked['rank_mloc'][df_row]
                         + df_metric_ranked['rank_mnoc'][df_row] + df_metric_ranked['rank_mcd'][df_row],
             project_id = project_id,
-            coupling = df_metric_ranked['rank_cbm'][df_row] + df_metric_ranked['rank_wcbm'][df_row] + df_metric_ranked['rank_acbm'][df_row],
-            cohesion = df_metric_ranked['rank_ncam'][df_row] + df_metric_ranked['rank_imc'][df_row],
-            complexity = df_metric_ranked['rank_nmo'][df_row] + df_metric_ranked['rank_trm'][df_row],
-            size = df_metric_ranked['rank_mloc'][df_row] + df_metric_ranked['rank_mnoc'][df_row]
+
+            # use average as each property containts different numbers of metric
+                        
+            coupling = (df_metric_ranked['rank_cbm'][df_row] + df_metric_ranked['rank_wcbm'][df_row] + df_metric_ranked['rank_acbm'][df_row]) / 3,
+            cohesion = (df_metric_ranked['rank_ncam'][df_row] + df_metric_ranked['rank_imc'][df_row]) / 2,
+            complexity = (df_metric_ranked['rank_nmo'][df_row] + df_metric_ranked['rank_trm'][df_row]) / 2,
+            size = (df_metric_ranked['rank_mloc'][df_row] + df_metric_ranked['rank_mnoc'][df_row] + df_metric_ranked['rank_mcd'][df_row]) / 3
         )
         xtotal = df_metric_ranked['rank_cbm'][df_row] + df_metric_ranked['rank_wcbm'][df_row] + df_metric_ranked['rank_acbm'][df_row] + df_metric_ranked['rank_ncam'][df_row] + df_metric_ranked['rank_imc'][df_row] + df_metric_ranked['rank_nmo'][df_row] + df_metric_ranked['rank_trm'][df_row] + df_metric_ranked['rank_mloc'][df_row] + df_metric_ranked['rank_mnoc'][df_row] + df_metric_ranked['rank_mcd'][df_row]
         print(str(df_metric_ranked['algo'][df_row]) + ' = ' + str(xtotal))
@@ -2638,16 +2665,16 @@ def calculate_scoring_all(project_id):
         ScoringFinaleAll.objects.filter(project_id=project_id).delete()
 
     df_metric = pd.DataFrame(ScoringAverage.objects.filter(project_id=project_id).all().values())
-    df_metric['rank_cbm'] = df_metric['cbm'].rank(ascending=False)
-    df_metric['rank_wcbm'] = df_metric['wcbm'].rank(ascending=False)
-    df_metric['rank_acbm'] = df_metric['acbm'].rank(ascending=False)
-    df_metric['rank_ncam'] = df_metric['ncam'].rank()
-    df_metric['rank_imc'] = df_metric['imc'].rank()
-    df_metric['rank_nmo'] = df_metric['nmo'].rank(ascending=False)
-    df_metric['rank_trm'] = df_metric['trm'].rank(ascending=False)
-    df_metric['rank_mloc'] = df_metric['mloc'].rank(ascending=False)
-    df_metric['rank_mnoc'] = df_metric['mnoc'].rank(ascending=False)
-    df_metric['rank_mcd'] = df_metric['mcd'].rank(ascending=False)
+    df_metric['rank_cbm'] = df_metric['cbm'].rank(ascending=False, pct=True)
+    df_metric['rank_wcbm'] = df_metric['wcbm'].rank(ascending=False, pct=True)
+    df_metric['rank_acbm'] = df_metric['acbm'].rank(ascending=False, pct=True)
+    df_metric['rank_ncam'] = df_metric['ncam'].rank(pct=True)
+    df_metric['rank_imc'] = df_metric['imc'].rank(pct=True)
+    df_metric['rank_nmo'] = df_metric['nmo'].rank(ascending=False, pct=True)
+    df_metric['rank_trm'] = df_metric['trm'].rank(ascending=False, pct=True)
+    df_metric['rank_mloc'] = df_metric['mloc'].rank(ascending=False, pct=True)
+    df_metric['rank_mnoc'] = df_metric['mnoc'].rank(ascending=False, pct=True)
+    df_metric['rank_mcd'] = df_metric['mcd'].rank(ascending=False, pct=True)
 
     df_metric_ranked = df_metric[['algo','type','rank_cbm','rank_wcbm','rank_acbm','rank_ncam','rank_imc','rank_nmo','rank_trm','rank_mloc','rank_mnoc','rank_mcd']].copy()
 
@@ -2675,10 +2702,13 @@ def calculate_scoring_all(project_id):
                         + df_metric_ranked['rank_imc'][df_row] + df_metric_ranked['rank_nmo'][df_row] + df_metric_ranked['rank_trm'][df_row] + df_metric_ranked['rank_mloc'][df_row]
                         + df_metric_ranked['rank_mnoc'][df_row] + df_metric_ranked['rank_mcd'][df_row],
             project_id = project_id,
-            coupling = df_metric_ranked['rank_cbm'][df_row] + df_metric_ranked['rank_wcbm'][df_row] + df_metric_ranked['rank_acbm'][df_row],
-            cohesion = df_metric_ranked['rank_ncam'][df_row] + df_metric_ranked['rank_imc'][df_row],
-            complexity = df_metric_ranked['rank_nmo'][df_row] + df_metric_ranked['rank_trm'][df_row],
-            size = df_metric_ranked['rank_mloc'][df_row] + df_metric_ranked['rank_mnoc'][df_row] + df_metric_ranked['rank_mcd'][df_row]
+            
+            # use average as each property containts different numbers of metric
+
+            coupling = (df_metric_ranked['rank_cbm'][df_row] + df_metric_ranked['rank_wcbm'][df_row] + df_metric_ranked['rank_acbm'][df_row]) / 3,
+            cohesion = (df_metric_ranked['rank_ncam'][df_row] + df_metric_ranked['rank_imc'][df_row]) / 2,
+            complexity = (df_metric_ranked['rank_nmo'][df_row] + df_metric_ranked['rank_trm'][df_row]) / 2,
+            size = (df_metric_ranked['rank_mloc'][df_row] + df_metric_ranked['rank_mnoc'][df_row] + df_metric_ranked['rank_mcd'][df_row]) / 3
         )
         xtotal = df_metric_ranked['rank_cbm'][df_row] + df_metric_ranked['rank_wcbm'][df_row] + df_metric_ranked['rank_acbm'][df_row] + df_metric_ranked['rank_ncam'][df_row] + df_metric_ranked['rank_imc'][df_row] + df_metric_ranked['rank_nmo'][df_row] + df_metric_ranked['rank_trm'][df_row] + df_metric_ranked['rank_mloc'][df_row] + df_metric_ranked['rank_mnoc'][df_row] + df_metric_ranked['rank_mcd'][df_row]
         print(str(df_metric_ranked['algo'][df_row]) + ' = ' + str(xtotal))
@@ -2701,8 +2731,9 @@ def export_overall_scoring(request):
             ctime = ct.clustering_time
             ptime = ct.processing_time
         else:
+            nt = GraphImages.objects.filter(project_id=s.project_id, algo=s.algo).get()
             ctime = 0.0
-            ptime = 0.0
+            ptime = nt.processing_time
 
         writer.writerow([project.name,s.algo,s.cbm,s.wcbm,s.acbm,s.ncam,s.imc,s.nmo,s.trm,s.mloc,s.mnoc,s.mcd,s.total,s.coupling,s.cohesion,s.complexity,s.size,ctime,ptime])
 
@@ -2727,8 +2758,9 @@ def export_overall_normalize(request):
             ctime = ct.clustering_time
             ptime = ct.processing_time
         else:
+            nt = GraphImages.objects.filter(project_id=s.project_id, algo=s.algo).get()
             ctime = 0.0
-            ptime = 0.0
+            ptime = nt.processing_time
 
         writer.writerow([project.name,s.algo,s.cbm,s.wcbm,s.acbm,s.ncam,s.imc,s.nmo,s.trm,s.mloc,s.mnoc,s.mcd,ctime,ptime])
 
@@ -2753,8 +2785,9 @@ def export_metric_scoring(request):
             ctime = ct.clustering_time
             ptime = ct.processing_time
         else:
+            nt = GraphImages.objects.filter(project_id=s.project_id, algo=s.algo).get()
             ctime = 0.0
-            ptime = 0.0
+            ptime = nt.processing_time
 
         writer.writerow([project.name,s.algo,s.cbm,s.wcbm,s.acbm,s.ncam,s.imc,s.nmo,s.trm,s.mloc,s.mnoc,s.mcd,s.total,s.coupling,s.cohesion,s.complexity,s.size,ctime,ptime])
 
@@ -2779,8 +2812,9 @@ def export_metric_normalize(request):
             ctime = ct.clustering_time
             ptime = ct.processing_time
         else:
+            nt = GraphImages.objects.filter(project_id=s.project_id, algo=s.algo).get()
             ctime = 0.0
-            ptime = 0.0
+            ptime = nt.processing_time
 
         writer.writerow([project.name,s.algo,s.cbm,s.wcbm,s.acbm,s.ncam,s.imc,s.nmo,s.trm,s.mloc,s.mnoc,s.mcd,ctime,ptime])
 
@@ -2805,8 +2839,9 @@ def export_network_scoring(request):
             ctime = ct.clustering_time
             ptime = ct.processing_time
         else:
+            nt = GraphImages.objects.filter(project_id=s.project_id, algo=s.algo).get()
             ctime = 0.0
-            ptime = 0.0
+            ptime = nt.processing_time
 
         writer.writerow([project.name,s.algo,s.cbm,s.wcbm,s.acbm,s.ncam,s.imc,s.nmo,s.trm,s.mloc,s.mnoc,s.mcd,s.total,s.coupling,s.cohesion,s.complexity,s.size,ctime,ptime])
 
@@ -2831,8 +2866,9 @@ def export_network_normalize(request):
             ctime = ct.clustering_time
             ptime = ct.processing_time
         else:
+            nt = GraphImages.objects.filter(project_id=s.project_id, algo=s.algo).get()
             ctime = 0.0
-            ptime = 0.0
+            ptime = nt.processing_time
 
         writer.writerow([project.name,s.algo,s.cbm,s.wcbm,s.acbm,s.ncam,s.imc,s.nmo,s.trm,s.mloc,s.mnoc,s.mcd,ctime,ptime])
 
