@@ -46,4 +46,6 @@ urlpatterns = [
 
     path('v2/export/network', views.export_network_scoring, name='v2_export_network_scoring'),
     path('v2/export/network_normalize', views.export_network_normalize, name='v2_export_network_normalize'),
+
+    path('v2/export/ms_metric/<int:project_id>', views.export_ms_metric, name='v2_export_ms_metric'),
 ]

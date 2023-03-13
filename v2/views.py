@@ -2714,6 +2714,23 @@ def calculate_scoring_all(project_id):
         print(str(df_metric_ranked['algo'][df_row]) + ' = ' + str(xtotal))
         scoring_finale.save()
 
+def export_ms_metric(request, project_id):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename=EXPORT_MS_METRIC.csv'
+
+    writer = csv.writer(response)
+
+    p = Project.objects.filter(id=project_id).get()
+
+    cn = ClusteringNormalize.objects.filter(project_id=p.id).order_by('algo','microservice').all()
+
+    writer.writerow(['PROJECT','ALGO','TYPE','MS','CBM','WCBM','ACBM','NCAM','IMC','NMO','TRM','MLOC','MNOC'])
+
+    for c in cn:
+        writer.writerow([p.name,c.algo,c.type,c.microservice,c.cbm,c.wcbm,c.acbm,c.ncam,c.imc,c.nmo,c.trm,c.mloc,c.mnoc])
+
+    return response
+
 def export_overall_scoring(request):
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename=EXPORT_OVERALL_SCORING.csv'
