@@ -1,4 +1,5 @@
 import math
+import statistics
 import random
 import time
 import string
@@ -27,7 +28,7 @@ from django.shortcuts import render
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 from bs4 import BeautifulSoup
-from v2.models import ClassMetricRaw, Clustering, ClusteringMetric, ClusteringNormalize, ClusteringTime, CompleteFile, CorpusFile, GraphImages, MetricNormalize, Project, S101File, S101MetricRaw, ScoringAverage, ScoringFinale, ScoringFinaleAll
+from v2.models import ClassMetricRaw, Clustering, ClusteringMetric, ClusteringNormalize, ClusteringTime, CompleteFile, CorpusFile, GraphImages, MetricNormalize, Project, S101File, S101MetricRaw, ScoringAverage, ScoringFinale, ScoringFinaleAll, ScoringFinaleAllMedian, ScoringFinaleMedian, ScoringMedian
 
 def index(request):
     projects = Project.objects.order_by('name').all()
@@ -35,11 +36,123 @@ def index(request):
     networks = ScoringFinale.objects.filter(type='network').order_by('-total').all()
     overall = ScoringFinaleAll.objects.order_by('-total').all()
 
+    kmeans_score = ScoringFinaleAllMedian(
+        algo = 'kmeans',
+        cbm = ScoringFinaleAllMedian.objects.filter(algo='kmeans').aggregate(s=Sum('cbm'))["s"],
+        wcbm = ScoringFinaleAllMedian.objects.filter(algo='kmeans').aggregate(s=Sum('wcbm'))["s"],
+        acbm = ScoringFinaleAllMedian.objects.filter(algo='kmeans').aggregate(s=Sum('acbm'))["s"],
+        ncam = ScoringFinaleAllMedian.objects.filter(algo='kmeans').aggregate(s=Sum('ncam'))["s"],
+        imc = ScoringFinaleAllMedian.objects.filter(algo='kmeans').aggregate(s=Sum('imc'))["s"],
+        nmo = ScoringFinaleAllMedian.objects.filter(algo='kmeans').aggregate(s=Sum('nmo'))["s"],
+        trm = ScoringFinaleAllMedian.objects.filter(algo='kmeans').aggregate(s=Sum('trm'))["s"],
+        mloc = ScoringFinaleAllMedian.objects.filter(algo='kmeans').aggregate(s=Sum('mloc'))["s"],
+        mnoc = ScoringFinaleAllMedian.objects.filter(algo='kmeans').aggregate(s=Sum('mnoc'))["s"],
+        mcd = ScoringFinaleAllMedian.objects.filter(algo='kmeans').aggregate(s=Sum('mcd'))["s"],
+        total = ScoringFinaleAllMedian.objects.filter(algo='kmeans').aggregate(s=Sum('total'))["s"]
+    )
+
+    agglomerative_score = ScoringFinaleAllMedian(
+        algo = 'agglomerative',
+        cbm = ScoringFinaleAllMedian.objects.filter(algo='agglomerative').aggregate(s=Sum('cbm'))["s"],
+        wcbm = ScoringFinaleAllMedian.objects.filter(algo='agglomerative').aggregate(s=Sum('wcbm'))["s"],
+        acbm = ScoringFinaleAllMedian.objects.filter(algo='agglomerative').aggregate(s=Sum('acbm'))["s"],
+        ncam = ScoringFinaleAllMedian.objects.filter(algo='agglomerative').aggregate(s=Sum('ncam'))["s"],
+        imc = ScoringFinaleAllMedian.objects.filter(algo='agglomerative').aggregate(s=Sum('imc'))["s"],
+        nmo = ScoringFinaleAllMedian.objects.filter(algo='agglomerative').aggregate(s=Sum('nmo'))["s"],
+        trm = ScoringFinaleAllMedian.objects.filter(algo='agglomerative').aggregate(s=Sum('trm'))["s"],
+        mloc = ScoringFinaleAllMedian.objects.filter(algo='agglomerative').aggregate(s=Sum('mloc'))["s"],
+        mnoc = ScoringFinaleAllMedian.objects.filter(algo='agglomerative').aggregate(s=Sum('mnoc'))["s"],
+        mcd = ScoringFinaleAllMedian.objects.filter(algo='agglomerative').aggregate(s=Sum('mcd'))["s"],
+        total = ScoringFinaleAllMedian.objects.filter(algo='agglomerative').aggregate(s=Sum('total'))["s"]
+    )
+
+    gaussian_score = ScoringFinaleAllMedian(
+        algo = 'gaussian',
+        cbm = ScoringFinaleAllMedian.objects.filter(algo='gaussian').aggregate(s=Sum('cbm'))["s"],
+        wcbm = ScoringFinaleAllMedian.objects.filter(algo='gaussian').aggregate(s=Sum('wcbm'))["s"],
+        acbm = ScoringFinaleAllMedian.objects.filter(algo='gaussian').aggregate(s=Sum('acbm'))["s"],
+        ncam = ScoringFinaleAllMedian.objects.filter(algo='gaussian').aggregate(s=Sum('ncam'))["s"],
+        imc = ScoringFinaleAllMedian.objects.filter(algo='gaussian').aggregate(s=Sum('imc'))["s"],
+        nmo = ScoringFinaleAllMedian.objects.filter(algo='gaussian').aggregate(s=Sum('nmo'))["s"],
+        trm = ScoringFinaleAllMedian.objects.filter(algo='gaussian').aggregate(s=Sum('trm'))["s"],
+        mloc = ScoringFinaleAllMedian.objects.filter(algo='gaussian').aggregate(s=Sum('mloc'))["s"],
+        mnoc = ScoringFinaleAllMedian.objects.filter(algo='gaussian').aggregate(s=Sum('mnoc'))["s"],
+        mcd = ScoringFinaleAllMedian.objects.filter(algo='gaussian').aggregate(s=Sum('mcd'))["s"],
+        total = ScoringFinaleAllMedian.objects.filter(algo='gaussian').aggregate(s=Sum('total'))["s"]
+    )
+
+    mean_shift_score = ScoringFinaleAllMedian(
+        algo = 'mean_shift',
+        cbm = ScoringFinaleAllMedian.objects.filter(algo='mean_shift').aggregate(s=Sum('cbm'))["s"],
+        wcbm = ScoringFinaleAllMedian.objects.filter(algo='mean_shift').aggregate(s=Sum('wcbm'))["s"],
+        acbm = ScoringFinaleAllMedian.objects.filter(algo='mean_shift').aggregate(s=Sum('acbm'))["s"],
+        ncam = ScoringFinaleAllMedian.objects.filter(algo='mean_shift').aggregate(s=Sum('ncam'))["s"],
+        imc = ScoringFinaleAllMedian.objects.filter(algo='mean_shift').aggregate(s=Sum('imc'))["s"],
+        nmo = ScoringFinaleAllMedian.objects.filter(algo='mean_shift').aggregate(s=Sum('nmo'))["s"],
+        trm = ScoringFinaleAllMedian.objects.filter(algo='mean_shift').aggregate(s=Sum('trm'))["s"],
+        mloc = ScoringFinaleAllMedian.objects.filter(algo='mean_shift').aggregate(s=Sum('mloc'))["s"],
+        mnoc = ScoringFinaleAllMedian.objects.filter(algo='mean_shift').aggregate(s=Sum('mnoc'))["s"],
+        mcd = ScoringFinaleAllMedian.objects.filter(algo='mean_shift').aggregate(s=Sum('mcd'))["s"],
+        total = ScoringFinaleAllMedian.objects.filter(algo='mean_shift').aggregate(s=Sum('total'))["s"]
+    )
+
+    gnewman_score = ScoringFinaleAllMedian(
+        algo = 'gnewman',
+        cbm = ScoringFinaleAllMedian.objects.filter(algo='gnewman').aggregate(s=Sum('cbm'))["s"],
+        wcbm = ScoringFinaleAllMedian.objects.filter(algo='gnewman').aggregate(s=Sum('wcbm'))["s"],
+        acbm = ScoringFinaleAllMedian.objects.filter(algo='gnewman').aggregate(s=Sum('acbm'))["s"],
+        ncam = ScoringFinaleAllMedian.objects.filter(algo='gnewman').aggregate(s=Sum('ncam'))["s"],
+        imc = ScoringFinaleAllMedian.objects.filter(algo='gnewman').aggregate(s=Sum('imc'))["s"],
+        nmo = ScoringFinaleAllMedian.objects.filter(algo='gnewman').aggregate(s=Sum('nmo'))["s"],
+        trm = ScoringFinaleAllMedian.objects.filter(algo='gnewman').aggregate(s=Sum('trm'))["s"],
+        mloc = ScoringFinaleAllMedian.objects.filter(algo='gnewman').aggregate(s=Sum('mloc'))["s"],
+        mnoc = ScoringFinaleAllMedian.objects.filter(algo='gnewman').aggregate(s=Sum('mnoc'))["s"],
+        mcd = ScoringFinaleAllMedian.objects.filter(algo='gnewman').aggregate(s=Sum('mcd'))["s"],
+        total = ScoringFinaleAllMedian.objects.filter(algo='gnewman').aggregate(s=Sum('total'))["s"]
+    )
+
+    leiden_score = ScoringFinaleAllMedian(
+        algo = 'leiden',
+        cbm = ScoringFinaleAllMedian.objects.filter(algo='leiden').aggregate(s=Sum('cbm'))["s"],
+        wcbm = ScoringFinaleAllMedian.objects.filter(algo='leiden').aggregate(s=Sum('wcbm'))["s"],
+        acbm = ScoringFinaleAllMedian.objects.filter(algo='leiden').aggregate(s=Sum('acbm'))["s"],
+        ncam = ScoringFinaleAllMedian.objects.filter(algo='leiden').aggregate(s=Sum('ncam'))["s"],
+        imc = ScoringFinaleAllMedian.objects.filter(algo='leiden').aggregate(s=Sum('imc'))["s"],
+        nmo = ScoringFinaleAllMedian.objects.filter(algo='leiden').aggregate(s=Sum('nmo'))["s"],
+        trm = ScoringFinaleAllMedian.objects.filter(algo='leiden').aggregate(s=Sum('trm'))["s"],
+        mloc = ScoringFinaleAllMedian.objects.filter(algo='leiden').aggregate(s=Sum('mloc'))["s"],
+        mnoc = ScoringFinaleAllMedian.objects.filter(algo='leiden').aggregate(s=Sum('mnoc'))["s"],
+        mcd = ScoringFinaleAllMedian.objects.filter(algo='leiden').aggregate(s=Sum('mcd'))["s"],
+        total = ScoringFinaleAllMedian.objects.filter(algo='leiden').aggregate(s=Sum('total'))["s"]
+    )
+
+    louvain_score = ScoringFinaleAllMedian(
+        algo = 'louvain',
+        cbm = ScoringFinaleAllMedian.objects.filter(algo='louvain').aggregate(s=Sum('cbm'))["s"],
+        wcbm = ScoringFinaleAllMedian.objects.filter(algo='louvain').aggregate(s=Sum('wcbm'))["s"],
+        acbm = ScoringFinaleAllMedian.objects.filter(algo='louvain').aggregate(s=Sum('acbm'))["s"],
+        ncam = ScoringFinaleAllMedian.objects.filter(algo='louvain').aggregate(s=Sum('ncam'))["s"],
+        imc = ScoringFinaleAllMedian.objects.filter(algo='louvain').aggregate(s=Sum('imc'))["s"],
+        nmo = ScoringFinaleAllMedian.objects.filter(algo='louvain').aggregate(s=Sum('nmo'))["s"],
+        trm = ScoringFinaleAllMedian.objects.filter(algo='louvain').aggregate(s=Sum('trm'))["s"],
+        mloc = ScoringFinaleAllMedian.objects.filter(algo='louvain').aggregate(s=Sum('mloc'))["s"],
+        mnoc = ScoringFinaleAllMedian.objects.filter(algo='louvain').aggregate(s=Sum('mnoc'))["s"],
+        mcd = ScoringFinaleAllMedian.objects.filter(algo='louvain').aggregate(s=Sum('mcd'))["s"],
+        total = ScoringFinaleAllMedian.objects.filter(algo='louvain').aggregate(s=Sum('total'))["s"]
+    )
+
     data = {
         'projects': projects,
         'metrics': metrics,
         'networks': networks,
-        'overall': overall
+        'overall': overall,
+        'kmeans_score': kmeans_score,
+        'agglomerative_score': agglomerative_score,
+        'gaussian_score':gaussian_score,
+        'mean_shift_score':mean_shift_score,
+        'gnewman_score':gnewman_score,
+        'leiden_score':leiden_score,
+        'louvain_score':louvain_score
     }
     return render(request, 'v2/index.html', data)
 
@@ -2193,10 +2306,12 @@ def scoring_initialize(request, project_id):
     return redirect('v2_scoring', project_id=project_id)
 
 def scoring(request, project_id):
+
+    # this section calculates scoring average for microservice clusters
+
     project = Project.objects.get(id=project_id)
 
-    # average scoring
-
+    # AVG
     if ScoringAverage.objects.filter(project_id=project_id).all().count() > 0:
         ScoringAverage.objects.filter(project_id=project_id).delete()
 
@@ -2226,10 +2341,30 @@ def scoring(request, project_id):
     scoring_metric = ScoringFinale.objects.filter(project_id=project_id,type='metric').order_by('-total').all()
     scoring_network = ScoringFinale.objects.filter(project_id=project_id,type='network').order_by('-total').all()
 
+    # MEDIAN
+    algo_list = ['kmeans','mean_shift','agglomerative','gaussian','fast_greedy','louvain','leiden','gnewman']
+    for al in algo_list:
+        calculate_scoring_median(project_id, al)
+
+    if ScoringFinaleMedian.objects.filter(project_id=project_id).all().count() > 0:
+        ScoringFinaleMedian.objects.filter(project_id=project_id).delete()
+
+    # calculate_scoring_type_median(project_id,'metric')
+
+    type_list = ['metric','network']
+    for tl in type_list:
+        calculate_scoring_type_median(project_id,tl)
+
+    # get median scoring
+    scoring_metric_median = ScoringFinaleMedian.objects.filter(project_id=project_id,type='metric').order_by('-total').all()
+    scoring_network_median = ScoringFinaleMedian.objects.filter(project_id=project_id,type='network').order_by('-total').all()
+
     data = {
         'project': project,
         'scoring_metric': scoring_metric,
+        'scoring_metric_median': scoring_metric_median,
         'scoring_network': scoring_network,
+        'scoring_network_median': scoring_network_median,
         'ms_kmeans_normalize': ms_kmeans_normalize,
         'ms_mean_shift_normalize': ms_mean_shift_normalize,
         'ms_agglomerative_normalize': ms_agglomerative_normalize,
@@ -2240,6 +2375,70 @@ def scoring(request, project_id):
         'ms_girvan_newman_normalize': ms_girvan_newman_normalize
     }
     return render(request, 'v2/project_scoring.html', data)
+
+def summary_median(request, project_id):
+    project = Project.objects.get(id=project_id)
+    project_classes = ClassMetricRaw.objects.filter(project_id=project_id).all().count()
+    project_methods = ClassMetricRaw.objects.filter(project_id=project_id).aggregate(Sum('nco'))
+    project_loc = ClassMetricRaw.objects.filter(project_id=project_id).aggregate(Sum('loc'))
+
+    # scoring
+    scoring_metric_median = ScoringFinaleMedian.objects.filter(project_id=project_id,type='metric').order_by('-total').all()
+    scoring_network_median = ScoringFinaleMedian.objects.filter(project_id=project_id,type='network').order_by('-total').all()
+    scoring_all_median = ScoringFinaleAllMedian.objects.filter(project_id=project_id).order_by('-total').all()
+
+    # generate graph images
+
+    for sm in scoring_metric_median:
+        df_metric = pd.DataFrame(ScoringFinaleMedian.objects.filter(project_id=project_id,type='metric',algo=sm.algo).all().values())
+        r = [
+            float(df_metric['cbm'].to_string(index=False)),
+            float(df_metric['wcbm'].to_string(index=False)),
+            float(df_metric['acbm'].to_string(index=False)),
+            float(df_metric['ncam'].to_string(index=False)),
+            float(df_metric['imc'].to_string(index=False)),
+            float(df_metric['nmo'].to_string(index=False)),
+            float(df_metric['trm'].to_string(index=False)),
+            float(df_metric['mloc'].to_string(index=False)),
+            float(df_metric['mnoc'].to_string(index=False)),
+            float(df_metric['mcd'].to_string(index=False))]
+        t = ['CBM','WCBM','ACBM','NCAM','IMC','NMO','TRM','MLOC','MNOC','MCD']
+        fig = px.line_polar(df_metric,r=r,theta=t,line_close=True, title=sm.algo)
+        fig.update_traces(fill='toself')
+        filename = 'v2_radar_' + sm.algo
+        fig.write_image("uploads/csv/" + filename + ".png")
+
+    for sn in scoring_network_median:
+        df_network = pd.DataFrame(ScoringFinaleMedian.objects.filter(project_id=project_id,type='network',algo=sn.algo).all().values())
+        r = [
+            float(df_network['cbm'].to_string(index=False)),
+            float(df_network['wcbm'].to_string(index=False)),
+            float(df_network['acbm'].to_string(index=False)),
+            float(df_network['ncam'].to_string(index=False)),
+            float(df_network['imc'].to_string(index=False)),
+            float(df_network['nmo'].to_string(index=False)),
+            float(df_network['trm'].to_string(index=False)),
+            float(df_network['mloc'].to_string(index=False)),
+            float(df_network['mnoc'].to_string(index=False)),
+            float(df_network['mcd'].to_string(index=False))]
+        t = ['CBM','WCBM','ACBM','NCAM','IMC','NMO','TRM','MLOC','MNOC','MCD']
+        fig = px.line_polar(df_network,r=r,theta=t,line_close=True, title=sn.algo)
+        fig.update_traces(fill='toself')
+        filename = 'v2_radar_' + sn.algo
+        fig.write_image("uploads/csv/" + filename + ".png")
+
+    # populate data to display
+
+    data = {
+        'project': project,
+        'scoring_metric_median': scoring_metric_median,
+        'scoring_network_median': scoring_network_median,
+        'scoring_overall_median': scoring_all_median,
+        'project_classes': project_classes,
+        'project_loc': project_loc,
+        'project_methods': project_methods,
+    }
+    return render(request, 'v2/project_summary.html', data)
 
 def summary(request, project_id):
     project = Project.objects.get(id=project_id)
@@ -2532,6 +2731,47 @@ def normalize_minmax(project_id, type, algo):
             )
             normalize.save()
 
+def calculate_scoring_median(project_id, algo):
+    # project = Project.objects.get(id=project_id)
+
+    # calculate scoring median for each metric by algo
+
+    if ClusteringMetric.objects.filter(project_id=project_id, algo=algo).order_by('microservice').all().count() > 0:
+        if ScoringMedian.objects.filter(project_id=project_id,algo=algo).all().count() > 0:
+            ScoringMedian.objects.filter(project_id=project_id,algo=algo).delete()
+
+        median_cbm = ClusteringNormalize.objects.filter(project_id=project_id,algo=algo).values_list('cbm', flat=True)
+        # print(list(median_cbm))
+        median_wcbm = ClusteringNormalize.objects.filter(project_id=project_id,algo=algo).values_list('wcbm', flat=True)
+        median_acbm = ClusteringNormalize.objects.filter(project_id=project_id,algo=algo).values_list('acbm', flat=True)
+        median_ncam = ClusteringNormalize.objects.filter(project_id=project_id,algo=algo).values_list('ncam', flat=True)
+        median_imc = ClusteringNormalize.objects.filter(project_id=project_id,algo=algo).values_list('imc', flat=True)
+        median_nmo = ClusteringNormalize.objects.filter(project_id=project_id,algo=algo).values_list('nmo', flat=True)
+        median_trm = ClusteringNormalize.objects.filter(project_id=project_id,algo=algo).values_list('trm', flat=True)
+        median_mloc = ClusteringNormalize.objects.filter(project_id=project_id,algo=algo).values_list('mloc', flat=True)
+        median_mnoc = ClusteringNormalize.objects.filter(project_id=project_id,algo=algo).values_list('mnoc', flat=True)
+        xmedian = ClusteringNormalize.objects.filter(project_id=project_id,algo=algo).first()
+        # median_type = ClusteringNormalize.objects.filter(project_id=project_id,algo=algo).values('type').first()
+
+        mcd = ScoringAverage.objects.filter(project_id=project_id,algo=algo).get()
+
+        median_ms = ScoringMedian(
+            cbm = statistics.median(list(median_cbm)), 
+            wcbm = statistics.median(list(median_wcbm)),
+            acbm = statistics.median(list(median_acbm)),
+            ncam = statistics.median(list(median_ncam)),
+            imc = statistics.median(list(median_imc)),
+            nmo = statistics.median(list(median_nmo)),
+            trm = statistics.median(list(median_trm)),
+            mloc = statistics.median(list(median_mloc)),
+            mnoc = statistics.median(list(median_mnoc)),
+            mcd = mcd.mcd,
+            algo = xmedian.algo,
+            type = xmedian.type,
+            project_id = project_id
+        )
+        median_ms.save()
+
 def calculate_scoring_average(project_id, algo):
     project = Project.objects.get(id=project_id)
 
@@ -2659,6 +2899,156 @@ def calculate_scoring_type(project_id, type):
         print(str(df_metric_ranked['algo'][df_row]) + ' = ' + str(xtotal))
         scoring_finale.save()
 
+def calculate_scoring_type_median(project_id, type):
+    
+    # copy data to scoringFinaleMedian table before process
+    ScoringFinaleMedian.objects.filter(project_id=project_id,type=type).delete()
+
+    if ScoringMedian.objects.filter(project_id=project_id,type=type).exists():
+        data_copy = ScoringMedian.objects.filter(project_id=project_id,type=type).all()
+        # print(data_copy)
+        for dc in data_copy:
+            copy_scoring_median = ScoringFinaleMedian(
+                algo = dc.algo,
+                type = dc.type,
+                cbm = dc.cbm,
+                wcbm = dc.wcbm,
+                acbm = dc.acbm,
+                ncam = dc.ncam,
+                imc = dc.imc,
+                nmo = dc.nmo,
+                trm = dc.trm,
+                mloc = dc.mloc,
+                mnoc = dc.mnoc,
+                mcd = dc.mcd,
+                # total = (dc.cbm + dc.wcbm + dc.acbm + dc.ncam + dc.imc + dc.nmo + dc.trm + dc.mloc + dc.mnoc + dc.mcd),
+                project_id = project_id
+            )
+            copy_scoring_median.save()
+    
+    # copy data to scoringFinaleAllMedian table before process
+    ScoringFinaleAllMedian.objects.filter(project_id=project_id).delete()
+
+    if ScoringMedian.objects.filter(project_id=project_id,type=type).exists():
+        data_copy = ScoringMedian.objects.filter(project_id=project_id).all()
+        # print(data_copy)
+        for dc in data_copy:
+            copy_scoring_all_median = ScoringFinaleAllMedian(
+                algo = dc.algo,
+                type = dc.type,
+                cbm = dc.cbm,
+                wcbm = dc.wcbm,
+                acbm = dc.acbm,
+                ncam = dc.ncam,
+                imc = dc.imc,
+                nmo = dc.nmo,
+                trm = dc.trm,
+                mloc = dc.mloc,
+                mnoc = dc.mnoc,
+                mcd = dc.mcd,
+                # total = (dc.cbm + dc.wcbm + dc.acbm + dc.ncam + dc.imc + dc.nmo + dc.trm + dc.mloc + dc.mnoc + dc.mcd),
+                project_id = project_id
+            )
+            copy_scoring_all_median.save()
+
+    # METRIC & NETWORK
+
+    # select newly copy table as data frame for processing
+
+    df_median = pd.DataFrame.from_records(ScoringFinaleMedian.objects.filter(project_id=project_id,type=type).all().values())
+    # print(df_median)
+
+    # convert to numeric type for manipulation
+
+    neg_metrics = ['cbm','wcbm','acbm','nmo','trm','mloc','mnoc','mcd']
+
+    for nm in neg_metrics:
+        df_median[nm] = pd.to_numeric(df_median[nm])
+        tmp_metric = df_median.loc[df_median[nm].idxmin()]
+        filter_gt = nm + '__gt'
+        filter = nm
+        search_string = tmp_metric[nm]
+        search_none = None
+        col_name = nm
+        # update score = none
+        ScoringFinaleMedian.objects.filter(project_id=project_id,type=type,**{filter_gt:search_string}).update(**{col_name:None})
+        # update score =1 
+        ScoringFinaleMedian.objects.filter(project_id=project_id,type=type,**{filter:search_string}).update(**{col_name:1})
+        # fix None
+        ScoringFinaleMedian.objects.filter(project_id=project_id,type=type,**{filter:search_none}).update(**{col_name:0})
+
+    pos_metrics = ['ncam','imc']
+    
+    for nm in pos_metrics:
+        df_median[nm] = pd.to_numeric(df_median[nm])
+        tmp_metric = df_median.loc[df_median[nm].idxmax()]
+        filter_lt = nm + '__lt'
+        filter = nm
+        search_string = tmp_metric[nm]
+        search_none = None
+        col_name = nm
+        # update score = none
+        ScoringFinaleMedian.objects.filter(project_id=project_id,type=type,**{filter_lt:search_string}).update(**{col_name:None})
+        # update score =1 
+        ScoringFinaleMedian.objects.filter(project_id=project_id,type=type,**{filter:search_string}).update(**{col_name:1})
+        # fix None
+        ScoringFinaleMedian.objects.filter(project_id=project_id,type=type,**{filter:search_none}).update(**{col_name:0})
+
+    sfm = ScoringFinaleMedian.objects.filter(project_id=project_id,type=type).all()
+    total = 0
+    for x in sfm:
+        total = (x.cbm + x.wcbm + x.acbm + x.ncam + x.imc + x.nmo + x.trm + x.mloc + x.mnoc + x.mcd)
+        ScoringFinaleMedian.objects.filter(project_id=project_id,type=type,id=x.id).update(total=total)
+
+    # ALL SCORING
+
+    # select newly copy table as data frame for processing
+
+    df_median = pd.DataFrame.from_records(ScoringFinaleAllMedian.objects.filter(project_id=project_id).all().values())
+    # print(df_median)
+
+    # convert to numeric type for manipulation
+
+    neg_metrics = ['cbm','wcbm','acbm','nmo','trm','mloc','mnoc','mcd']
+
+    for nm in neg_metrics:
+        df_median[nm] = pd.to_numeric(df_median[nm])
+        tmp_metric = df_median.loc[df_median[nm].idxmin()]
+        filter_gt = nm + '__gt'
+        filter = nm
+        search_string = tmp_metric[nm]
+        search_none = None
+        col_name = nm
+        # update score = none
+        ScoringFinaleAllMedian.objects.filter(project_id=project_id,**{filter_gt:search_string}).update(**{col_name:None})
+        # update score =1 
+        ScoringFinaleAllMedian.objects.filter(project_id=project_id,**{filter:search_string}).update(**{col_name:1})
+         # fix None
+        ScoringFinaleAllMedian.objects.filter(project_id=project_id,**{filter:search_none}).update(**{col_name:0})
+
+    pos_metrics = ['ncam','imc']
+    
+    for nm in pos_metrics:
+        df_median[nm] = pd.to_numeric(df_median[nm])
+        tmp_metric = df_median.loc[df_median[nm].idxmax()]
+        filter_lt = nm + '__lt'
+        filter = nm
+        search_string = tmp_metric[nm]
+        search_none = None
+        col_name = nm
+        # update score = none
+        ScoringFinaleAllMedian.objects.filter(project_id=project_id,**{filter_lt:search_string}).update(**{col_name:None})
+        # update score =1 
+        ScoringFinaleAllMedian.objects.filter(project_id=project_id,**{filter:search_string}).update(**{col_name:1})
+         # fix None
+        ScoringFinaleAllMedian.objects.filter(project_id=project_id,**{filter:search_none}).update(**{col_name:0})
+
+    sfm = ScoringFinaleAllMedian.objects.filter(project_id=project_id).all()
+    total = 0
+    for x in sfm:
+        total = (x.cbm + x.wcbm + x.acbm + x.ncam + x.imc + x.nmo + x.trm + x.mloc + x.mnoc + x.mcd)
+        ScoringFinaleAllMedian.objects.filter(project_id=project_id,id=x.id).update(total=total)
+    
 def calculate_scoring_all(project_id):
 
     if ScoringFinaleAll.objects.filter(project_id=project_id).all().count() > 0:

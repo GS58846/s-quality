@@ -32,7 +32,7 @@
   <hr>
   <h3>Metric-based</h3>
   <div class="row">
-    {% for x in scoring_metric %}
+    {% for x in scoring_metric_median %}
     <div class="col">
       <img src="{{ '/files/v2_radar_' }}{{ x.algo }}.png" class="img-fluid" alt="">
     </div>
@@ -59,19 +59,70 @@
             </tr>
           </thead>
           <tbody>
-            {% for ms in scoring_metric %}
+            {% for ms in scoring_metric_median %}
             <tr>
               <td>{{ ms.algo }}</td>
-              <td>{{ ms.cbm }}</td>
-              <td>{{ ms.wcbm }}</td>
-              <td>{{ ms.acbm }}</td>
-              <td>{{ ms.ncam }}</td>
-              <td>{{ ms.imc }}</td>
-              <td>{{ ms.nmo }}</td>
-              <td>{{ ms.trm }}</td>
-              <td>{{ ms.mloc }}</td>
-              <td>{{ ms.mnoc }}</td>
-              <td>{{ ms.mcd }}</td>
+
+              {% if ms.cbm > 0 %}
+              <td>1</td>
+              {% else %}
+              <td>0</td>
+              {% endif %}
+
+              {% if ms.wcbm > 0 %}
+              <td>1</td>
+              {% else %}
+              <td>0</td>
+              {% endif %}
+
+              {% if ms.acbm > 0 %}
+              <td>1</td>
+              {% else %}
+              <td>0</td>
+              {% endif %}
+
+              {% if ms.ncam > 0 %}
+              <td>1</td>
+              {% else %}
+              <td>0</td>
+              {% endif %}
+              
+              {% if ms.imc > 0 %}
+              <td>1</td>
+              {% else %}
+              <td>0</td>
+              {% endif %}
+              
+              {% if ms.nmo > 0 %}
+              <td>1</td>
+              {% else %}
+              <td>0</td>
+              {% endif %}
+              
+              {% if ms.trm > 0 %}
+              <td>1</td>
+              {% else %}
+              <td>0</td>
+              {% endif %}
+
+              {% if ms.mloc > 0 %}
+              <td>1</td>
+              {% else %}
+              <td>0</td>
+              {% endif %}
+
+              {% if ms.mnoc > 0 %}
+              <td>1</td>
+              {% else %}
+              <td>0</td>
+              {% endif %}
+              
+              {% if ms.mcd > 0 %}
+              <td>1</td>
+              {% else %}
+              <td>0</td>
+              {% endif %}
+
               <td>{{ ms.total }}</td>
             </tr>
             {% endfor %}
@@ -85,7 +136,7 @@
 
   <h3>Network-based</h3>
   <div class="row">
-    {% for x in scoring_network %}
+    {% for x in scoring_network_median %}
     <div class="col">
       <img src="{{ '/files/v2_radar_' }}{{ x.algo }}.png" class="img-fluid" alt="">
     </div>
@@ -112,19 +163,70 @@
             </tr>
           </thead>
           <tbody>
-            {% for ms in scoring_network %}
+            {% for ms in scoring_network_median %}
             <tr>
               <td>{{ ms.algo }}</td>
-              <td>{{ ms.cbm }}</td>
-              <td>{{ ms.wcbm }}</td>
-              <td>{{ ms.acbm }}</td>
-              <td>{{ ms.ncam }}</td>
-              <td>{{ ms.imc }}</td>
-              <td>{{ ms.nmo }}</td>
-              <td>{{ ms.trm }}</td>
-              <td>{{ ms.mloc }}</td>
-              <td>{{ ms.mnoc }}</td>
-              <td>{{ ms.mcd }}</td>
+
+              {% if ms.cbm > 0 %}
+              <td>1</td>
+              {% else %}
+              <td>0</td>
+              {% endif %}
+
+              {% if ms.wcbm > 0 %}
+              <td>1</td>
+              {% else %}
+              <td>0</td>
+              {% endif %}
+
+              {% if ms.acbm > 0 %}
+              <td>1</td>
+              {% else %}
+              <td>0</td>
+              {% endif %}
+
+              {% if ms.ncam > 0 %}
+              <td>1</td>
+              {% else %}
+              <td>0</td>
+              {% endif %}
+              
+              {% if ms.imc > 0 %}
+              <td>1</td>
+              {% else %}
+              <td>0</td>
+              {% endif %}
+              
+              {% if ms.nmo > 0 %}
+              <td>1</td>
+              {% else %}
+              <td>0</td>
+              {% endif %}
+              
+              {% if ms.trm > 0 %}
+              <td>1</td>
+              {% else %}
+              <td>0</td>
+              {% endif %}
+
+              {% if ms.mloc > 0 %}
+              <td>1</td>
+              {% else %}
+              <td>0</td>
+              {% endif %}
+
+              {% if ms.mnoc > 0 %}
+              <td>1</td>
+              {% else %}
+              <td>0</td>
+              {% endif %}
+              
+              {% if ms.mcd > 0 %}
+              <td>1</td>
+              {% else %}
+              <td>0</td>
+              {% endif %}
+
               <td>{{ ms.total }}</td>
             </tr>
             {% endfor %}
@@ -157,19 +259,70 @@
             </tr>
           </thead>
           <tbody>
-            {% for ms in scoring_overall %}
+            {% for ms in scoring_overall_median %}
             <tr>
               <td>{{ ms.algo }}</td>
-              <td>{{ ms.cbm }}</td>
-              <td>{{ ms.wcbm }}</td>
-              <td>{{ ms.acbm }}</td>
-              <td>{{ ms.ncam }}</td>
-              <td>{{ ms.imc }}</td>
-              <td>{{ ms.nmo }}</td>
-              <td>{{ ms.trm }}</td>
-              <td>{{ ms.mloc }}</td>
-              <td>{{ ms.mnoc }}</td>
-              <td>{{ ms.mcd }}</td>
+
+              {% if ms.cbm > 0 %}
+              <td>1</td>
+              {% else %}
+              <td>0</td>
+              {% endif %}
+
+              {% if ms.wcbm > 0 %}
+              <td>1</td>
+              {% else %}
+              <td>0</td>
+              {% endif %}
+
+              {% if ms.acbm > 0 %}
+              <td>1</td>
+              {% else %}
+              <td>0</td>
+              {% endif %}
+
+              {% if ms.ncam > 0 %}
+              <td>1</td>
+              {% else %}
+              <td>0</td>
+              {% endif %}
+              
+              {% if ms.imc > 0 %}
+              <td>1</td>
+              {% else %}
+              <td>0</td>
+              {% endif %}
+              
+              {% if ms.nmo > 0 %}
+              <td>1</td>
+              {% else %}
+              <td>0</td>
+              {% endif %}
+              
+              {% if ms.trm > 0 %}
+              <td>1</td>
+              {% else %}
+              <td>0</td>
+              {% endif %}
+
+              {% if ms.mloc > 0 %}
+              <td>1</td>
+              {% else %}
+              <td>0</td>
+              {% endif %}
+
+              {% if ms.mnoc > 0 %}
+              <td>1</td>
+              {% else %}
+              <td>0</td>
+              {% endif %}
+              
+              {% if ms.mcd > 0 %}
+              <td>1</td>
+              {% else %}
+              <td>0</td>
+              {% endif %}
+
               <td>{{ ms.total }}</td>
             </tr>
             {% endfor %}
