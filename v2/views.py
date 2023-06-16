@@ -28,7 +28,9 @@ from django.shortcuts import render
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 from bs4 import BeautifulSoup
-from v2.models import ClassMetricRaw, Clustering, ClusteringMetric, ClusteringNormalize, ClusteringTime, CompleteFile, CorpusFile, GraphImages, MetricNormalize, Project, S101File, S101MetricRaw, ScoringAverage, ScoringFinale, ScoringFinaleAll, ScoringFinaleAllMedian, ScoringFinaleMedian, ScoringMedian
+from pyvis.network import Network
+import networkx as nx
+from v2.models import ClassMetricRaw, Clustering, ClusteringMetric, ClusteringNormalize, ClusteringTime, CompleteFile, CorpusFile, GraphImages, MetricNormalize, MsInteractions, Project, S101File, S101MetricRaw, ScoringAverage, ScoringFinale, ScoringFinaleAll, ScoringFinaleAllMedian, ScoringFinaleMedian, ScoringMedian
 
 def index(request):
     projects = Project.objects.order_by('name').all()
@@ -925,6 +927,9 @@ def clustering_kmeans(request, project_id):
             if key != i:
                 if S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_grp[i], project_id=project_id):
                     ms_cbm += 1
+
+                    # inter ms coupling
+                    curr_ms = S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_grp[i], project_id=project_id)
                    
                     if S101MetricRaw.objects.filter(class_from__in=ms_grp[i], class_to__in=val, project_id=project_id):
                         # print('     MS'+str(i)) 
@@ -2359,6 +2364,7 @@ def scoring(request, project_id):
     scoring_metric_median = ScoringFinaleMedian.objects.filter(project_id=project_id,type='metric').order_by('-total').all()
     scoring_network_median = ScoringFinaleMedian.objects.filter(project_id=project_id,type='network').order_by('-total').all()
 
+
     data = {
         'project': project,
         'scoring_metric': scoring_metric,
@@ -2565,6 +2571,66 @@ def export_project_summary(request):
 ###################
 # START: reusable #
 ###################
+
+def generate_ms_diagram(request, project_id, algo):
+
+    print('<<<<< ' + algo + '>>>>>')
+
+    # TODO: check if ms-from ms-to edge table exits
+    if MsInteractions.objects.filter(project_id=project_id, algo=algo).count() > 0:
+        MsInteractions.objects.filter(project_id=project_id, algo=algo).delete()
+
+    # query
+    ms_grp = defaultdict(list)
+    ms_len = Clustering.objects.filter(project_id=project_id, algo=algo).distinct('cluster').count()
+    for i in range(ms_len):
+        cluster_grp = []
+        cls = Clustering.objects.filter(project_id=project_id,algo=algo,cluster=i).all()
+        for c in cls:
+            cluster_grp.append(c.class_name)
+            ms_grp[i].append(c.class_name)
+    
+    for key, val in ms_grp.items():
+        # print(val)
+        for i in range(ms_len):
+            if key != i:
+                if S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_grp[i], project_id=project_id):
+                    
+                    # inter ms coupling
+                    sum_coupling = list(S101MetricRaw.objects.filter(class_from__in=val, class_to__in=ms_grp[i], project_id=project_id).aggregate(Sum('weight')).values())[0]
+                    # print(val)
+                    # print(ms_grp[i])
+                    # print(sum_coupling)
+
+                    ms2ms = MsInteractions(
+                        ms_from = key,
+                        ms_edge = sum_coupling,
+                        ms_to = i,
+                        project_id = project_id,
+                        algo = algo
+                    )
+                    ms2ms.save()
+
+    # generate diagram
+    g = Network(height='700px')
+
+    # add nodes
+    for x in range(ms_len):
+        mnoc = ClusteringMetric.objects.filter(project_id=project_id, algo=algo, microservice=x).get().mnoc
+        ms_name = 'MS-' +str(x);
+        g.add_node(x, label=ms_name, title=str(mnoc), shape="dot", value=mnoc, size=mnoc)
+    
+    ms_interaction = MsInteractions.objects.filter(project_id=project_id, algo=algo).all()
+    for msi in ms_interaction:
+        g.add_edge(int(msi.ms_from), int(msi.ms_to), value=msi.ms_edge, title=msi.ms_edge, physics=False)
+
+    g.save_graph(str(settings.BASE_DIR)+'/v2/templates/v2/pvis_graph_file.html')  
+
+    data = {
+        'algo': algo
+    }
+
+    return render(request, 'v2/ms_diagram.html', data)
 
 def clustering_metric_calculation(project_id, type, algo):
 

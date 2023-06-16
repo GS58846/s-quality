@@ -86,6 +86,13 @@ class Clustering(models.Model):
     type = models.TextField()
     algo = models.TextField()
     project_id = models.IntegerField()
+    
+class MsInteractions(models.Model):
+    ms_from = models.TextField()
+    ms_edge = models.IntegerField()
+    ms_to = models.TextField()
+    algo = models.TextField()
+    project_id = models.IntegerField()
 
 class ClusteringMetric(models.Model):
     algo = models.TextField()
