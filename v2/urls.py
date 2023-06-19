@@ -27,6 +27,7 @@ urlpatterns = [
 
     path('v2/project/cluster/<int:project_id>/kmeans', views.clustering_kmeans, name='v2_clustering_kmeans'),
     path('v2/project/generate/diagram/<int:project_id>/<str:algo>', views.generate_ms_diagram, name='v2_generate_ms_diagram'),
+    path('v2/project/generate/radar/<int:project_id>/<str:algo>', views.generate_ms_radar_chart, name='v2_generate_ms_radar_chart'),
 
     path('v2/project/cluster/<int:project_id>/mean_shift', views.clustering_mean_shift, name='v2_clustering_mean_shift'),
     path('v2/project/cluster/<int:project_id>/agglomerative', views.clustering_agglomerative, name='v2_clustering_agglomerative'),

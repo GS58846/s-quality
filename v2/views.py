@@ -1531,7 +1531,6 @@ def clustering_gaussian(request, project_id):
 
     return redirect('v2_cluster_metric', project_id=project_id)
 
-
 def clustering_normalize(request, project_id):
     raw_data = MetricNormalize.objects.filter(project_id=project_id).all().values()
     df = pd.DataFrame(raw_data)
@@ -2572,11 +2571,55 @@ def export_project_summary(request):
 # START: reusable #
 ###################
 
+def generate_ms_radar_chart(request, project_id, algo):
+
+    print('<<<<<<<< Generate Radar Chart for ' + algo + ' >>>>>>>>>>')
+
+    ms_len = ClusteringNormalize.objects.filter(project_id=project_id, algo=algo).count()
+
+    for i in range(ms_len):
+        df_metric = pd.DataFrame(ClusteringNormalize.objects.filter(project_id=project_id,algo=algo,microservice=i).order_by('microservice').all().values())
+        # print('MS-'+str(i)+' CBM '+ str(df_metric['cbm']))
+        r = [
+            # float(df_metric['cbm'].to_string(index=False)),
+            float(df_metric['cbm']),
+            float(df_metric['wcbm']),
+            float(df_metric['acbm']),
+            float(df_metric['ncam']),
+            float(df_metric['imc']),
+            float(df_metric['nmo']),
+            float(df_metric['trm']),
+            float(df_metric['mloc']),
+            float(df_metric['mnoc'])]
+        t = ['CBM','WCBM','ACBM','NCAM','IMC','NMO','TRM','MLOC','MNOC']
+
+        fig = px.line_polar(df_metric,r=r,theta=t,line_close=True, title='MS-'+str(i))
+
+        fig.update_layout(
+            polar=dict(
+                radialaxis=dict(
+                    range=[0, 1]  # Specify the minimum and maximum values
+                )
+            )
+        )
+
+        fig.update_traces(fill='toself')
+        filename = 'v2_ms_radar_' + str(project_id) + '_' + str(i) + '_' + algo
+        fig.write_image("uploads/csv/radar/" + filename + ".png")
+
+        data = {
+            'algo': algo,
+            'ms_len': range(ms_len),
+            'project_id': project_id
+        }
+
+    return render(request, 'v2/ms_radar_chart.html', data)
+    # return redirect('v2_cluster_metric', project_id=project_id, algo=algo)
+
 def generate_ms_diagram(request, project_id, algo):
 
     print('<<<<< ' + algo + '>>>>>')
 
-    # TODO: check if ms-from ms-to edge table exits
     if MsInteractions.objects.filter(project_id=project_id, algo=algo).count() > 0:
         MsInteractions.objects.filter(project_id=project_id, algo=algo).delete()
 
@@ -2622,7 +2665,15 @@ def generate_ms_diagram(request, project_id, algo):
     
     ms_interaction = MsInteractions.objects.filter(project_id=project_id, algo=algo).all()
     for msi in ms_interaction:
-        g.add_edge(int(msi.ms_from), int(msi.ms_to), value=msi.ms_edge, title=msi.ms_edge, physics=False)
+        g.add_edge(int(msi.ms_from), int(msi.ms_to), value=msi.ms_edge, title=msi.ms_edge, physics=False, smooth=False)
+
+    g.layout = 'circle'
+
+    # Set the layout option
+    g.layout_options = {
+        "randomSeed": 42,  # Set a random seed for layout consistency
+        "hierarchical": True,  # Disable hierarchical layout
+    }
 
     g.save_graph(str(settings.BASE_DIR)+'/v2/templates/v2/pvis_graph_file.html')  
 
