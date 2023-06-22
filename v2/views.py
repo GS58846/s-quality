@@ -2661,7 +2661,14 @@ def generate_ms_diagram(request, project_id, algo):
     for x in range(ms_len):
         mnoc = ClusteringMetric.objects.filter(project_id=project_id, algo=algo, microservice=x).get().mnoc
         ms_name = 'MS-' +str(x);
-        g.add_node(x, label=ms_name, title=str(mnoc), shape="dot", value=mnoc, size=mnoc)
+
+        # list of classes
+        class_list = Clustering.objects.filter(project_id=project_id, algo=algo,cluster=x).order_by('class_name').all()
+        class_names = ''
+        for cl in class_list:
+            class_names = class_names + cl.class_name + '\n'
+
+        g.add_node(x, label=ms_name, title=class_names, shape="dot", value=mnoc, size=mnoc)
     
     ms_interaction = MsInteractions.objects.filter(project_id=project_id, algo=algo).all()
     for msi in ms_interaction:
