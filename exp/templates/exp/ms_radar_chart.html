@@ -1,0 +1,8 @@
+<h1>{{ algo }}</h1>
+<div class="container">
+    <div class="row">
+        {% for i in ms_len %}
+            <img src="{{ '/files/radar/exp_ms_radar_'}}{{ project_id }}_{{ i }}.png" width="35%" class="img-fluid" alt="">
+        {% endfor %}
+    </div>
+</div>

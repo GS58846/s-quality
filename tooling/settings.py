@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'squality',
     'v2',
+    'exp',
 ]
 
 MIDDLEWARE = [
