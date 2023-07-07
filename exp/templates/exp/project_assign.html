@@ -22,6 +22,15 @@
               <tr>
                 <th scope="col">#</th>
                 <th scope="col">Class Name</th>
+                <th style="text-align: center;" scope="col">CBO</th>
+                <th style="text-align: center;" scope="col">IC</th>
+                <th style="text-align: center;" scope="col">OC</th>
+                <th style="text-align: center;" scope="col">CAM</th>
+                <th style="text-align: center;" scope="col">NCO</th>
+                <th style="text-align: center;" scope="col">DIT</th>
+                <th style="text-align: center;" scope="col">RFC</th>
+                <th style="text-align: center;" scope="col">LOC</th>
+                <th style="text-align: center;" scope="col">NCA</th>
                 <th style="text-align: left;" scope="col">CLUSTER</th>
               </tr>
             </thead>
@@ -30,6 +39,15 @@
               <tr>
                 <td>{{ forloop.counter }}.</td>
                 <td>{{ sd.class_name }}</td>
+                <td style="text-align: center;">{{ sd.cbo }}</td>
+                <td style="text-align: center;">{{ sd.ic }}</td>
+                <td style="text-align: center;">{{ sd.oc }}</td>
+                <td style="text-align: center;">{{ sd.cam }}</td>
+                <td style="text-align: center;">{{ sd.nco }}</td>
+                <td style="text-align: center;">{{ sd.dit }}</td>
+                <td style="text-align: center;">{{ sd.rfc }}</td>
+                <td style="text-align: center;">{{ sd.loc }}</td>
+                <td style="text-align: center;">{{ sd.nca }}</td>
                 <td><input type="text" name="{{sd.class_name}}" id="{{sd.class_name}}" value="{{ sd.cluster }}" /></td>
               </tr>
               {% endfor %}
