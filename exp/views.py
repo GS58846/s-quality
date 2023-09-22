@@ -1,3 +1,4 @@
+from decimal import Decimal
 import math
 import statistics
 from django.conf import settings
@@ -6,7 +7,7 @@ import networkx as nx
 import pandas as pd
 import plotly.express as px
 from django.http import HttpRequest
-from django.db.models import Q, Sum
+from django.db.models import Q, Sum, Max, Min
 from django.shortcuts import redirect, render
 from sklearn.base import defaultdict
 from sklearn.preprocessing import MinMaxScaler
@@ -67,7 +68,117 @@ def project_assign(request, id):
 
     id_list = [1,2,3,4,5,6,id]
 
-    scoring_median = ScoringFinaleMedian.objects.filter(project_id__in=id_list).order_by('-total').all()
+    # scoring_median = ScoringFinaleMedian.objects.filter(project_id__in=id_list).order_by('-total').all()
+
+    for aid in id_list:
+
+        # TOPSIS method
+
+        # 1. Find Best Ideal Value & Worst Ideal Value for each quality metric (feature)
+
+        ideal_ncam = ScoringMedian.objects.filter(project_id__in=id_list).aggregate(max_value=Max('ncam'))
+        ideal_ncam = ideal_ncam['max_value']
+        worst_ncam = ScoringMedian.objects.filter(project_id__in=id_list).aggregate(min_value=Min('ncam'))
+        worst_ncam = worst_ncam['min_value']
+
+        ideal_imc = ScoringMedian.objects.filter(project_id__in=id_list).aggregate(max_value=Max('imc'))
+        ideal_imc = ideal_imc['max_value']
+        worst_imc = ScoringMedian.objects.filter(project_id__in=id_list).aggregate(min_value=Min('imc'))
+        worst_imc = worst_imc['min_value']
+
+        ideal_cbm = ScoringMedian.objects.filter(project_id__in=id_list).aggregate(min_value=Min('cbm'))
+        ideal_cbm = ideal_cbm['min_value']
+        worst_cbm = ScoringMedian.objects.filter(project_id__in=id_list).aggregate(max_value=Max('cbm'))
+        worst_cbm = worst_cbm['max_value']
+
+
+        ideal_wcbm = ScoringMedian.objects.filter(project_id__in=id_list).aggregate(min_value=Min('wcbm'))
+        ideal_wcbm = ideal_wcbm['min_value']
+        worst_wcbm = ScoringMedian.objects.filter(project_id__in=id_list).aggregate(max_value=Max('wcbm'))
+        worst_wcbm = worst_wcbm['max_value']
+
+        ideal_acbm = ScoringMedian.objects.filter(project_id__in=id_list).aggregate(min_value=Min('acbm'))
+        ideal_acbm = ideal_acbm['min_value']
+        worst_acbm = ScoringMedian.objects.filter(project_id__in=id_list).aggregate(max_value=Max('acbm'))
+        worst_acbm = worst_acbm['max_value']
+
+        ideal_nmo = ScoringMedian.objects.filter(project_id__in=id_list).aggregate(min_value=Min('nmo'))
+        ideal_nmo = ideal_nmo['min_value']
+        worst_nmo = ScoringMedian.objects.filter(project_id__in=id_list).aggregate(max_value=Max('nmo'))
+        worst_nmo = worst_nmo['max_value']
+
+        ideal_trm = ScoringMedian.objects.filter(project_id__in=id_list).aggregate(min_value=Min('trm'))
+        ideal_trm = ideal_trm['min_value']
+        worst_trm = ScoringMedian.objects.filter(project_id__in=id_list).aggregate(max_value=Max('trm'))
+        worst_trm = worst_trm['max_value']
+
+        ideal_mloc = ScoringMedian.objects.filter(project_id__in=id_list).aggregate(min_value=Min('mloc'))
+        ideal_mloc = ideal_mloc['min_value']
+        worst_mloc = ScoringMedian.objects.filter(project_id__in=id_list).aggregate(max_value=Max('mloc'))
+        worst_mloc = worst_mloc['max_value']
+
+        ideal_mnoc = ScoringMedian.objects.filter(project_id__in=id_list).aggregate(min_value=Min('mnoc'))
+        ideal_mnoc = ideal_mnoc['min_value']
+        worst_mnoc = ScoringMedian.objects.filter(project_id__in=id_list).aggregate(max_value=Max('mnoc'))
+        worst_mnoc = worst_mnoc['max_value']
+
+        ideal_mcd = ScoringMedian.objects.filter(project_id__in=id_list).aggregate(min_value=Min('mcd'))
+        ideal_mcd = ideal_mcd['min_value']
+        worst_mcd = ScoringMedian.objects.filter(project_id__in=id_list).aggregate(max_value=Max('mcd'))
+        worst_mcd = worst_mcd['max_value']
+
+        # 2. Calculate Euclidean Distance for each algo
+        # col_list = ['cbm','wcbm','acbm','ncam','imc','nmo','trm','mloc','mnoc','mcd']
+        sm = ScoringMedian.objects.filter(project_id=aid).get()
+        # for sm in scoring_median:
+        algo_ideal_distance = 0.0
+        algo_worst_distance = 0.0
+        algo_ideal_distance = Decimal(algo_ideal_distance) + (sm.cbm - ideal_cbm) ** 2
+        # print(sm.algo + ' cbm ' + str(sm.cbm) + '-' + str(ideal_cbm) + ' **2')
+        algo_ideal_distance += (sm.wcbm - ideal_wcbm) ** 2
+        algo_ideal_distance += Decimal((sm.acbm - ideal_acbm) ** 2)
+        algo_ideal_distance += Decimal((sm.ncam - ideal_ncam) ** 2)
+        algo_ideal_distance += Decimal((sm.imc - ideal_imc) ** 2)
+        algo_ideal_distance += Decimal((sm.nmo - ideal_nmo) ** 2)
+        algo_ideal_distance += Decimal((sm.trm - ideal_trm) ** 2)
+        algo_ideal_distance += Decimal((sm.mloc - ideal_mloc) ** 2)
+        algo_ideal_distance += Decimal((sm.mnoc - ideal_mnoc) ** 2)
+        algo_ideal_distance += Decimal((sm.mcd - ideal_mcd) ** 2)
+
+        algo_worst_distance = Decimal(algo_worst_distance) + Decimal((sm.cbm - worst_cbm) ** 2)
+        algo_worst_distance += Decimal((sm.wcbm - worst_wcbm) ** 2)
+        algo_worst_distance += Decimal((sm.acbm - worst_acbm) ** 2)
+        algo_worst_distance += Decimal((sm.ncam - worst_ncam) ** 2)
+        algo_worst_distance += Decimal((sm.imc - worst_imc) ** 2)
+        algo_worst_distance += Decimal((sm.nmo - worst_nmo) ** 2)
+        algo_worst_distance += Decimal((sm.trm - worst_trm) ** 2)
+        algo_worst_distance += Decimal((sm.mloc - worst_mloc) ** 2)
+        algo_worst_distance += Decimal((sm.mnoc - worst_mnoc) ** 2)
+        algo_worst_distance += Decimal((sm.mcd - worst_mcd) ** 2)
+
+        # print('algo_ideal_distance ' + str(algo_ideal_distance))
+        algo_ideal_distance = math.sqrt(algo_ideal_distance)
+        # print('algo_ideal_distance SQRT ' + str(algo_ideal_distance))
+
+        # print('algo_worst_distance ' + str(algo_worst_distance))
+        algo_worst_distance = math.sqrt(algo_worst_distance)
+        # print('algo_worst_distance SQRT ' + str(algo_worst_distance))
+
+        sm_update = ScoringMedian.objects.filter(project_id=sm.project_id).get()
+        sm_update.ideal_d = algo_ideal_distance
+        sm_update.worst_d = algo_worst_distance
+        sm_update.save()
+
+    # 3. Topsis score for each algo
+    algos = ScoringMedian.objects.filter(project_id__in=id_list).all()
+    for algo in algos:
+        topsis_score = algo.worst_d / (algo.ideal_d + algo.worst_d)
+        sm = ScoringMedian.objects.filter(project_id=algo.project_id).get()
+        sm.topsis_score = topsis_score
+        sm.save()
+
+    # scoring_median = ScoringFinaleMedian.objects.filter(id__in=id_list).order_by('-total').all()
+    scoring_median = ScoringMedian.objects.filter(project_id__in=id_list).order_by('-topsis_score').all()
 
     data = {
         'project': project,

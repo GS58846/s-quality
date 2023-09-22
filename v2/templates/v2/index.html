@@ -7,7 +7,7 @@
 
 
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-  <h1 class="h2">Overview Scoring by Quality Metrics</h1>
+  <h1 class="h2">Mean TOPSIS Scoring by Quality Metrics</h1>
 </div>
 
 <div class="table-responsive">
@@ -30,102 +30,102 @@
     </thead>
     <tbody>
       <tr>
-        <td>{{ kmeans_score.algo }}</td>
-        <td>{{ kmeans_score.cbm|floatformat:"0" }}</td>
-        <td>{{ kmeans_score.wcbm|floatformat:"0" }}</td>
-        <td>{{ kmeans_score.acbm|floatformat:"0" }}</td>
-        <td>{{ kmeans_score.ncam|floatformat:"0" }}</td>
-        <td>{{ kmeans_score.imc|floatformat:"0" }}</td>
-        <td>{{ kmeans_score.nmo|floatformat:"0" }}</td>
-        <td>{{ kmeans_score.trm|floatformat:"0" }}</td>
-        <td>{{ kmeans_score.mloc|floatformat:"0" }}</td>
-        <td>{{ kmeans_score.mnoc|floatformat:"0" }}</td>
-        <td>{{ kmeans_score.mcd|floatformat:"0" }}</td>
-        <td>{{ kmeans_score.total|floatformat:"0" }}</td>
+        <td>{{ kmeans_score.algo }} ( {{ kmeans_score.tmp_count }} )</td>
+        <td>{{ kmeans_score.cbm|floatformat:"6" }}</td>
+        <td>{{ kmeans_score.wcbm|floatformat:"6" }}</td>
+        <td>{{ kmeans_score.acbm|floatformat:"6" }}</td>
+        <td>{{ kmeans_score.ncam|floatformat:"6" }}</td>
+        <td>{{ kmeans_score.imc|floatformat:"6" }}</td>
+        <td>{{ kmeans_score.nmo|floatformat:"6" }}</td>
+        <td>{{ kmeans_score.trm|floatformat:"6" }}</td>
+        <td>{{ kmeans_score.mloc|floatformat:"6" }}</td>
+        <td>{{ kmeans_score.mnoc|floatformat:"6" }}</td>
+        <td>{{ kmeans_score.mcd|floatformat:"6" }}</td>
+        <td>{{ kmeans_score.topsis_score|floatformat:"6" }}</td>
       </tr>
       <tr>
-        <td>{{ agglomerative_score.algo }}</td>
-        <td>{{ agglomerative_score.cbm|floatformat:"0" }}</td>
-        <td>{{ agglomerative_score.wcbm|floatformat:"0" }}</td>
-        <td>{{ agglomerative_score.acbm|floatformat:"0" }}</td>
-        <td>{{ agglomerative_score.ncam|floatformat:"0" }}</td>
-        <td>{{ agglomerative_score.imc|floatformat:"0" }}</td>
-        <td>{{ agglomerative_score.nmo|floatformat:"0" }}</td>
-        <td>{{ agglomerative_score.trm|floatformat:"0" }}</td>
-        <td>{{ agglomerative_score.mloc|floatformat:"0" }}</td>
-        <td>{{ agglomerative_score.mnoc|floatformat:"0" }}</td>
-        <td>{{ agglomerative_score.mcd|floatformat:"0" }}</td>
-        <td>{{ agglomerative_score.total|floatformat:"0" }}</td>
+        <td>{{ agglomerative_score.algo }} ( {{ agglomerative_score.tmp_count }} )</td>
+        <td>{{ agglomerative_score.cbm|floatformat:"6" }}</td>
+        <td>{{ agglomerative_score.wcbm|floatformat:"6" }}</td>
+        <td>{{ agglomerative_score.acbm|floatformat:"6" }}</td>
+        <td>{{ agglomerative_score.ncam|floatformat:"6" }}</td>
+        <td>{{ agglomerative_score.imc|floatformat:"6" }}</td>
+        <td>{{ agglomerative_score.nmo|floatformat:"6" }}</td>
+        <td>{{ agglomerative_score.trm|floatformat:"6" }}</td>
+        <td>{{ agglomerative_score.mloc|floatformat:"6" }}</td>
+        <td>{{ agglomerative_score.mnoc|floatformat:"6" }}</td>
+        <td>{{ agglomerative_score.mcd|floatformat:"6" }}</td>
+        <td>{{ agglomerative_score.topsis_score|floatformat:"6" }}</td>
       </tr>
       <tr>
-        <td>{{ gaussian_score.algo }}</td>
-        <td>{{ gaussian_score.cbm|floatformat:"0" }}</td>
-        <td>{{ gaussian_score.wcbm|floatformat:"0" }}</td>
-        <td>{{ gaussian_score.acbm|floatformat:"0" }}</td>
-        <td>{{ gaussian_score.ncam|floatformat:"0" }}</td>
-        <td>{{ gaussian_score.imc|floatformat:"0" }}</td>
-        <td>{{ gaussian_score.nmo|floatformat:"0" }}</td>
-        <td>{{ gaussian_score.trm|floatformat:"0" }}</td>
-        <td>{{ gaussian_score.mloc|floatformat:"0" }}</td>
-        <td>{{ gaussian_score.mnoc|floatformat:"0" }}</td>
-        <td>{{ gaussian_score.mcd|floatformat:"0" }}</td>
-        <td>{{ gaussian_score.total|floatformat:"0" }}</td>
+        <td>{{ gaussian_score.algo }} ( {{ gaussian_score.tmp_count }} )</td>
+        <td>{{ gaussian_score.cbm|floatformat:"6" }}</td>
+        <td>{{ gaussian_score.wcbm|floatformat:"6" }}</td>
+        <td>{{ gaussian_score.acbm|floatformat:"6" }}</td>
+        <td>{{ gaussian_score.ncam|floatformat:"6" }}</td>
+        <td>{{ gaussian_score.imc|floatformat:"6" }}</td>
+        <td>{{ gaussian_score.nmo|floatformat:"6" }}</td>
+        <td>{{ gaussian_score.trm|floatformat:"6" }}</td>
+        <td>{{ gaussian_score.mloc|floatformat:"6" }}</td>
+        <td>{{ gaussian_score.mnoc|floatformat:"6" }}</td>
+        <td>{{ gaussian_score.mcd|floatformat:"6" }}</td>
+        <td>{{ gaussian_score.topsis_score|floatformat:"6" }}</td>
       </tr>
       <tr>
-        <td>{{ mean_shift_score.algo }}</td>
-        <td>{{ mean_shift_score.cbm|floatformat:"0" }}</td>
-        <td>{{ mean_shift_score.wcbm|floatformat:"0" }}</td>
-        <td>{{ mean_shift_score.acbm|floatformat:"0" }}</td>
-        <td>{{ mean_shift_score.ncam|floatformat:"0" }}</td>
-        <td>{{ mean_shift_score.imc|floatformat:"0" }}</td>
-        <td>{{ mean_shift_score.nmo|floatformat:"0" }}</td>
-        <td>{{ mean_shift_score.trm|floatformat:"0" }}</td>
-        <td>{{ mean_shift_score.mloc|floatformat:"0" }}</td>
-        <td>{{ mean_shift_score.mnoc|floatformat:"0" }}</td>
-        <td>{{ mean_shift_score.mcd|floatformat:"0" }}</td>
-        <td>{{ mean_shift_score.total|floatformat:"0" }}</td>
+        <td>{{ mean_shift_score.algo }} ( {{ mean_shift_score.tmp_count }} )</td>
+        <td>{{ mean_shift_score.cbm|floatformat:"6" }}</td>
+        <td>{{ mean_shift_score.wcbm|floatformat:"6" }}</td>
+        <td>{{ mean_shift_score.acbm|floatformat:"6" }}</td>
+        <td>{{ mean_shift_score.ncam|floatformat:"6" }}</td>
+        <td>{{ mean_shift_score.imc|floatformat:"6" }}</td>
+        <td>{{ mean_shift_score.nmo|floatformat:"6" }}</td>
+        <td>{{ mean_shift_score.trm|floatformat:"6" }}</td>
+        <td>{{ mean_shift_score.mloc|floatformat:"6" }}</td>
+        <td>{{ mean_shift_score.mnoc|floatformat:"6" }}</td>
+        <td>{{ mean_shift_score.mcd|floatformat:"6" }}</td>
+        <td>{{ mean_shift_score.topsis_score|floatformat:"6" }}</td>
       </tr>
       <tr>
-        <td>{{ gnewman_score.algo }}</td>
-        <td>{{ gnewman_score.cbm|floatformat:"0" }}</td>
-        <td>{{ gnewman_score.wcbm|floatformat:"0" }}</td>
-        <td>{{ gnewman_score.acbm|floatformat:"0" }}</td>
-        <td>{{ gnewman_score.ncam|floatformat:"0" }}</td>
-        <td>{{ gnewman_score.imc|floatformat:"0" }}</td>
-        <td>{{ gnewman_score.nmo|floatformat:"0" }}</td>
-        <td>{{ gnewman_score.trm|floatformat:"0" }}</td>
-        <td>{{ gnewman_score.mloc|floatformat:"0" }}</td>
-        <td>{{ gnewman_score.mnoc|floatformat:"0" }}</td>
-        <td>{{ gnewman_score.mcd|floatformat:"0" }}</td>
-        <td>{{ gnewman_score.total|floatformat:"0" }}</td>
+        <td>{{ gnewman_score.algo }} ( {{ gnewman_score.tmp_count }} )</td>
+        <td>{{ gnewman_score.cbm|floatformat:"6" }}</td>
+        <td>{{ gnewman_score.wcbm|floatformat:"6" }}</td>
+        <td>{{ gnewman_score.acbm|floatformat:"6" }}</td>
+        <td>{{ gnewman_score.ncam|floatformat:"6" }}</td>
+        <td>{{ gnewman_score.imc|floatformat:"6" }}</td>
+        <td>{{ gnewman_score.nmo|floatformat:"6" }}</td>
+        <td>{{ gnewman_score.trm|floatformat:"6" }}</td>
+        <td>{{ gnewman_score.mloc|floatformat:"6" }}</td>
+        <td>{{ gnewman_score.mnoc|floatformat:"6" }}</td>
+        <td>{{ gnewman_score.mcd|floatformat:"6" }}</td>
+        <td>{{ gnewman_score.topsis_score|floatformat:"6" }}</td>
       </tr>
       <tr>
-        <td>{{ leiden_score.algo }}</td>
-        <td>{{ leiden_score.cbm|floatformat:"0" }}</td>
-        <td>{{ leiden_score.wcbm|floatformat:"0" }}</td>
-        <td>{{ leiden_score.acbm|floatformat:"0" }}</td>
-        <td>{{ leiden_score.ncam|floatformat:"0" }}</td>
-        <td>{{ leiden_score.imc|floatformat:"0" }}</td>
-        <td>{{ leiden_score.nmo|floatformat:"0" }}</td>
-        <td>{{ leiden_score.trm|floatformat:"0" }}</td>
-        <td>{{ leiden_score.mloc|floatformat:"0" }}</td>
-        <td>{{ leiden_score.mnoc|floatformat:"0" }}</td>
-        <td>{{ leiden_score.mcd|floatformat:"0" }}</td>
-        <td>{{ leiden_score.total|floatformat:"0" }}</td>
+        <td>{{ leiden_score.algo }} ( {{ leiden_score.tmp_count }} )</td>
+        <td>{{ leiden_score.cbm|floatformat:"6" }}</td>
+        <td>{{ leiden_score.wcbm|floatformat:"6" }}</td>
+        <td>{{ leiden_score.acbm|floatformat:"6" }}</td>
+        <td>{{ leiden_score.ncam|floatformat:"6" }}</td>
+        <td>{{ leiden_score.imc|floatformat:"6" }}</td>
+        <td>{{ leiden_score.nmo|floatformat:"6" }}</td>
+        <td>{{ leiden_score.trm|floatformat:"6" }}</td>
+        <td>{{ leiden_score.mloc|floatformat:"6" }}</td>
+        <td>{{ leiden_score.mnoc|floatformat:"6" }}</td>
+        <td>{{ leiden_score.mcd|floatformat:"6" }}</td>
+        <td>{{ leiden_score.topsis_score|floatformat:"6" }}</td>
       </tr>
       <tr>
-        <td>{{ louvain_score.algo }}</td>
-        <td>{{ louvain_score.cbm|floatformat:"0" }}</td>
-        <td>{{ louvain_score.wcbm|floatformat:"0" }}</td>
-        <td>{{ louvain_score.acbm|floatformat:"0" }}</td>
-        <td>{{ louvain_score.ncam|floatformat:"0" }}</td>
-        <td>{{ louvain_score.imc|floatformat:"0" }}</td>
-        <td>{{ louvain_score.nmo|floatformat:"0" }}</td>
-        <td>{{ louvain_score.trm|floatformat:"0" }}</td>
-        <td>{{ louvain_score.mloc|floatformat:"0" }}</td>
-        <td>{{ louvain_score.mnoc|floatformat:"0" }}</td>
-        <td>{{ louvain_score.mcd|floatformat:"0" }}</td>
-        <td>{{ louvain_score.total|floatformat:"0" }}</td>
+        <td>{{ louvain_score.algo }} ( {{ louvain_score.tmp_count }} )</td>
+        <td>{{ louvain_score.cbm|floatformat:"6" }}</td>
+        <td>{{ louvain_score.wcbm|floatformat:"6" }}</td>
+        <td>{{ louvain_score.acbm|floatformat:"6" }}</td>
+        <td>{{ louvain_score.ncam|floatformat:"6" }}</td>
+        <td>{{ louvain_score.imc|floatformat:"6" }}</td>
+        <td>{{ louvain_score.nmo|floatformat:"6" }}</td>
+        <td>{{ louvain_score.trm|floatformat:"6" }}</td>
+        <td>{{ louvain_score.mloc|floatformat:"6" }}</td>
+        <td>{{ louvain_score.mnoc|floatformat:"6" }}</td>
+        <td>{{ louvain_score.mcd|floatformat:"6" }}</td>
+        <td>{{ louvain_score.topsis_score|floatformat:"6" }}</td>
       </tr>
     </tbody>
   </table>

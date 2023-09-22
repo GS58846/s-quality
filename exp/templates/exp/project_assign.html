@@ -132,7 +132,7 @@
             </tbody>
           </table>
 
-          <h3>Quality Score with Algorithms Score</h3>
+          <h3>Quality Score with TOPSIS Score</h3>
           <div class="row">
             <div class="col">
               <div class="table-responsive">
@@ -150,11 +150,42 @@
                       <th scope="col">MLOC</th>
                       <th scope="col">MNOC</th>
                       <th scope="col">MCD</th>
-                      <th scope="col">Total</th>
+                      <th scope="col">TOPSIS SCORE</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {% if scoring_median.count > 6 %}
+                    {% for st in scoring_median %}
+                    <tr>
+                      {% if st.project_id == 1 %}
+                      <td>AGGLOMERATIVE</td>
+                      {% elif st.project_id == 2 %}
+                      <td>GAUSSIAN</td>
+                      {% elif st.project_id == 3 %}
+                      <td>GIRVAN-NEWMAN</td>
+                      {% elif st.project_id == 4 %}
+                      <td>KMEANS</td>
+                      {% elif st.project_id == 5 %}
+                      <td>LEIDEN</td>
+                      {% elif st.project_id == 6 %}
+                      <td>MEAN-SHIFT</td>
+                      {% else %}
+                      <td>YOUR SOLUTION</td>
+                      {% endif %}
+        
+                      <td>{{ st.cbm }}</td>
+                      <td>{{ st.wcbm }}</td>
+                      <td>{{ st.acbm }}</td>
+                      <td>{{ st.ncam }}</td>
+                      <td>{{ st.imc }}</td>
+                      <td>{{ st.nmo }}</td>
+                      <td>{{ st.trm }}</td>
+                      <td>{{ st.mloc }}</td>
+                      <td>{{ st.mnoc }}</td>
+                      <td>{{ st.mcd }}</td>
+                      
+                      <td>{{ st.topsis_score }}</td>
+                    {% endfor %}
+                    <!-- {% if scoring_median.count > 6 %}
                     {% for ms in scoring_median %}
                     <tr>
                       <td>{{ ms.project_id }}</td>
@@ -222,7 +253,7 @@
                       <td>{{ ms.total }}</td>
                     </tr>
                     {% endfor %}
-                    {% endif %}
+                    {% endif %} -->
                   </tbody>
                 </table>
               </div>

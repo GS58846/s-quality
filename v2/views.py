@@ -1,3 +1,4 @@
+from decimal import Decimal
 import math
 import statistics
 import random
@@ -11,6 +12,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import igraph
+from django.db.models import Max, Min, Avg
 from igraph import *
 from collections import defaultdict
 from sklearn.cluster import KMeans
@@ -38,110 +40,222 @@ def index(request):
     networks = ScoringFinale.objects.filter(type='network').order_by('-total').all()
     overall = ScoringFinaleAll.objects.order_by('-total').all()
 
-    kmeans_score = ScoringFinaleAllMedian(
+    kmeans_score = ScoringMedian(
         algo = 'kmeans',
-        cbm = ScoringFinaleAllMedian.objects.filter(algo='kmeans').aggregate(s=Sum('cbm'))["s"],
-        wcbm = ScoringFinaleAllMedian.objects.filter(algo='kmeans').aggregate(s=Sum('wcbm'))["s"],
-        acbm = ScoringFinaleAllMedian.objects.filter(algo='kmeans').aggregate(s=Sum('acbm'))["s"],
-        ncam = ScoringFinaleAllMedian.objects.filter(algo='kmeans').aggregate(s=Sum('ncam'))["s"],
-        imc = ScoringFinaleAllMedian.objects.filter(algo='kmeans').aggregate(s=Sum('imc'))["s"],
-        nmo = ScoringFinaleAllMedian.objects.filter(algo='kmeans').aggregate(s=Sum('nmo'))["s"],
-        trm = ScoringFinaleAllMedian.objects.filter(algo='kmeans').aggregate(s=Sum('trm'))["s"],
-        mloc = ScoringFinaleAllMedian.objects.filter(algo='kmeans').aggregate(s=Sum('mloc'))["s"],
-        mnoc = ScoringFinaleAllMedian.objects.filter(algo='kmeans').aggregate(s=Sum('mnoc'))["s"],
-        mcd = ScoringFinaleAllMedian.objects.filter(algo='kmeans').aggregate(s=Sum('mcd'))["s"],
-        total = ScoringFinaleAllMedian.objects.filter(algo='kmeans').aggregate(s=Sum('total'))["s"]
+        cbm = ScoringMedian.objects.filter(algo='kmeans').aggregate(s=Avg('cbm'))["s"],
+        wcbm = ScoringMedian.objects.filter(algo='kmeans').aggregate(s=Avg('wcbm'))["s"],
+        acbm = ScoringMedian.objects.filter(algo='kmeans').aggregate(s=Avg('acbm'))["s"],
+        ncam = ScoringMedian.objects.filter(algo='kmeans').aggregate(s=Avg('ncam'))["s"],
+        imc = ScoringMedian.objects.filter(algo='kmeans').aggregate(s=Avg('imc'))["s"],
+        nmo = ScoringMedian.objects.filter(algo='kmeans').aggregate(s=Avg('nmo'))["s"],
+        trm = ScoringMedian.objects.filter(algo='kmeans').aggregate(s=Avg('trm'))["s"],
+        mloc = ScoringMedian.objects.filter(algo='kmeans').aggregate(s=Avg('mloc'))["s"],
+        mnoc = ScoringMedian.objects.filter(algo='kmeans').aggregate(s=Avg('mnoc'))["s"],
+        mcd = ScoringMedian.objects.filter(algo='kmeans').aggregate(s=Avg('mcd'))["s"],
+        topsis_score = ScoringMedian.objects.filter(algo='kmeans').aggregate(s=Avg('topsis_score'))["s"],
+        tmp_count = ScoringMedian.objects.filter(algo='kmeans').count()
     )
 
-    agglomerative_score = ScoringFinaleAllMedian(
+    # kmeans_score = ScoringFinaleAllMedian(
+    #     algo = 'kmeans',
+    #     cbm = ScoringFinaleAllMedian.objects.filter(algo='kmeans').aggregate(s=Sum('cbm'))["s"],
+    #     wcbm = ScoringFinaleAllMedian.objects.filter(algo='kmeans').aggregate(s=Sum('wcbm'))["s"],
+    #     acbm = ScoringFinaleAllMedian.objects.filter(algo='kmeans').aggregate(s=Sum('acbm'))["s"],
+    #     ncam = ScoringFinaleAllMedian.objects.filter(algo='kmeans').aggregate(s=Sum('ncam'))["s"],
+    #     imc = ScoringFinaleAllMedian.objects.filter(algo='kmeans').aggregate(s=Sum('imc'))["s"],
+    #     nmo = ScoringFinaleAllMedian.objects.filter(algo='kmeans').aggregate(s=Sum('nmo'))["s"],
+    #     trm = ScoringFinaleAllMedian.objects.filter(algo='kmeans').aggregate(s=Sum('trm'))["s"],
+    #     mloc = ScoringFinaleAllMedian.objects.filter(algo='kmeans').aggregate(s=Sum('mloc'))["s"],
+    #     mnoc = ScoringFinaleAllMedian.objects.filter(algo='kmeans').aggregate(s=Sum('mnoc'))["s"],
+    #     mcd = ScoringFinaleAllMedian.objects.filter(algo='kmeans').aggregate(s=Sum('mcd'))["s"],
+    #     total = ScoringFinaleAllMedian.objects.filter(algo='kmeans').aggregate(s=Sum('total'))["s"]
+    # )
+
+    agglomerative_score = ScoringMedian(
         algo = 'agglomerative',
-        cbm = ScoringFinaleAllMedian.objects.filter(algo='agglomerative').aggregate(s=Sum('cbm'))["s"],
-        wcbm = ScoringFinaleAllMedian.objects.filter(algo='agglomerative').aggregate(s=Sum('wcbm'))["s"],
-        acbm = ScoringFinaleAllMedian.objects.filter(algo='agglomerative').aggregate(s=Sum('acbm'))["s"],
-        ncam = ScoringFinaleAllMedian.objects.filter(algo='agglomerative').aggregate(s=Sum('ncam'))["s"],
-        imc = ScoringFinaleAllMedian.objects.filter(algo='agglomerative').aggregate(s=Sum('imc'))["s"],
-        nmo = ScoringFinaleAllMedian.objects.filter(algo='agglomerative').aggregate(s=Sum('nmo'))["s"],
-        trm = ScoringFinaleAllMedian.objects.filter(algo='agglomerative').aggregate(s=Sum('trm'))["s"],
-        mloc = ScoringFinaleAllMedian.objects.filter(algo='agglomerative').aggregate(s=Sum('mloc'))["s"],
-        mnoc = ScoringFinaleAllMedian.objects.filter(algo='agglomerative').aggregate(s=Sum('mnoc'))["s"],
-        mcd = ScoringFinaleAllMedian.objects.filter(algo='agglomerative').aggregate(s=Sum('mcd'))["s"],
-        total = ScoringFinaleAllMedian.objects.filter(algo='agglomerative').aggregate(s=Sum('total'))["s"]
+        cbm = ScoringMedian.objects.filter(algo='agglomerative').aggregate(s=Avg('cbm'))["s"],
+        wcbm = ScoringMedian.objects.filter(algo='agglomerative').aggregate(s=Avg('wcbm'))["s"],
+        acbm = ScoringMedian.objects.filter(algo='agglomerative').aggregate(s=Avg('acbm'))["s"],
+        ncam = ScoringMedian.objects.filter(algo='agglomerative').aggregate(s=Avg('ncam'))["s"],
+        imc = ScoringMedian.objects.filter(algo='agglomerative').aggregate(s=Avg('imc'))["s"],
+        nmo = ScoringMedian.objects.filter(algo='agglomerative').aggregate(s=Avg('nmo'))["s"],
+        trm = ScoringMedian.objects.filter(algo='agglomerative').aggregate(s=Avg('trm'))["s"],
+        mloc = ScoringMedian.objects.filter(algo='agglomerative').aggregate(s=Avg('mloc'))["s"],
+        mnoc = ScoringMedian.objects.filter(algo='agglomerative').aggregate(s=Avg('mnoc'))["s"],
+        mcd = ScoringMedian.objects.filter(algo='agglomerative').aggregate(s=Avg('mcd'))["s"],
+        topsis_score = ScoringMedian.objects.filter(algo='agglomerative').aggregate(s=Avg('topsis_score'))["s"],
+        tmp_count = ScoringMedian.objects.filter(algo='agglomerative').count()
     )
 
-    gaussian_score = ScoringFinaleAllMedian(
+    # agglomerative_score = ScoringFinaleAllMedian(
+    #     algo = 'agglomerative',
+    #     cbm = ScoringFinaleAllMedian.objects.filter(algo='agglomerative').aggregate(s=Sum('cbm'))["s"],
+    #     wcbm = ScoringFinaleAllMedian.objects.filter(algo='agglomerative').aggregate(s=Sum('wcbm'))["s"],
+    #     acbm = ScoringFinaleAllMedian.objects.filter(algo='agglomerative').aggregate(s=Sum('acbm'))["s"],
+    #     ncam = ScoringFinaleAllMedian.objects.filter(algo='agglomerative').aggregate(s=Sum('ncam'))["s"],
+    #     imc = ScoringFinaleAllMedian.objects.filter(algo='agglomerative').aggregate(s=Sum('imc'))["s"],
+    #     nmo = ScoringFinaleAllMedian.objects.filter(algo='agglomerative').aggregate(s=Sum('nmo'))["s"],
+    #     trm = ScoringFinaleAllMedian.objects.filter(algo='agglomerative').aggregate(s=Sum('trm'))["s"],
+    #     mloc = ScoringFinaleAllMedian.objects.filter(algo='agglomerative').aggregate(s=Sum('mloc'))["s"],
+    #     mnoc = ScoringFinaleAllMedian.objects.filter(algo='agglomerative').aggregate(s=Sum('mnoc'))["s"],
+    #     mcd = ScoringFinaleAllMedian.objects.filter(algo='agglomerative').aggregate(s=Sum('mcd'))["s"],
+    #     total = ScoringFinaleAllMedian.objects.filter(algo='agglomerative').aggregate(s=Sum('total'))["s"]
+    # )
+
+    gaussian_score = ScoringMedian(
         algo = 'gaussian',
-        cbm = ScoringFinaleAllMedian.objects.filter(algo='gaussian').aggregate(s=Sum('cbm'))["s"],
-        wcbm = ScoringFinaleAllMedian.objects.filter(algo='gaussian').aggregate(s=Sum('wcbm'))["s"],
-        acbm = ScoringFinaleAllMedian.objects.filter(algo='gaussian').aggregate(s=Sum('acbm'))["s"],
-        ncam = ScoringFinaleAllMedian.objects.filter(algo='gaussian').aggregate(s=Sum('ncam'))["s"],
-        imc = ScoringFinaleAllMedian.objects.filter(algo='gaussian').aggregate(s=Sum('imc'))["s"],
-        nmo = ScoringFinaleAllMedian.objects.filter(algo='gaussian').aggregate(s=Sum('nmo'))["s"],
-        trm = ScoringFinaleAllMedian.objects.filter(algo='gaussian').aggregate(s=Sum('trm'))["s"],
-        mloc = ScoringFinaleAllMedian.objects.filter(algo='gaussian').aggregate(s=Sum('mloc'))["s"],
-        mnoc = ScoringFinaleAllMedian.objects.filter(algo='gaussian').aggregate(s=Sum('mnoc'))["s"],
-        mcd = ScoringFinaleAllMedian.objects.filter(algo='gaussian').aggregate(s=Sum('mcd'))["s"],
-        total = ScoringFinaleAllMedian.objects.filter(algo='gaussian').aggregate(s=Sum('total'))["s"]
+        cbm = ScoringMedian.objects.filter(algo='gaussian').aggregate(s=Avg('cbm'))["s"],
+        wcbm = ScoringMedian.objects.filter(algo='gaussian').aggregate(s=Avg('wcbm'))["s"],
+        acbm = ScoringMedian.objects.filter(algo='gaussian').aggregate(s=Avg('acbm'))["s"],
+        ncam = ScoringMedian.objects.filter(algo='gaussian').aggregate(s=Avg('ncam'))["s"],
+        imc = ScoringMedian.objects.filter(algo='gaussian').aggregate(s=Avg('imc'))["s"],
+        nmo = ScoringMedian.objects.filter(algo='gaussian').aggregate(s=Avg('nmo'))["s"],
+        trm = ScoringMedian.objects.filter(algo='gaussian').aggregate(s=Avg('trm'))["s"],
+        mloc = ScoringMedian.objects.filter(algo='gaussian').aggregate(s=Avg('mloc'))["s"],
+        mnoc = ScoringMedian.objects.filter(algo='gaussian').aggregate(s=Avg('mnoc'))["s"],
+        mcd = ScoringMedian.objects.filter(algo='gaussian').aggregate(s=Avg('mcd'))["s"],
+        topsis_score = ScoringMedian.objects.filter(algo='gaussian').aggregate(s=Avg('topsis_score'))["s"],
+        tmp_count = ScoringMedian.objects.filter(algo='gaussian').count()
     )
 
-    mean_shift_score = ScoringFinaleAllMedian(
+    # gaussian_score = ScoringFinaleAllMedian(
+    #     algo = 'gaussian',
+    #     cbm = ScoringFinaleAllMedian.objects.filter(algo='gaussian').aggregate(s=Sum('cbm'))["s"],
+    #     wcbm = ScoringFinaleAllMedian.objects.filter(algo='gaussian').aggregate(s=Sum('wcbm'))["s"],
+    #     acbm = ScoringFinaleAllMedian.objects.filter(algo='gaussian').aggregate(s=Sum('acbm'))["s"],
+    #     ncam = ScoringFinaleAllMedian.objects.filter(algo='gaussian').aggregate(s=Sum('ncam'))["s"],
+    #     imc = ScoringFinaleAllMedian.objects.filter(algo='gaussian').aggregate(s=Sum('imc'))["s"],
+    #     nmo = ScoringFinaleAllMedian.objects.filter(algo='gaussian').aggregate(s=Sum('nmo'))["s"],
+    #     trm = ScoringFinaleAllMedian.objects.filter(algo='gaussian').aggregate(s=Sum('trm'))["s"],
+    #     mloc = ScoringFinaleAllMedian.objects.filter(algo='gaussian').aggregate(s=Sum('mloc'))["s"],
+    #     mnoc = ScoringFinaleAllMedian.objects.filter(algo='gaussian').aggregate(s=Sum('mnoc'))["s"],
+    #     mcd = ScoringFinaleAllMedian.objects.filter(algo='gaussian').aggregate(s=Sum('mcd'))["s"],
+    #     total = ScoringFinaleAllMedian.objects.filter(algo='gaussian').aggregate(s=Sum('total'))["s"]
+    # )
+
+    mean_shift_score = ScoringMedian(
         algo = 'mean_shift',
-        cbm = ScoringFinaleAllMedian.objects.filter(algo='mean_shift').aggregate(s=Sum('cbm'))["s"],
-        wcbm = ScoringFinaleAllMedian.objects.filter(algo='mean_shift').aggregate(s=Sum('wcbm'))["s"],
-        acbm = ScoringFinaleAllMedian.objects.filter(algo='mean_shift').aggregate(s=Sum('acbm'))["s"],
-        ncam = ScoringFinaleAllMedian.objects.filter(algo='mean_shift').aggregate(s=Sum('ncam'))["s"],
-        imc = ScoringFinaleAllMedian.objects.filter(algo='mean_shift').aggregate(s=Sum('imc'))["s"],
-        nmo = ScoringFinaleAllMedian.objects.filter(algo='mean_shift').aggregate(s=Sum('nmo'))["s"],
-        trm = ScoringFinaleAllMedian.objects.filter(algo='mean_shift').aggregate(s=Sum('trm'))["s"],
-        mloc = ScoringFinaleAllMedian.objects.filter(algo='mean_shift').aggregate(s=Sum('mloc'))["s"],
-        mnoc = ScoringFinaleAllMedian.objects.filter(algo='mean_shift').aggregate(s=Sum('mnoc'))["s"],
-        mcd = ScoringFinaleAllMedian.objects.filter(algo='mean_shift').aggregate(s=Sum('mcd'))["s"],
-        total = ScoringFinaleAllMedian.objects.filter(algo='mean_shift').aggregate(s=Sum('total'))["s"]
+        cbm = ScoringMedian.objects.filter(algo='mean_shift').aggregate(s=Avg('cbm'))["s"],
+        wcbm = ScoringMedian.objects.filter(algo='mean_shift').aggregate(s=Avg('wcbm'))["s"],
+        acbm = ScoringMedian.objects.filter(algo='mean_shift').aggregate(s=Avg('acbm'))["s"],
+        ncam = ScoringMedian.objects.filter(algo='mean_shift').aggregate(s=Avg('ncam'))["s"],
+        imc = ScoringMedian.objects.filter(algo='mean_shift').aggregate(s=Avg('imc'))["s"],
+        nmo = ScoringMedian.objects.filter(algo='mean_shift').aggregate(s=Avg('nmo'))["s"],
+        trm = ScoringMedian.objects.filter(algo='mean_shift').aggregate(s=Avg('trm'))["s"],
+        mloc = ScoringMedian.objects.filter(algo='mean_shift').aggregate(s=Avg('mloc'))["s"],
+        mnoc = ScoringMedian.objects.filter(algo='mean_shift').aggregate(s=Avg('mnoc'))["s"],
+        mcd = ScoringMedian.objects.filter(algo='mean_shift').aggregate(s=Avg('mcd'))["s"],
+        topsis_score = ScoringMedian.objects.filter(algo='mean_shift').aggregate(s=Avg('topsis_score'))["s"],
+        tmp_count = ScoringMedian.objects.filter(algo='mean_shift').count()
     )
 
-    gnewman_score = ScoringFinaleAllMedian(
+    # mean_shift_score = ScoringFinaleAllMedian(
+    #     algo = 'mean_shift',
+    #     cbm = ScoringFinaleAllMedian.objects.filter(algo='mean_shift').aggregate(s=Sum('cbm'))["s"],
+    #     wcbm = ScoringFinaleAllMedian.objects.filter(algo='mean_shift').aggregate(s=Sum('wcbm'))["s"],
+    #     acbm = ScoringFinaleAllMedian.objects.filter(algo='mean_shift').aggregate(s=Sum('acbm'))["s"],
+    #     ncam = ScoringFinaleAllMedian.objects.filter(algo='mean_shift').aggregate(s=Sum('ncam'))["s"],
+    #     imc = ScoringFinaleAllMedian.objects.filter(algo='mean_shift').aggregate(s=Sum('imc'))["s"],
+    #     nmo = ScoringFinaleAllMedian.objects.filter(algo='mean_shift').aggregate(s=Sum('nmo'))["s"],
+    #     trm = ScoringFinaleAllMedian.objects.filter(algo='mean_shift').aggregate(s=Sum('trm'))["s"],
+    #     mloc = ScoringFinaleAllMedian.objects.filter(algo='mean_shift').aggregate(s=Sum('mloc'))["s"],
+    #     mnoc = ScoringFinaleAllMedian.objects.filter(algo='mean_shift').aggregate(s=Sum('mnoc'))["s"],
+    #     mcd = ScoringFinaleAllMedian.objects.filter(algo='mean_shift').aggregate(s=Sum('mcd'))["s"],
+    #     total = ScoringFinaleAllMedian.objects.filter(algo='mean_shift').aggregate(s=Sum('total'))["s"]
+    # )
+
+    gnewman_score = ScoringMedian(
         algo = 'gnewman',
-        cbm = ScoringFinaleAllMedian.objects.filter(algo='gnewman').aggregate(s=Sum('cbm'))["s"],
-        wcbm = ScoringFinaleAllMedian.objects.filter(algo='gnewman').aggregate(s=Sum('wcbm'))["s"],
-        acbm = ScoringFinaleAllMedian.objects.filter(algo='gnewman').aggregate(s=Sum('acbm'))["s"],
-        ncam = ScoringFinaleAllMedian.objects.filter(algo='gnewman').aggregate(s=Sum('ncam'))["s"],
-        imc = ScoringFinaleAllMedian.objects.filter(algo='gnewman').aggregate(s=Sum('imc'))["s"],
-        nmo = ScoringFinaleAllMedian.objects.filter(algo='gnewman').aggregate(s=Sum('nmo'))["s"],
-        trm = ScoringFinaleAllMedian.objects.filter(algo='gnewman').aggregate(s=Sum('trm'))["s"],
-        mloc = ScoringFinaleAllMedian.objects.filter(algo='gnewman').aggregate(s=Sum('mloc'))["s"],
-        mnoc = ScoringFinaleAllMedian.objects.filter(algo='gnewman').aggregate(s=Sum('mnoc'))["s"],
-        mcd = ScoringFinaleAllMedian.objects.filter(algo='gnewman').aggregate(s=Sum('mcd'))["s"],
-        total = ScoringFinaleAllMedian.objects.filter(algo='gnewman').aggregate(s=Sum('total'))["s"]
+        cbm = ScoringMedian.objects.filter(algo='gnewman').aggregate(s=Avg('cbm'))["s"],
+        wcbm = ScoringMedian.objects.filter(algo='gnewman').aggregate(s=Avg('wcbm'))["s"],
+        acbm = ScoringMedian.objects.filter(algo='gnewman').aggregate(s=Avg('acbm'))["s"],
+        ncam = ScoringMedian.objects.filter(algo='gnewman').aggregate(s=Avg('ncam'))["s"],
+        imc = ScoringMedian.objects.filter(algo='gnewman').aggregate(s=Avg('imc'))["s"],
+        nmo = ScoringMedian.objects.filter(algo='gnewman').aggregate(s=Avg('nmo'))["s"],
+        trm = ScoringMedian.objects.filter(algo='gnewman').aggregate(s=Avg('trm'))["s"],
+        mloc = ScoringMedian.objects.filter(algo='gnewman').aggregate(s=Avg('mloc'))["s"],
+        mnoc = ScoringMedian.objects.filter(algo='gnewman').aggregate(s=Avg('mnoc'))["s"],
+        mcd = ScoringMedian.objects.filter(algo='gnewman').aggregate(s=Avg('mcd'))["s"],
+        topsis_score = ScoringMedian.objects.filter(algo='gnewman').aggregate(s=Avg('topsis_score'))["s"],
+        tmp_count = ScoringMedian.objects.filter(algo='gnewman').count()
     )
 
-    leiden_score = ScoringFinaleAllMedian(
+    # gnewman_score = ScoringFinaleAllMedian(
+    #     algo = 'gnewman',
+    #     cbm = ScoringFinaleAllMedian.objects.filter(algo='gnewman').aggregate(s=Sum('cbm'))["s"],
+    #     wcbm = ScoringFinaleAllMedian.objects.filter(algo='gnewman').aggregate(s=Sum('wcbm'))["s"],
+    #     acbm = ScoringFinaleAllMedian.objects.filter(algo='gnewman').aggregate(s=Sum('acbm'))["s"],
+    #     ncam = ScoringFinaleAllMedian.objects.filter(algo='gnewman').aggregate(s=Sum('ncam'))["s"],
+    #     imc = ScoringFinaleAllMedian.objects.filter(algo='gnewman').aggregate(s=Sum('imc'))["s"],
+    #     nmo = ScoringFinaleAllMedian.objects.filter(algo='gnewman').aggregate(s=Sum('nmo'))["s"],
+    #     trm = ScoringFinaleAllMedian.objects.filter(algo='gnewman').aggregate(s=Sum('trm'))["s"],
+    #     mloc = ScoringFinaleAllMedian.objects.filter(algo='gnewman').aggregate(s=Sum('mloc'))["s"],
+    #     mnoc = ScoringFinaleAllMedian.objects.filter(algo='gnewman').aggregate(s=Sum('mnoc'))["s"],
+    #     mcd = ScoringFinaleAllMedian.objects.filter(algo='gnewman').aggregate(s=Sum('mcd'))["s"],
+    #     total = ScoringFinaleAllMedian.objects.filter(algo='gnewman').aggregate(s=Sum('total'))["s"]
+    # )
+
+    leiden_score = ScoringMedian(
         algo = 'leiden',
-        cbm = ScoringFinaleAllMedian.objects.filter(algo='leiden').aggregate(s=Sum('cbm'))["s"],
-        wcbm = ScoringFinaleAllMedian.objects.filter(algo='leiden').aggregate(s=Sum('wcbm'))["s"],
-        acbm = ScoringFinaleAllMedian.objects.filter(algo='leiden').aggregate(s=Sum('acbm'))["s"],
-        ncam = ScoringFinaleAllMedian.objects.filter(algo='leiden').aggregate(s=Sum('ncam'))["s"],
-        imc = ScoringFinaleAllMedian.objects.filter(algo='leiden').aggregate(s=Sum('imc'))["s"],
-        nmo = ScoringFinaleAllMedian.objects.filter(algo='leiden').aggregate(s=Sum('nmo'))["s"],
-        trm = ScoringFinaleAllMedian.objects.filter(algo='leiden').aggregate(s=Sum('trm'))["s"],
-        mloc = ScoringFinaleAllMedian.objects.filter(algo='leiden').aggregate(s=Sum('mloc'))["s"],
-        mnoc = ScoringFinaleAllMedian.objects.filter(algo='leiden').aggregate(s=Sum('mnoc'))["s"],
-        mcd = ScoringFinaleAllMedian.objects.filter(algo='leiden').aggregate(s=Sum('mcd'))["s"],
-        total = ScoringFinaleAllMedian.objects.filter(algo='leiden').aggregate(s=Sum('total'))["s"]
+        cbm = ScoringMedian.objects.filter(algo='leiden').aggregate(s=Avg('cbm'))["s"],
+        wcbm = ScoringMedian.objects.filter(algo='leiden').aggregate(s=Avg('wcbm'))["s"],
+        acbm = ScoringMedian.objects.filter(algo='leiden').aggregate(s=Avg('acbm'))["s"],
+        ncam = ScoringMedian.objects.filter(algo='leiden').aggregate(s=Avg('ncam'))["s"],
+        imc = ScoringMedian.objects.filter(algo='leiden').aggregate(s=Avg('imc'))["s"],
+        nmo = ScoringMedian.objects.filter(algo='leiden').aggregate(s=Avg('nmo'))["s"],
+        trm = ScoringMedian.objects.filter(algo='leiden').aggregate(s=Avg('trm'))["s"],
+        mloc = ScoringMedian.objects.filter(algo='leiden').aggregate(s=Avg('mloc'))["s"],
+        mnoc = ScoringMedian.objects.filter(algo='leiden').aggregate(s=Avg('mnoc'))["s"],
+        mcd = ScoringMedian.objects.filter(algo='leiden').aggregate(s=Avg('mcd'))["s"],
+        topsis_score = ScoringMedian.objects.filter(algo='leiden').aggregate(s=Avg('topsis_score'))["s"],
+        tmp_count = ScoringMedian.objects.filter(algo='leiden').count()
     )
 
-    louvain_score = ScoringFinaleAllMedian(
+    # leiden_score = ScoringFinaleAllMedian(
+    #     algo = 'leiden',
+    #     cbm = ScoringFinaleAllMedian.objects.filter(algo='leiden').aggregate(s=Sum('cbm'))["s"],
+    #     wcbm = ScoringFinaleAllMedian.objects.filter(algo='leiden').aggregate(s=Sum('wcbm'))["s"],
+    #     acbm = ScoringFinaleAllMedian.objects.filter(algo='leiden').aggregate(s=Sum('acbm'))["s"],
+    #     ncam = ScoringFinaleAllMedian.objects.filter(algo='leiden').aggregate(s=Sum('ncam'))["s"],
+    #     imc = ScoringFinaleAllMedian.objects.filter(algo='leiden').aggregate(s=Sum('imc'))["s"],
+    #     nmo = ScoringFinaleAllMedian.objects.filter(algo='leiden').aggregate(s=Sum('nmo'))["s"],
+    #     trm = ScoringFinaleAllMedian.objects.filter(algo='leiden').aggregate(s=Sum('trm'))["s"],
+    #     mloc = ScoringFinaleAllMedian.objects.filter(algo='leiden').aggregate(s=Sum('mloc'))["s"],
+    #     mnoc = ScoringFinaleAllMedian.objects.filter(algo='leiden').aggregate(s=Sum('mnoc'))["s"],
+    #     mcd = ScoringFinaleAllMedian.objects.filter(algo='leiden').aggregate(s=Sum('mcd'))["s"],
+    #     total = ScoringFinaleAllMedian.objects.filter(algo='leiden').aggregate(s=Sum('total'))["s"]
+    # )
+
+    louvain_score = ScoringMedian(
         algo = 'louvain',
-        cbm = ScoringFinaleAllMedian.objects.filter(algo='louvain').aggregate(s=Sum('cbm'))["s"],
-        wcbm = ScoringFinaleAllMedian.objects.filter(algo='louvain').aggregate(s=Sum('wcbm'))["s"],
-        acbm = ScoringFinaleAllMedian.objects.filter(algo='louvain').aggregate(s=Sum('acbm'))["s"],
-        ncam = ScoringFinaleAllMedian.objects.filter(algo='louvain').aggregate(s=Sum('ncam'))["s"],
-        imc = ScoringFinaleAllMedian.objects.filter(algo='louvain').aggregate(s=Sum('imc'))["s"],
-        nmo = ScoringFinaleAllMedian.objects.filter(algo='louvain').aggregate(s=Sum('nmo'))["s"],
-        trm = ScoringFinaleAllMedian.objects.filter(algo='louvain').aggregate(s=Sum('trm'))["s"],
-        mloc = ScoringFinaleAllMedian.objects.filter(algo='louvain').aggregate(s=Sum('mloc'))["s"],
-        mnoc = ScoringFinaleAllMedian.objects.filter(algo='louvain').aggregate(s=Sum('mnoc'))["s"],
-        mcd = ScoringFinaleAllMedian.objects.filter(algo='louvain').aggregate(s=Sum('mcd'))["s"],
-        total = ScoringFinaleAllMedian.objects.filter(algo='louvain').aggregate(s=Sum('total'))["s"]
+        cbm = ScoringMedian.objects.filter(algo='louvain').aggregate(s=Avg('cbm'))["s"],
+        wcbm = ScoringMedian.objects.filter(algo='louvain').aggregate(s=Avg('wcbm'))["s"],
+        acbm = ScoringMedian.objects.filter(algo='louvain').aggregate(s=Avg('acbm'))["s"],
+        ncam = ScoringMedian.objects.filter(algo='louvain').aggregate(s=Avg('ncam'))["s"],
+        imc = ScoringMedian.objects.filter(algo='louvain').aggregate(s=Avg('imc'))["s"],
+        nmo = ScoringMedian.objects.filter(algo='louvain').aggregate(s=Avg('nmo'))["s"],
+        trm = ScoringMedian.objects.filter(algo='louvain').aggregate(s=Avg('trm'))["s"],
+        mloc = ScoringMedian.objects.filter(algo='louvain').aggregate(s=Avg('mloc'))["s"],
+        mnoc = ScoringMedian.objects.filter(algo='louvain').aggregate(s=Avg('mnoc'))["s"],
+        mcd = ScoringMedian.objects.filter(algo='louvain').aggregate(s=Avg('mcd'))["s"],
+        topsis_score = ScoringMedian.objects.filter(algo='louvain').aggregate(s=Avg('topsis_score'))["s"],
+        tmp_count = ScoringMedian.objects.filter(algo='louvain').count()
     )
+
+    # louvain_score = ScoringFinaleAllMedian(
+    #     algo = 'louvain',
+    #     cbm = ScoringFinaleAllMedian.objects.filter(algo='louvain').aggregate(s=Sum('cbm'))["s"],
+    #     wcbm = ScoringFinaleAllMedian.objects.filter(algo='louvain').aggregate(s=Sum('wcbm'))["s"],
+    #     acbm = ScoringFinaleAllMedian.objects.filter(algo='louvain').aggregate(s=Sum('acbm'))["s"],
+    #     ncam = ScoringFinaleAllMedian.objects.filter(algo='louvain').aggregate(s=Sum('ncam'))["s"],
+    #     imc = ScoringFinaleAllMedian.objects.filter(algo='louvain').aggregate(s=Sum('imc'))["s"],
+    #     nmo = ScoringFinaleAllMedian.objects.filter(algo='louvain').aggregate(s=Sum('nmo'))["s"],
+    #     trm = ScoringFinaleAllMedian.objects.filter(algo='louvain').aggregate(s=Sum('trm'))["s"],
+    #     mloc = ScoringFinaleAllMedian.objects.filter(algo='louvain').aggregate(s=Sum('mloc'))["s"],
+    #     mnoc = ScoringFinaleAllMedian.objects.filter(algo='louvain').aggregate(s=Sum('mnoc'))["s"],
+    #     mcd = ScoringFinaleAllMedian.objects.filter(algo='louvain').aggregate(s=Sum('mcd'))["s"],
+    #     total = ScoringFinaleAllMedian.objects.filter(algo='louvain').aggregate(s=Sum('total'))["s"]
+    # )
 
     data = {
         'projects': projects,
@@ -2296,14 +2410,14 @@ def scoring_initialize(request, project_id):
     metric_algo = ['kmeans', 'mean_shift', 'agglomerative', 'gaussian']
 
     for ma in metric_algo:
-        print(ma)
+        # print(ma)
         normalize_minmax(project_id, 'metric', ma)
         # generate_classification_file(project_id, 'metric', ma)
 
     network_algo = ['fast_greedy', 'louvain', 'leiden', 'gnewman']
 
     for na in network_algo:
-        print(na)
+        # print(na)
         normalize_minmax(project_id, 'network', na)
         # generate_classification_file(project_id, 'network', na)
 
@@ -2345,11 +2459,123 @@ def scoring(request, project_id):
     scoring_metric = ScoringFinale.objects.filter(project_id=project_id,type='metric').order_by('-total').all()
     scoring_network = ScoringFinale.objects.filter(project_id=project_id,type='network').order_by('-total').all()
 
+    #########
     # MEDIAN
+    #########
+
     algo_list = ['kmeans','mean_shift','agglomerative','gaussian','fast_greedy','louvain','leiden','gnewman']
     for al in algo_list:
         calculate_scoring_median(project_id, al)
 
+    # TOPSIS method
+
+    # 1. Find Best Ideal Value & Worst Ideal Value for each quality metric (feature)
+
+    ideal_ncam = ScoringMedian.objects.filter(project_id=project_id).aggregate(max_value=Max('ncam'))
+    ideal_ncam = ideal_ncam['max_value']
+    worst_ncam = ScoringMedian.objects.filter(project_id=project_id).aggregate(min_value=Min('ncam'))
+    worst_ncam = worst_ncam['min_value']
+
+    ideal_imc = ScoringMedian.objects.filter(project_id=project_id).aggregate(max_value=Max('imc'))
+    ideal_imc = ideal_imc['max_value']
+    worst_imc = ScoringMedian.objects.filter(project_id=project_id).aggregate(min_value=Min('imc'))
+    worst_imc = worst_imc['min_value']
+
+    ideal_cbm = ScoringMedian.objects.filter(project_id=project_id).aggregate(min_value=Min('cbm'))
+    ideal_cbm = ideal_cbm['min_value']
+    worst_cbm = ScoringMedian.objects.filter(project_id=project_id).aggregate(max_value=Max('cbm'))
+    worst_cbm = worst_cbm['max_value']
+
+    print('ideal cbm ' + str(ideal_cbm))
+    print('worst_cbm ' + str(worst_cbm))
+
+    ideal_wcbm = ScoringMedian.objects.filter(project_id=project_id).aggregate(min_value=Min('wcbm'))
+    ideal_wcbm = ideal_wcbm['min_value']
+    worst_wcbm = ScoringMedian.objects.filter(project_id=project_id).aggregate(max_value=Max('wcbm'))
+    worst_wcbm = worst_wcbm['max_value']
+
+    ideal_acbm = ScoringMedian.objects.filter(project_id=project_id).aggregate(min_value=Min('acbm'))
+    ideal_acbm = ideal_acbm['min_value']
+    worst_acbm = ScoringMedian.objects.filter(project_id=project_id).aggregate(max_value=Max('acbm'))
+    worst_acbm = worst_acbm['max_value']
+
+    ideal_nmo = ScoringMedian.objects.filter(project_id=project_id).aggregate(min_value=Min('nmo'))
+    ideal_nmo = ideal_nmo['min_value']
+    worst_nmo = ScoringMedian.objects.filter(project_id=project_id).aggregate(max_value=Max('nmo'))
+    worst_nmo = worst_nmo['max_value']
+
+    ideal_trm = ScoringMedian.objects.filter(project_id=project_id).aggregate(min_value=Min('trm'))
+    ideal_trm = ideal_trm['min_value']
+    worst_trm = ScoringMedian.objects.filter(project_id=project_id).aggregate(max_value=Max('trm'))
+    worst_trm = worst_trm['max_value']
+
+    ideal_mloc = ScoringMedian.objects.filter(project_id=project_id).aggregate(min_value=Min('mloc'))
+    ideal_mloc = ideal_mloc['min_value']
+    worst_mloc = ScoringMedian.objects.filter(project_id=project_id).aggregate(max_value=Max('mloc'))
+    worst_mloc = worst_mloc['max_value']
+
+    ideal_mnoc = ScoringMedian.objects.filter(project_id=project_id).aggregate(min_value=Min('mnoc'))
+    ideal_mnoc = ideal_mnoc['min_value']
+    worst_mnoc = ScoringMedian.objects.filter(project_id=project_id).aggregate(max_value=Max('mnoc'))
+    worst_mnoc = worst_mnoc['max_value']
+
+    ideal_mcd = ScoringMedian.objects.filter(project_id=project_id).aggregate(min_value=Min('mcd'))
+    ideal_mcd = ideal_mcd['min_value']
+    worst_mcd = ScoringMedian.objects.filter(project_id=project_id).aggregate(max_value=Max('mcd'))
+    worst_mcd = worst_mcd['max_value']
+
+    # 2. Calculate Euclidean Distance for each algo
+    # col_list = ['cbm','wcbm','acbm','ncam','imc','nmo','trm','mloc','mnoc','mcd']
+    scoring_median = ScoringMedian.objects.filter(project_id=project_id).all()
+    for sm in scoring_median:
+        algo_ideal_distance = 0.0
+        algo_worst_distance = 0.0
+        algo_ideal_distance = Decimal(algo_ideal_distance) + (sm.cbm - ideal_cbm) ** 2
+        # print(sm.algo + ' cbm ' + str(sm.cbm) + '-' + str(ideal_cbm) + ' **2')
+        algo_ideal_distance += (sm.wcbm - ideal_wcbm) ** 2
+        algo_ideal_distance += Decimal((sm.acbm - ideal_acbm) ** 2)
+        algo_ideal_distance += Decimal((sm.ncam - ideal_ncam) ** 2)
+        algo_ideal_distance += Decimal((sm.imc - ideal_imc) ** 2)
+        algo_ideal_distance += Decimal((sm.nmo - ideal_nmo) ** 2)
+        algo_ideal_distance += Decimal((sm.trm - ideal_trm) ** 2)
+        algo_ideal_distance += Decimal((sm.mloc - ideal_mloc) ** 2)
+        algo_ideal_distance += Decimal((sm.mnoc - ideal_mnoc) ** 2)
+        algo_ideal_distance += Decimal((sm.mcd - ideal_mcd) ** 2)
+
+        algo_worst_distance = Decimal(algo_worst_distance) + Decimal((sm.cbm - worst_cbm) ** 2)
+        algo_worst_distance += Decimal((sm.wcbm - worst_wcbm) ** 2)
+        algo_worst_distance += Decimal((sm.acbm - worst_acbm) ** 2)
+        algo_worst_distance += Decimal((sm.ncam - worst_ncam) ** 2)
+        algo_worst_distance += Decimal((sm.imc - worst_imc) ** 2)
+        algo_worst_distance += Decimal((sm.nmo - worst_nmo) ** 2)
+        algo_worst_distance += Decimal((sm.trm - worst_trm) ** 2)
+        algo_worst_distance += Decimal((sm.mloc - worst_mloc) ** 2)
+        algo_worst_distance += Decimal((sm.mnoc - worst_mnoc) ** 2)
+        algo_worst_distance += Decimal((sm.mcd - worst_mcd) ** 2)
+
+        # print('algo_ideal_distance ' + str(algo_ideal_distance))
+        algo_ideal_distance = math.sqrt(algo_ideal_distance)
+        # print('algo_ideal_distance SQRT ' + str(algo_ideal_distance))
+
+        # print('algo_worst_distance ' + str(algo_worst_distance))
+        algo_worst_distance = math.sqrt(algo_worst_distance)
+        # print('algo_worst_distance SQRT ' + str(algo_worst_distance))
+
+        sm_update = ScoringMedian.objects.filter(project_id=project_id, algo=sm.algo).get()
+        sm_update.ideal_d = algo_ideal_distance
+        sm_update.worst_d = algo_worst_distance
+        sm_update.save()
+
+    # 3. Topsis score for each algo
+    algos = ScoringMedian.objects.filter(project_id=project_id).all()
+    for algo in algos:
+        topsis_score = algo.worst_d / (algo.ideal_d + algo.worst_d)
+        sm = ScoringMedian.objects.filter(project_id=project_id, algo=algo.algo).get()
+        sm.topsis_score = topsis_score
+        sm.save()
+
+    ###################################################
+            
     if ScoringFinaleMedian.objects.filter(project_id=project_id).all().count() > 0:
         ScoringFinaleMedian.objects.filter(project_id=project_id).delete()
 
@@ -2363,9 +2589,12 @@ def scoring(request, project_id):
     scoring_metric_median = ScoringFinaleMedian.objects.filter(project_id=project_id,type='metric').order_by('-total').all()
     scoring_network_median = ScoringFinaleMedian.objects.filter(project_id=project_id,type='network').order_by('-total').all()
 
+    # get topsis scoring
+    scoring_topsis = ScoringMedian.objects.filter(project_id=project_id).order_by('-topsis_score').all()
 
     data = {
         'project': project,
+        'scoring_topsis': scoring_topsis,
         'scoring_metric': scoring_metric,
         'scoring_metric_median': scoring_metric_median,
         'scoring_network': scoring_network,
@@ -2379,7 +2608,8 @@ def scoring(request, project_id):
         'ms_leiden_normalize': ms_leiden_normalize,
         'ms_girvan_newman_normalize': ms_girvan_newman_normalize
     }
-    return render(request, 'v2/project_scoring.html', data)
+    # return render(request, 'v2/project_scoring.html', data)
+    return render(request, 'v2/project_scoring_topsis.html', data)
 
 def summary_median(request, project_id):
     project = Project.objects.get(id=project_id)
@@ -2391,6 +2621,8 @@ def summary_median(request, project_id):
     scoring_metric_median = ScoringFinaleMedian.objects.filter(project_id=project_id,type='metric').order_by('-total').all()
     scoring_network_median = ScoringFinaleMedian.objects.filter(project_id=project_id,type='network').order_by('-total').all()
     scoring_all_median = ScoringFinaleAllMedian.objects.filter(project_id=project_id).order_by('-total').all()
+
+    scoring_topsis = ScoringMedian.objects.filter(project_id=project_id).order_by('-topsis_score').all()
 
     # generate graph images
 
@@ -2436,6 +2668,7 @@ def summary_median(request, project_id):
 
     data = {
         'project': project,
+        'scoring_topsis': scoring_topsis,
         'scoring_metric_median': scoring_metric_median,
         'scoring_network_median': scoring_network_median,
         'scoring_overall_median': scoring_all_median,

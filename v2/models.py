@@ -146,7 +146,22 @@ class ScoringMedian(models.Model):
     mloc = models.DecimalField(max_digits=30, decimal_places=6, default=0, blank=True, null=True)
     mnoc = models.DecimalField(max_digits=30, decimal_places=6, default=0, blank=True, null=True)
     mcd = models.DecimalField(max_digits=30, decimal_places=6, default=0, blank=True, null=True)
+
+    # TOPSIS
+    # 1. Best ideal_value and worst_value
+    # ideal = models.DecimalField(max_digits=30, decimal_places=6, default=0, blank=True, null=True)
+    # worst = models.DecimalField(max_digits=30, decimal_places=6, default=0, blank=True, null=True)
+
+    # 2. Euclidean Distance ideal_distance and worst_distance
+    ideal_d = models.DecimalField(max_digits=30, decimal_places=6, default=0, blank=True, null=True)
+    worst_d = models.DecimalField(max_digits=30, decimal_places=6, default=0, blank=True, null=True)
+
+    # 3. Performance Score
+    topsis_score = models.DecimalField(max_digits=30, decimal_places=6, default=0, blank=True, null=True)
+
     project_id = models.IntegerField()
+
+    tmp_count = models.IntegerField(default=0)
 
 class ScoringFinale(models.Model):
     algo = models.TextField()

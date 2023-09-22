@@ -93,6 +93,11 @@ class ScoringMedian(models.Model):
     mcd = models.DecimalField(max_digits=30, decimal_places=6, default=0, blank=True, null=True)
     project_id = models.IntegerField()
 
+    ideal_d = models.DecimalField(max_digits=30, decimal_places=6, default=0, blank=True, null=True)
+    worst_d = models.DecimalField(max_digits=30, decimal_places=6, default=0, blank=True, null=True)
+    topsis_score = models.DecimalField(max_digits=30, decimal_places=6, default=0, blank=True, null=True)
+
+
 class ScoringFinaleMedian(models.Model):
     cbm = models.DecimalField(max_digits=9, decimal_places=6, default=0, blank=True, null=True)
     wcbm = models.DecimalField(max_digits=9, decimal_places=6, default=0, blank=True, null=True)
@@ -106,6 +111,7 @@ class ScoringFinaleMedian(models.Model):
     mcd = models.DecimalField(max_digits=9, decimal_places=6, default=0, blank=True, null=True)
     total = models.IntegerField(default=0, blank=True, null=True)
     project_id = models.IntegerField()
+
 
 class MsInteractions(models.Model):
     ms_from = models.TextField()

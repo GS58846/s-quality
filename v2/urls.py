@@ -38,6 +38,7 @@ urlpatterns = [
 
     path('v2/project/scoring/<int:project_id>/initialize', views.scoring_initialize, name='v2_scoring_initialize'),
     path('v2/project/scoring/<int:project_id>', views.scoring, name='v2_scoring'),
+    # path('v2/project/scoring_topsis/<int:project_id>', views.scoring_topsis, name='v2_scoring_topsis'),
 
     path('v2/project/summary/<int:project_id>', views.summary_median, name='v2_summary'),
     path('v2/project/export_project_summary', views.export_project_summary, name='v2_export_project_summary'),
