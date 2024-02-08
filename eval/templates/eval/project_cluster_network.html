@@ -1,0 +1,125 @@
+{% extends 'v2/base/layout.html' %}
+
+{% load static %}
+
+{% block main %}
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">{{ project.name }}</h1>
+</div>
+
+<div class="container">
+  <a href="{% url 'v2_index' %}" class="btn btn-info"><i class="bi-house"></i></a>
+  <a href="{% url 'v2_cluster_metric' project.id %}" class="btn btn-secondary">Back: Metric Clustering</a>
+  <h2 class="col mt-2">Network-based Clustering</h2>
+  <form action="{% url 'v2_clustering_network_run' project.id %}" method="post">
+    {% csrf_token %}
+    <button class="btn btn-danger btn-sm" type="submit">Run</button>
+  </form>
+
+  {% if graph_images %}
+    {% for gi in graph_images %}
+    <hr>
+    <h4>{{ gi.fullname }}</h4>
+    <p>Processing Time: <strong>{{ gi.processing_time }} seconds</strong></p>
+    <div class="row pb-3">
+      <div class="col">
+        <img src="{{ gi.fileurl }}" width="460" alt="">
+      </div>
+      <div class="col">
+        <table class="table table-dark table-striped table-hover table-sm table-responsive">
+          <thead>
+            <tr>
+              <!-- <th scope="col">#</th> -->
+              <th scope="col">Microservice</th>
+              <th scope="col">CBM</th>
+              <th scope="col">WCBM</th>
+              <th scope="col">ACBM</th>
+              <th scope="col">NCAM</th>
+              <th scope="col">IMC</th>
+              <th scope="col">NMO</th>
+              <th scope="col">TRM</th>
+              <th scope="col">MLOC</th>
+              <th scope="col">MNOC</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if gi.algo == 'fast_greedy' %}
+              {% for ms in fastgreedy %}
+              <tr>
+                <td>MS-{{ ms.microservice }}</td>
+                <td>{{ ms.cbm }}</td>
+                <td>{{ ms.wcbm }}</td>
+                <td>{{ ms.acbm }}</td>
+                <td>{{ ms.ncam }}</td>
+                <td>{{ ms.imc }}</td>
+                <td>{{ ms.nmo }}</td>
+                <td>{{ ms.trm }}</td>
+                <td>{{ ms.mloc }}</td>
+                <td>{{ ms.mnoc }}</td>
+              </tr>
+                {% endfor %}
+              {% endif %}
+            {% if gi.algo == 'louvain' %}
+              {% for ms in louvain %}
+              <tr>
+                <td>MS-{{ ms.microservice }}</td>
+                <td>{{ ms.cbm }}</td>
+                <td>{{ ms.wcbm }}</td>
+                <td>{{ ms.acbm }}</td>
+                <td>{{ ms.ncam }}</td>
+                <td>{{ ms.imc }}</td>
+                <td>{{ ms.nmo }}</td>
+                <td>{{ ms.trm }}</td>
+                <td>{{ ms.mloc }}</td>
+                <td>{{ ms.mnoc }}</td>
+              </tr>
+                {% endfor %}
+              {% endif %}
+            {% if gi.algo == 'leiden' %}
+              {% for ms in leiden %}
+            <tr>
+              <td>MS-{{ ms.microservice }}</td>
+              <td>{{ ms.cbm }}</td>
+              <td>{{ ms.wcbm }}</td>
+              <td>{{ ms.acbm }}</td>
+              <td>{{ ms.ncam }}</td>
+              <td>{{ ms.imc }}</td>
+              <td>{{ ms.nmo }}</td>
+              <td>{{ ms.trm }}</td>
+              <td>{{ ms.mloc }}</td>
+              <td>{{ ms.mnoc }}</td>
+            </tr>
+              {% endfor %}
+            {% endif %}
+          {% if gi.algo == 'gnewman' %}
+            {% for ms in gnewman %}
+          <tr>
+            <td>MS-{{ ms.microservice }}</td>
+            <td>{{ ms.cbm }}</td>
+            <td>{{ ms.wcbm }}</td>
+            <td>{{ ms.acbm }}</td>
+            <td>{{ ms.ncam }}</td>
+            <td>{{ ms.imc }}</td>
+            <td>{{ ms.nmo }}</td>
+            <td>{{ ms.trm }}</td>
+            <td>{{ ms.mloc }}</td>
+            <td>{{ ms.mnoc }}</td>
+          </tr>
+            {% endfor %}
+          {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="row pt-2 pb-5">
+    <!-- <code>* have you generate project combo file using weka? (Input: normalized metric data) (Algorithm: Genetic Algorithm + K-Means)</code> -->
+    <a href="{% url 'v2_scoring_initialize' project.id %}" class="btn btn-secondary">Next: Scoring</a>
+  </div>
+  
+</div>
+
+{% endblock %}

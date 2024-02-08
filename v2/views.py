@@ -909,7 +909,7 @@ def clustering_kmeans(request, project_id):
         sse_list.append(kmeans.inertia_)
 
     k_value = KneeLocator(range(1,class_count), sse_list, curve="convex", direction="decreasing")
-    k_value.elbow  
+    k_value.elbow 
 
     # sample mean / average
     sample_mean = class_count / k_value.elbow

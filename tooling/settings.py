@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'squality',
     'v2',
     'exp',
+    'eval',
 ]
 
 MIDDLEWARE = [
