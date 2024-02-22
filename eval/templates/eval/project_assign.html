@@ -156,20 +156,20 @@
                   <tbody>
                     {% for st in scoring_median %}
                     <tr>
-                      {% if st.project_id == 1 %}
+                      {% if st.project_id == 5 %}
                       <td>K-MEANS</td>
                       {% elif st.project_id == 2 %}
                       <td>MEAN-SHIFT</td>
-                      {% elif st.project_id == 3 %}
+                      {% elif st.project_id == 6 %}
                       <td>AGGLOMERATIVE</td>
                       {% elif st.project_id == 4 %}
                       <td>GAUSSIAN</td>
-                      {% elif st.project_id == 5 %}
+                      {% elif st.project_id == 3 %}
                       <td>LEIDEN</td>
-                      {% elif st.project_id == 6 %}
+                      {% elif st.project_id == 1 %}
                       <td>GIRVAN-NEWMAN</td>
                       {% else %}
-                      <td>YOUR SOLUTION</td>
+                      <td><strong>YOUR SOLUTION</strong></td>
                       {% endif %}
         
                       <td>{{ st.cbm }}</td>

@@ -24,7 +24,7 @@
     <thead>
       <tr>
         <th scope="col">#</th>
-        <th scope="col" style="width: 60%;">Project Name</th>
+        <th scope="col" style="width: 60%;">Project Name (id)</th>
         <th scope="col">Created</th>
         <th scope="col">&nbsp;</th>
       </tr>
@@ -33,7 +33,7 @@
       {% for project in projects %}
       <tr>
         <td>{{ forloop.counter }}.</td>
-        <td>{{ project.name }}</td>
+        <td>{{ project.name }} ({{ project.id }})</td>
         <td>{{ project.created_at }}</td>
         <td>
           {% if project.id > 6 %}
@@ -49,6 +49,61 @@
       <tr>
         <td colspan="4">No records found!</td>
       </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<h3>Overall Quality Score with TOPSIS</h3>
+<div class="table-responsive">
+  <table class="table table-dark table-striped table-hover table-sm">
+    <thead>
+      <tr>
+        <th scope="col">Algo</th>
+        <th scope="col">CBM</th>
+        <th scope="col">WCBM</th>
+        <th scope="col">ACBM</th>
+        <th scope="col">NCAM</th>
+        <th scope="col">IMC</th>
+        <th scope="col">NMO</th>
+        <th scope="col">TRM</th>
+        <th scope="col">MLOC</th>
+        <th scope="col">MNOC</th>
+        <th scope="col">MCD</th>
+        <th scope="col">TOPSIS SCORE</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for st in scoring_median %}
+      <tr>
+        {% if st.project_id == 5 %}
+        <td>K-MEANS</td>
+        {% elif st.project_id == 2 %}
+        <td>MEAN-SHIFT</td>
+        {% elif st.project_id == 6 %}
+        <td>AGGLOMERATIVE</td>
+        {% elif st.project_id == 4 %}
+        <td>GAUSSIAN</td>
+        {% elif st.project_id == 3 %}
+        <td>LEIDEN</td>
+        {% elif st.project_id == 1 %}
+        <td>GIRVAN-NEWMAN</td>
+        {% else %}
+        <td><strong>PROJECT ID ({{ st.project_id }})</strong></td>
+        {% endif %}
+
+        <td>{{ st.cbm }}</td>
+        <td>{{ st.wcbm }}</td>
+        <td>{{ st.acbm }}</td>
+        <td>{{ st.ncam }}</td>
+        <td>{{ st.imc }}</td>
+        <td>{{ st.nmo }}</td>
+        <td>{{ st.trm }}</td>
+        <td>{{ st.mloc }}</td>
+        <td>{{ st.mnoc }}</td>
+        <td>{{ st.mcd }}</td>
+        
+        <td>{{ st.topsis_score }}</td>
       {% endfor %}
     </tbody>
   </table>
